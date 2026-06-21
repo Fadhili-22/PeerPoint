@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PeerPoint Counsellor Directory — Prototype (THROWAWAY)</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Work+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#006470",
+              "primary-light": "#2D7D8A",
+              "primary-dark": "#004E59",
+              "primary-accent": "#A4EEFD",
+              background: "#F7F9FF",
+              surface: "#FFFFFF",
+              "surface-muted": "#ECF4FF",
+              "surface-dark": "#26323D",
+              "soft-teal": "#E9F2F3",
+              "on-surface": "#111D27",
+              "on-surface-muted": "#3F484A",
+              "on-surface-subtle": "#6F797B",
+              "on-primary": "#FFFFFF",
+              "on-dark-accent": "#A4EEFD",
+              outline: "#6F797B",
+              "outline-muted": "#BEC8CA",
+              "accent-gold": "#E79D19",
+              "strathmore-blue": "#02338D",
+              success: "#10B981",
+              warning: "#F59E0B",
+              danger: "#EF4444",
+              crisis: "#CC0000",
+              "crisis-light": "#FFDAD4",
+            },
+            fontFamily: {
+              heading: ["Plus Jakarta Sans", "sans-serif"],
+              body: ["Work Sans", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      html {
+        font-family: "Work Sans", sans-serif;
+        background-color: #f7f9ff;
+        color: #111d27;
+        -webkit-font-smoothing: antialiased;
+      }
+      h1, h2, h3, h4, h5, h6 {
+        font-family: "Plus Jakarta Sans", sans-serif;
+      }
+    </style>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  </head>
+  <body class="bg-background">
+    <div id="root"></div>
+    <!--
+      app.js is precompiled from PrototypeCounsellorDirectory.jsx via:
+      npx esbuild PrototypeCounsellorDirectory.jsx --outfile=app.js --loader:.jsx=jsx
+    -->
+    <script defer src="./app.js"></script>
+  </body>
+</html>

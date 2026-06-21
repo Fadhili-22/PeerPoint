@@ -1,0 +1,227 @@
+# PeerPoint Backend — Project Rules & Context
+
+Read this file fully before making any change. It exists so that any agent working
+on this codebase — including ones with no memory of prior sessions — inherits the
+decisions already made here, instead of rediscovering, contradicting, or "fixing"
+something that was deliberate.
+
+---
+
+## 1. What this project actually is
+
+PeerPoint is a peer-counselling platform being built for Strathmore University's
+Mental Health Club. **This is a real product for long-term production use, not a
+class assignment or demo.** It will be used by real students, real peer
+counsellors, and real administrators, likely for years. The Mental Health Club
+president is an actual stakeholder/client for product decisions, not a grading
+rubric.
+
+Treat every decision — schema design, endpoint design, error handling, naming —
+the way an experienced engineering team would when building something they're
+accountable for maintaining long after this semester ends. Favor correctness,
+auditability, and maintainability over the fastest thing that makes a demo work.
+
+The frontend was built first, deliberately, as a way of surfacing real requirements
+before backend work began. A full requirements audit derived from that frontend
+lives at `frontend_audit.md` — read it before doing any schema or endpoint
+work, since it is the source of truth for what the backend needs to support.
+
+**The audit describes the frontend's needs as of when it was generated. This file
+describes what the backend actually has and has decided. Where the two disagree,
+this file wins for backend implementation decisions — flag the conflict rather
+than silently picking one.**
+
+---
+
+## 2. Stack & hard conventions
+
+- **Stack:** FastAPI, SQLAlchemy, PostgreSQL (local dev on port 5433), Pydantic,
+  JWT auth via `python-jose`, password hashing via `passlib`/`bcrypt`.
+- **Imports:** absolute imports throughout — `from app.x import y`. Do not
+  introduce relative imports.
+- **bcrypt version pin:** `bcrypt==4.0.1` is pinned deliberately. There is a known
+  version conflict between newer bcrypt releases and the installed passlib
+  version that silently breaks password verification (auth appears to work in
+  some flows and mysteriously fails in others). **Never "fix" this pin without
+  understanding why it's there** — if you think it needs to change, flag it,
+  don't just bump it.
+- **Swagger / OAuth2 setup:** `tokenUrl` in the OAuth2 scheme must match the
+  actual *mounted* route path (e.g. `"auth/login"`, not `"login"`) or Swagger's
+  "Authorize" flow will silently fail. Login endpoints must accept
+  `OAuth2PasswordRequestForm` and read credentials via `.username` (even though
+  the field is conceptually an email) — using a custom Pydantic body here causes
+  422 errors against Swagger's form-encoded submission.
+- **Design layer vs. code layer:** `PeerCounsellor extends Student` is a
+  confirmed decision **at the OO design/class-diagram layer only** (already
+  reflected in submitted diagrams). At the code layer, this is implemented via
+  SQLAlchemy **Single Table Inheritance** — there is no separate
+  `PeerCounsellor` Python class hierarchy, and none should be introduced. The
+  diagrams and the code are allowed to express the same relationship differently;
+  this is intentional, not a gap.
+
+---
+
+## 3. Current actual state of the backend (read this before assuming anything)
+
+Be precise about what exists vs. what's planned — do not assume a planned change
+has already happened, and do not assume something not yet built is out of scope
+just because it isn't there yet.
+
+**Already built and verified (do not casually rewrite):**
+- Authentication and role-based access control — complete, verified end-to-end in
+  Swagger UI. This includes registration, login, and JWT issuance.
+- The `Session` SQLAlchemy model — finalized, with dual foreign keys into the
+  `users` table (one for the student, one for the counsellor).
+- A `require_active_counsellor` dependency that checks both role and
+  verification status before allowing counsellor-only actions.
+
+
+ARCHITECTURE DECISION
+
+The frontend audit references a legacy single-role model
+(users.role).
+
+This is retained in the audit for historical accuracy.
+
+Authorization should migrate to user_roles
+as described in the User Roles ADR below.
+
+When implementing authorization features,
+follow the user_roles design documented here,
+not the legacy single-role assumptions in the audit.
+**Current role model (IMPORTANT — about to change, but hasn't yet):**
+- The backend currently uses a **single `role` enum column on `users`**
+  (`student | counsellor | admin`). Promotion today would mean overwriting this
+  value.
+- **This is a known, deliberate, planned-but-not-yet-executed change.** The
+  target architecture (already decided, not up for debate) replaces this with a
+  `user_roles` join table supporting multiple, independently granted/revoked
+  roles per user — see Section 4. **Do not build new scaffolding that assumes
+  the single-role model is permanent.** If you are scaffolding something that
+  touches authorization and the `user_roles` migration hasn't landed yet,
+  scaffold it in a way that will be easy to adapt (e.g. don't hardcode
+  `user.role ==` checks deep in business logic if you can reasonably route them
+  through a single dependency/helper instead) — but do not attempt the
+  migration yourself unless that is explicitly the task you were given.
+
+**Not yet built (do not assume these exist):**
+- The `user_roles` table and migration.
+- Full scaffolding completion across all documented endpoints/models in the
+  audit — this is in progress, not finished.
+
+---
+
+## 4. Settled decisions you must not re-litigate
+
+These were deliberated and decided. An agent encountering these should implement
+consistently with them, not propose alternatives, unless explicitly asked to
+revisit them.
+
+### 4.1 Role & authorization model (target state, not yet implemented)
+
+- Single-role enum is being replaced by a `user_roles` table:
+  `id, user_id (FK), role (enum: student, counsellor, admin), is_active,
+  granted_at, granted_by (FK, nullable), revoked_at (nullable)`.
+- **Why:** peer counsellors are still Strathmore students and must retain full
+  student-side functionality (booking sessions, browsing resources) after
+  promotion. A single overwritable role column cannot represent "has both
+  roles simultaneously," and the original design (give counsellors a separate
+  account/email) was rejected — it would fragment one person's activity across
+  two disconnected accounts, which is worse than the problem it solves.
+- **Promotion is additive, never destructive.** Approving a promotion means
+  `INSERT`ing a new `user_roles` row (`role=counsellor`), never overwriting or
+  deleting the existing `student` row. The admin-facing "Promote" button and
+  workflow do not change at all — only what happens underneath the click
+  changes.
+- **Admin is modeled the same way** (a `user_roles` row, `role=admin`) to
+  support multiple admins. However: no public-facing or
+  student/counsellor-accessible endpoint may ever create a `role=admin` row.
+  Admin grants only happen via a direct seed/management script, or a
+  protected endpoint that itself requires an existing admin's authentication.
+- The existing `role` column on `users` (once the migration lands) becomes a
+  **non-authoritative hint only** (e.g. "what to show right after login if no
+  active context is set"). It must never be used for actual authorization
+  checks once `user_roles` exists — that logic must check `user_roles`
+  membership instead.
+- **Active context, not dual accounts:** a counsellor with both roles logs in
+  once. The frontend lets them pick an active context (student view vs.
+  counsellor view) and switch between them without re-authenticating. The
+  backend's job is just to expose all active roles (`roles: ["student",
+  "counsellor"]`) on login/`me` — it does not need to track "active context"
+  server-side; that's frontend state.
+
+### 4.2 Resource lifecycle model
+
+- Resources use a `status` field with currently-real values
+  `draft | published | archived`, **deliberately designed to extend further**
+  without a breaking change.
+- **Already decided and being built on the frontend (may not exist in backend
+  models yet — check before assuming):** a counsellor submission workflow adds
+  `pending_review` and `rejected` to this set, with flow:
+  `draft → pending_review → published` (via "Approve & Publish") or
+  `→ draft` (via "Approve to Draft", for submissions needing minor admin
+  edits before going live) or `→ rejected → (counsellor edits) → pending_review`
+  (resubmission).
+- New metadata fields accompanying this: `submittedBy`, `submittedAt`,
+  `reviewedBy`, `reviewedAt`, `rejectionReason`. These are deliberately
+  distinct from `lastEditedBy`: `submittedBy` = who originated the submission,
+  `lastEditedBy` = who last touched the content, `reviewedBy` = who made the
+  approve/reject decision. Do not collapse these into one field.
+- **Featured resources are NOT a singleton.** `featured` is a boolean that can
+  be `true` on multiple resources simultaneously, paired with a nullable
+  `featuredOrder` integer for display priority. Featuring one resource does
+  **not** automatically unfeature another. (An earlier draft of this design
+  used a single-featured-resource-with-auto-unfeature pattern; that was
+  identified as a UX footgun — silently changing one resource's state as a
+  side effect of editing a different one — and explicitly rejected in favor of
+  this approach, which matches how real editorial/CMS products handle featured
+  content.)
+- **Editing already-published articles by counsellors is explicitly out of
+  scope** for the current phase. Submissions are submit-once. Do not build a
+  "propose an edit to a live article" flow unless specifically asked to.
+- Author fields (`author`, `authorRole`) on counsellor-submitted resources are
+  **locked/read-only from the counsellor's side**, pre-filled from their own
+  profile. Admins may still edit these during review. This is a deliberate
+  integrity decision, not an oversight — don't add counsellor-side editing of
+  these fields without it being explicitly requested.
+
+### 4.3 General principles applied throughout this project
+
+- **Additive over destructive.** When a workflow changes "who can do X," prefer
+  granting/extending over overwriting/replacing, especially for anything
+  resembling a role, permission, or status transition. This shows up in the
+  role model and the resource status model both, and should be the default
+  instinct for any future similar decision.
+- **Don't silently invent product decisions.** If a requirement in the audit is
+  ambiguous or contradicts something here, flag it explicitly rather than
+  guessing and moving on quietly.
+- **Explain changes like a PR description.** When implementing something
+  non-trivial, briefly note what existed before, what was wrong/missing, and
+  how the change fits existing patterns — not just a diff with no narration.
+
+---
+
+## 5. Explicit "do not touch without flagging first" list
+
+- The verified, working authentication flow (registration, login, JWT
+  issuance/validation) — extend it if needed, but do not refactor it
+  speculatively.
+- The `require_active_counsellor` dependency's existing verification-status
+  check — this can be *extended* (e.g. to check `user_roles` instead of the
+  single `role` column, once that migration lands) but its underlying safety
+  check (a counsellor must be properly verified to act as one) must not be
+  removed or weakened.
+- The `Session` model's dual-FK structure into `users`.
+- The `bcrypt==4.0.1` pin (see Section 2).
+
+---
+
+## 6. Where to look for more detail
+
+- Full frontend-derived requirements audit: `frontend_audit.md` — read
+  before any schema/endpoint work. This is the most detailed source for
+  expected API shapes, but defer to this file (Sections 3–4) where the two
+  conflict on backend architecture specifically.
+- Diagrams (Use Case, Activity, Class, ERD, Sequence) reflect the confirmed
+  design-layer decisions (including the `PeerCounsellor extends Student`
+  relationship) and are submission-ready as of when they were generated.

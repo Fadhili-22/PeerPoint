@@ -1,0 +1,616 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>PeerPoint Admin Dashboard</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Work+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "secondary-fixed": "#ffdad4",
+                "on-surface-variant": "#3f484a",
+                "outline-variant": "#bec8ca",
+                "inverse-surface": "#26323d",
+                "surface-container-lowest": "#ffffff",
+                "surface-dim": "#cfdbea",
+                "on-tertiary-container": "#fcfaf6",
+                "secondary-container": "#e41f13",
+                "error-container": "#ffdad6",
+                "on-error": "#ffffff",
+                "surface-container": "#e3effe",
+                "tertiary-container": "#737370",
+                "surface": "#f7f9ff",
+                "on-background": "#111d27",
+                "primary-fixed-dim": "#88d2e0",
+                "on-tertiary": "#ffffff",
+                "surface-container-highest": "#d7e4f3",
+                "surface-tint": "#0a6875",
+                "primary-container": "#2d7d8a",
+                "outline": "#6f797b",
+                "surface-container-high": "#dde9f9",
+                "on-secondary-fixed-variant": "#930000",
+                "on-primary-container": "#effcff",
+                "secondary-fixed-dim": "#ffb4a8",
+                "on-secondary-fixed": "#410000",
+                "surface-container-low": "#ecf4ff",
+                "on-surface": "#111d27",
+                "background": "#f7f9ff",
+                "primary-fixed": "#a4eefd",
+                "tertiary": "#5a5a58",
+                "on-secondary-container": "#fffbff",
+                "primary": "#006470",
+                "on-error-container": "#93000a",
+                "surface-bright": "#f7f9ff",
+                "tertiary-fixed-dim": "#c8c6c3",
+                "on-secondary": "#ffffff",
+                "tertiary-fixed": "#e4e2de",
+                "soft-teal-tint": "#E9F2F3",
+                "strathmore-blue": "#02338D",
+                "on-tertiary-fixed": "#1b1c1a",
+                "on-tertiary-fixed-variant": "#474744",
+                "secondary": "#bc0000",
+                "inverse-on-surface": "#e7f2ff",
+                "accent-gold": "#E79D19",
+                "inverse-primary": "#88d2e0",
+                "surface-variant": "#d7e4f3",
+                "on-primary-fixed-variant": "#004e59",
+                "on-primary-fixed": "#001f24",
+                "error": "#ba1a1a",
+                "surface-white": "#FFFFFF",
+                "on-primary": "#ffffff"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "base": "8px",
+                "margin-desktop": "40px",
+                "gutter": "24px",
+                "container-max": "1200px",
+                "margin-mobile": "20px"
+            },
+            "fontFamily": {
+                "headline-lg": ["Plus Jakarta Sans"],
+                "headline-md": ["Plus Jakarta Sans"],
+                "display-lg": ["Plus Jakarta Sans"],
+                "caption": ["Work Sans"],
+                "body-lg": ["Work Sans"],
+                "label-md": ["Plus Jakarta Sans"],
+                "headline-lg-mobile": ["Plus Jakarta Sans"],
+                "body-md": ["Work Sans"]
+            },
+            "fontSize": {
+                "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}],
+                "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-on-surface selection:bg-primary-container selection:text-white bg-surface-container-low">
+<!-- Top Navigation -->
+<header class="w-full top-0 sticky z-[60] shadow-[0_4px_20px_0_rgba(0,0,0,0.05)] bg-surface-white">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md text-primary flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+                    PeerPoint
+                </span>
+<span class="hidden md:inline-flex items-center px-3 py-0.5 rounded-full bg-soft-teal-tint text-primary font-label-md text-[12px] uppercase tracking-wider">
+                    Admin Panel
+                </span>
+</div>
+<div class="flex-1 max-w-md px-8 hidden md:block">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-xl py-2 pl-10 pr-4 focus:ring-2 focus:ring-primary-container transition-all text-body-md" placeholder="Search platform analytics..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="material-symbols-outlined p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors">notifications</button>
+<div class="flex items-center gap-3 pl-2 border-l border-outline-variant/30">
+<div class="text-right hidden sm:block">
+<p class="font-label-md text-on-surface leading-tight">Admin Sarah</p>
+<p class="text-caption text-on-surface-variant">Administrator</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-white font-bold custom-shadow">
+                        SA
+                    </div>
+</div>
+</div>
+</div>
+</header>
+<div class="flex min-h-screen">
+<!-- Sidebar -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-72 hidden md:flex flex-col bg-surface-white border-r border-outline-variant/20 py-8 px-4 z-50">
+<nav class="space-y-1">
+<a class="flex items-center gap-3 bg-soft-teal-tint text-primary rounded-lg px-4 py-3 font-bold transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span> Dashboard
+                </a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">supervisor_account</span> Manage Counsellors
+                </a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">groups</span> Manage Students
+                </a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">calendar_month</span> Sessions
+                </a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">library_books</span> Resource Hub
+                </a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">analytics</span> Reports
+                </a>
+<div class="pt-8 mt-8 border-t border-outline-variant/20">
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">settings</span> Settings
+                    </a>
+</div>
+</nav>
+<!-- Endorsement Badge -->
+<div class="mt-auto p-4 bg-surface-container-low rounded-xl">
+<p class="text-[10px] text-strathmore-blue font-bold uppercase tracking-widest mb-2">Endorsed By</p>
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded bg-strathmore-blue/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-strathmore-blue text-[18px]">school</span>
+</div>
+<p class="text-caption leading-tight text-on-surface-variant font-semibold">Strathmore University Mental Health Club</p>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 md:ml-72 p-margin-mobile md:p-margin-desktop space-y-gutter">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Platform Overview</h1>
+<p class="text-body-md text-on-surface-variant">Monitor platform health, counsellor activity, and student engagement.</p>
+</div>
+<div class="bg-surface-white px-4 py-2 rounded-xl custom-shadow flex items-center gap-3 border border-primary/5">
+<span class="material-symbols-outlined text-primary">calendar_today</span>
+<span class="font-label-md" id="current-date">Jun 17 • 2026, 06:26 PM</span>
+</div>
+</div>
+<!-- KPI Row -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+<!-- Total Students -->
+<div class="bg-surface-white p-6 rounded-[24px] custom-shadow hover:scale-[1.02] transition-transform duration-300">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-blue-50 text-blue-600 rounded-lg"><span class="material-symbols-outlined">groups</span></div>
+<span class="text-green-600 text-caption font-bold flex items-center">+12% <span class="material-symbols-outlined text-[14px]">trending_up</span></span>
+</div>
+<p class="text-caption text-on-surface-variant font-medium">Total Students</p>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">2,840</h3>
+</div>
+<!-- Active Counsellors -->
+<div class="bg-surface-white p-6 rounded-[24px] custom-shadow hover:scale-[1.02] transition-transform duration-300">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-teal-50 text-primary rounded-lg"><span class="material-symbols-outlined">support_agent</span></div>
+<span class="text-green-600 text-caption font-bold flex items-center">+4% <span class="material-symbols-outlined text-[14px]">trending_up</span></span>
+</div>
+<p class="text-caption text-on-surface-variant font-medium">Active Counsellors</p>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">48</h3>
+</div>
+<!-- Sessions -->
+<div class="bg-surface-white p-6 rounded-[24px] custom-shadow hover:scale-[1.02] transition-transform duration-300">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-purple-50 text-purple-600 rounded-lg"><span class="material-symbols-outlined">event_note</span></div>
+<span class="text-green-600 text-caption font-bold flex items-center">+18% <span class="material-symbols-outlined text-[14px]">trending_up</span></span>
+</div>
+<p class="text-caption text-on-surface-variant font-medium">Sessions This Month</p>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">512</h3>
+</div>
+<!-- Pending Approvals -->
+<div class="bg-surface-white p-6 rounded-[24px] border-2 border-accent-gold/20 custom-shadow hover:scale-[1.02] transition-transform duration-300">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-orange-50 text-accent-gold rounded-lg"><span class="material-symbols-outlined">pending_actions</span></div>
+<span class="bg-accent-gold text-white px-2 py-0.5 rounded-full text-[10px] font-bold">URGENT</span>
+</div>
+<p class="text-caption text-on-surface-variant font-medium">Pending Approvals</p>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">11</h3>
+</div>
+<!-- Resources -->
+<div class="bg-surface-white p-6 rounded-[24px] custom-shadow hover:scale-[1.02] transition-transform duration-300">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-pink-50 text-pink-600 rounded-lg"><span class="material-symbols-outlined">auto_stories</span></div>
+<span class="text-on-surface-variant text-caption font-medium">Last 7d</span>
+</div>
+<p class="text-caption text-on-surface-variant font-medium">Resources Published</p>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">156</h3>
+</div>
+</div>
+<!-- Main Dashboard Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Pending Approvals Table -->
+<div class="lg:col-span-8 bg-surface-white rounded-[24px] custom-shadow overflow-hidden">
+<div class="p-6 border-b border-outline-variant/10 flex flex-col md:flex-row justify-between md:items-center gap-4">
+<div class="flex gap-4 border-b border-outline-variant/10 md:border-0">
+<button class="pb-2 md:pb-0 px-1 border-b-2 border-primary text-primary font-bold">New Accounts (8)</button>
+<button class="pb-2 md:pb-0 px-1 text-on-surface-variant hover:text-primary transition-colors">New Resources (3)</button>
+</div>
+<button class="text-primary font-label-md flex items-center gap-1 hover:underline">View All Requests <span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant font-label-md">
+<th class="px-6 py-4">Applicant</th>
+<th class="px-6 py-4">Role</th>
+<th class="px-6 py-4">Date</th>
+<th class="px-6 py-4">Status</th>
+<th class="px-6 py-4 text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-soft-teal-tint flex items-center justify-center text-primary font-bold text-[12px]">EM</div>
+<div>
+<p class="font-label-md">Dr. Eric Mutua</p>
+<p class="text-caption text-on-surface-variant">emutua@strathmore.edu</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-body-md">Senior Counsellor</td>
+<td class="px-6 py-4 text-body-md">Oct 22, 2023</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 bg-accent-gold/10 text-accent-gold rounded-full text-caption font-bold">Pending Review</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 text-primary hover:bg-soft-teal-tint rounded-lg transition-all" title="Approve"><span class="material-symbols-outlined">check_circle</span></button>
+<button class="p-2 text-error hover:bg-error-container/20 rounded-lg transition-all" title="Reject"><span class="material-symbols-outlined">cancel</span></button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-soft-teal-tint flex items-center justify-center text-primary font-bold text-[12px]">AL</div>
+<div>
+<p class="font-label-md">Alice Lemayian</p>
+<p class="text-caption text-on-surface-variant">alemayian@strath.edu</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-body-md">Student Peer</td>
+<td class="px-6 py-4 text-body-md">Oct 23, 2023</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 bg-accent-gold/10 text-accent-gold rounded-full text-caption font-bold">Verifying ID</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 text-primary hover:bg-soft-teal-tint rounded-lg transition-all"><span class="material-symbols-outlined">check_circle</span></button>
+<button class="p-2 text-error hover:bg-error-container/20 rounded-lg transition-all"><span class="material-symbols-outlined">cancel</span></button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Attention Needed Sidebar -->
+<div class="lg:col-span-4 space-y-gutter">
+<div class="bg-surface-white p-6 rounded-[24px] custom-shadow border-l-4 border-error">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-error">warning</span>
+<h3 class="font-headline-md text-[18px]">Attention Needed</h3>
+</div>
+<div class="space-y-4">
+<div class="p-3 bg-error-container/10 rounded-xl">
+<p class="font-label-md text-on-error-container">Delayed Responses</p>
+<p class="text-caption text-on-surface-variant">3 sessions have been waiting for counsellor response for &gt;24h.</p>
+</div>
+<div class="p-3 bg-accent-gold/10 rounded-xl">
+<p class="font-label-md text-on-secondary-fixed-variant">Counsellor Availability</p>
+<p class="text-caption text-on-surface-variant">High demand for "Stress Management" (95% cap reached).</p>
+</div>
+<div class="p-3 bg-soft-teal-tint rounded-xl">
+<p class="font-label-md text-primary">System Update</p>
+<p class="text-caption text-on-surface-variant">Monthly report data ready for export.</p>
+</div>
+</div>
+</div>
+<!-- Platform Health -->
+<div class="bg-surface-white p-6 rounded-[24px] custom-shadow">
+<h3 class="font-headline-md text-[18px] mb-4">Platform Health</h3>
+<div class="grid grid-cols-2 gap-4">
+<div class="text-center p-3 bg-surface-container-low rounded-xl">
+<p class="text-caption text-on-surface-variant mb-1">Satisfaction</p>
+<div class="relative inline-flex items-center justify-center">
+<svg class="w-16 h-16 transform -rotate-90">
+<circle class="text-outline-variant/20" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-width="6"></circle>
+<circle class="text-primary" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-dasharray="175" stroke-dashoffset="14" stroke-width="6"></circle>
+</svg>
+<span class="absolute text-caption font-bold">92%</span>
+</div>
+</div>
+<div class="text-center p-3 bg-surface-container-low rounded-xl">
+<p class="text-caption text-on-surface-variant mb-1">Coverage</p>
+<p class="font-headline-md text-primary">38<span class="text-body-md text-on-surface-variant">/48</span></p>
+<p class="text-[10px] uppercase font-bold text-on-surface-variant">Active</p>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-outline-variant/10 space-y-3">
+<div class="flex justify-between items-center">
+<span class="text-caption">Avg Response Time</span>
+<span class="text-caption font-bold text-primary">1.8h</span>
+</div>
+<div class="w-full bg-outline-variant/20 h-1.5 rounded-full">
+<div class="bg-primary h-1.5 rounded-full w-4/5"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Session Monitoring (Charts Placeholder) -->
+<div class="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="bg-surface-white p-6 rounded-[24px] custom-shadow">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-md text-[18px]">Session Analytics</h3>
+<select class="bg-surface-container-low border-none rounded-lg text-caption px-2 py-1 outline-none">
+<option>Last 8 Weeks</option>
+<option>Last 6 Months</option>
+</select>
+</div>
+<div class="h-64 flex items-end justify-between gap-2">
+<!-- Visual placeholder for a line chart -->
+<div class="flex-1 bg-primary-container/20 rounded-t h-[40%] relative group">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] px-1 rounded opacity-0 group-hover:opacity-100">42</div>
+</div>
+<div class="flex-1 bg-primary-container/30 rounded-t h-[55%]"></div>
+<div class="flex-1 bg-primary-container/40 rounded-t h-[70%]"></div>
+<div class="flex-1 bg-primary h-[85%]"></div>
+<div class="flex-1 bg-primary-container/40 rounded-t h-[60%]"></div>
+<div class="flex-1 bg-primary-container/60 rounded-t h-[75%]"></div>
+<div class="flex-1 bg-primary-container/20 rounded-t h-[50%]"></div>
+<div class="flex-1 bg-primary h-[95%]"></div>
+</div>
+<div class="flex justify-between mt-4 text-[10px] text-on-surface-variant uppercase font-bold">
+<span class="">Wk 1</span><span class="">Wk 2</span><span class="">Wk 3</span><span class="">Wk 4</span><span class="">Wk 5</span><span class="">Wk 6</span><span class="">Wk 7</span><span class="">Wk 8</span>
+</div>
+</div>
+<div class="bg-surface-white p-6 rounded-[24px] custom-shadow flex flex-col items-center justify-center">
+<h3 class="font-headline-md text-[18px] self-start mb-6">Status Distribution</h3>
+<div class="relative w-48 h-48">
+<svg class="w-full h-full" viewBox="0 0 36 36">
+<path class="text-primary stroke-current" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-dasharray="60, 100" stroke-width="4"></path>
+<path class="text-accent-gold stroke-current" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-dasharray="25, 100" stroke-dashoffset="-60" stroke-width="4"></path>
+<path class="text-error stroke-current" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-dasharray="15, 100" stroke-dashoffset="-85" stroke-width="4"></path>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-headline-md font-bold text-on-surface">512</span>
+<span class="text-[10px] text-on-surface-variant uppercase">Sessions</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-x-8 gap-y-2 mt-6">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="text-caption">Completed (60%)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-accent-gold"></span>
+<span class="text-caption">Upcoming (25%)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="text-caption">Cancelled (15%)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Counsellor Performance -->
+<div class="lg:col-span-12 bg-surface-white rounded-[24px] custom-shadow overflow-hidden">
+<div class="p-6 border-b border-outline-variant/10 flex justify-between items-center">
+<h3 class="font-headline-md text-[18px]">Counsellor Workload &amp; Performance</h3>
+<button class="p-2 hover:bg-surface-container rounded-full transition-colors"><span class="material-symbols-outlined">filter_list</span></button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant font-label-md">
+<th class="px-6 py-4">Counsellor</th>
+<th class="px-6 py-4">Total Handled</th>
+<th class="px-6 py-4">Response Rate</th>
+<th class="px-6 py-4">Availability</th>
+<th class="px-6 py-4">Last Active</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr>
+<td class="px-6 py-4 font-label-md">Dr. Jane Foster</td>
+<td class="px-6 py-4 text-body-md">142 Sessions</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-caption font-bold">98%</span>
+<span class="text-[10px] text-on-surface-variant">Excellent</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-caption">Online Now</span>
+</div>
+</td>
+<td class="px-6 py-4 text-caption text-on-surface-variant">Active 5m ago</td>
+</tr>
+<tr>
+<td class="px-6 py-4 font-label-md">Prof. Mark Otieno</td>
+<td class="px-6 py-4 text-body-md">98 Sessions</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-accent-gold/10 text-accent-gold rounded-full text-caption font-bold">82%</span>
+<span class="text-[10px] text-on-surface-variant">Average</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="w-2 h-2 rounded-full bg-outline-variant"></span>
+<span class="text-caption">Away</span>
+</div>
+</td>
+<td class="px-6 py-4 text-caption text-on-surface-variant">Yesterday, 16:40</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Resource Analytics & Recent Activity -->
+<div class="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Resources -->
+<div class="md:col-span-2 bg-surface-white rounded-[24px] custom-shadow overflow-hidden">
+<div class="p-6 border-b border-outline-variant/10 flex justify-between items-center">
+<h3 class="font-headline-md text-[18px]">Top Performing Resources</h3>
+<button class="bg-primary text-white px-4 py-2 rounded-xl font-label-md hover:bg-primary-container transition-all flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-[18px]">add</span> Publish New
+                            </button>
+</div>
+<div class="p-0">
+<table class="w-full text-left">
+<thead class="bg-surface-container-low text-on-surface-variant font-label-md">
+<tr>
+<th class="px-6 py-3">Resource Title</th>
+<th class="px-6 py-3">Category</th>
+<th class="px-6 py-3">Views</th>
+<th class="px-6 py-3">Saves</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="hover:bg-soft-teal-tint/30 transition-colors">
+<td class="px-6 py-4 font-medium text-primary">Coping with Finals Stress</td>
+<td class="px-6 py-4"><span class="px-2 py-1 bg-surface-container rounded-full text-[10px] uppercase font-bold text-on-surface-variant">Academic</span></td>
+<td class="px-6 py-4 text-body-md">1,240</td>
+<td class="px-6 py-4 text-body-md">452</td>
+</tr>
+<tr class="hover:bg-soft-teal-tint/30 transition-colors">
+<td class="px-6 py-4 font-medium text-primary">Deep Breathing Techniques</td>
+<td class="px-6 py-4"><span class="px-2 py-1 bg-surface-container rounded-full text-[10px] uppercase font-bold text-on-surface-variant">Anxiety</span></td>
+<td class="px-6 py-4 text-body-md">980</td>
+<td class="px-6 py-4 text-body-md">312</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Recent Activity -->
+<div class="bg-surface-white p-6 rounded-[24px] custom-shadow">
+<h3 class="font-headline-md text-[18px] mb-6">Platform Activity</h3>
+<div class="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-outline-variant/20">
+<div class="relative flex gap-4">
+<div class="w-6 h-6 rounded-full bg-primary-container z-10 flex items-center justify-center border-4 border-surface-white">
+<span class="w-1.5 h-1.5 bg-white rounded-full"></span>
+</div>
+<div>
+<p class="font-label-md leading-tight">New Resource Approved</p>
+<p class="text-caption text-on-surface-variant">"Mindfulness 101" by Dr. Mutua</p>
+<span class="text-[10px] text-outline uppercase font-bold">12 mins ago</span>
+</div>
+</div>
+<div class="relative flex gap-4">
+<div class="w-6 h-6 rounded-full bg-accent-gold z-10 flex items-center justify-center border-4 border-surface-white">
+<span class="w-1.5 h-1.5 bg-white rounded-full"></span>
+</div>
+<div>
+<p class="font-label-md leading-tight">Critical Alert: Delay</p>
+<p class="text-caption text-on-surface-variant">3 sessions flagged for response lag</p>
+<span class="text-[10px] text-outline uppercase font-bold">1 hr ago</span>
+</div>
+</div>
+<div class="relative flex gap-4">
+<div class="w-6 h-6 rounded-full bg-soft-teal-tint z-10 flex items-center justify-center border-4 border-surface-white">
+<span class="w-1.5 h-1.5 bg-primary rounded-full"></span>
+</div>
+<div>
+<p class="font-label-md leading-tight">Counsellor Onboarded</p>
+<p class="text-caption text-on-surface-variant">Alice Lemayian joined the team</p>
+<span class="text-[10px] text-outline uppercase font-bold">3 hrs ago</span>
+</div>
+</div>
+</div>
+<button class="w-full mt-6 py-2 text-primary font-label-md hover:bg-soft-teal-tint rounded-xl transition-all">View All Activity</button>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<footer class="w-full py-8 mt-auto border-t border-outline-variant/30 flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-caption text-on-surface-variant">Endorsed by Strathmore University Mental Health Club</p>
+<div class="flex gap-6">
+<a class="text-caption text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="text-caption text-on-surface-variant hover:text-primary transition-colors" href="#">Contact Support</a>
+<a class="text-caption text-on-surface-variant hover:text-primary transition-colors" href="#">Terms of Service</a>
+</div>
+</footer>
+</main>
+</div>
+<!-- Mobile Navigation (Bottom Bar) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center py-2 px-4 md:hidden bg-surface-white shadow-[0_-4px_20px_0_rgba(0,0,0,0.05)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center bg-soft-teal-tint text-primary rounded-full px-4 py-1" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-bold">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="text-[10px] font-medium">Users</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">event_available</span>
+<span class="text-[10px] font-medium">Sessions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-[10px] font-medium">Hub</span>
+</a>
+</nav>
+<script>
+        // Update current date/time
+        function updateDateTime() {
+            const now = new Date();
+            const options = { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+            document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', options).replace(',', ' •');
+        }
+        updateDateTime();
+        setInterval(updateDateTime, 60000);
+
+        // Simple tab switching simulation
+        const tabs = document.querySelectorAll('button[class*="pb-2"]');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => {
+                    t.classList.remove('border-b-2', 'border-primary', 'text-primary', 'font-bold');
+                    t.classList.add('text-on-surface-variant');
+                });
+                tab.classList.add('border-b-2', 'border-primary', 'text-primary', 'font-bold');
+                tab.classList.remove('text-on-surface-variant');
+            });
+        });
+    </script>
+
+
+</body></html>

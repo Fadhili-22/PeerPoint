@@ -1,0 +1,609 @@
+=== Peer_Counselling_Platform_Proposal_.docx ===
+A Web-Based Peer Support and Counselling Access Platform for Strathmore University Students
+189979 Munyua Njenga Fadhili
+190293 Munyao Victor Mwaniki
+ICS 3 Group A
+Supervisor Name: Salome Monthe Chemiat
+An Informatics and Computer Science Project Proposal Submitted to the School of Computing and Engineering Sciences (SCES) in partial fulfilment of the requirements for the award of a Bachelor of Science Degree in Informatics and Computer Sciences
+School of Computing and Engineering Sciences
+Strathmore University
+Nairobi, Kenya
+May 2026
+Declaration
+We declare that this project has not been submitted to any other University for the award of a Degree in Informatics and Computer Sciences. To the best of our knowledge and belief, this proposal contains no material previously published or written by another person except where due reference is made in the proposal itself.
+Students' Signatures:
+Student Name: Fadhili Munyua (189979)     Sign: _________________________________   Date: ____________________________
+Student Name: Victor Munyao (190293)      Sign: _________________________________   Date: ____________________________
+Supervisor's Approval Signature:
+Supervisor Name: Salome Monthe Chemiat                                                                    
+Sign: ___________ Date: __22nd May 2026____________________
+Abstract
+Mental health is a critical yet underserved concern among university students in Kenya. Studies indicate that between 31% and 40% of students at Kenyan universities experience symptoms of a diagnosable mental health condition, yet the majority do not seek help due to barriers such as stigma, unawareness of available services, and the difficulty of making first contact with support systems. At Strathmore University, students who wish to engage in peer counselling must approach the Mental Health Club directly  a demanding step for someone already in distress.
+This proposal presents a web-based Peer Support and Counselling Access Platform designed to lower these barriers. The platform serves two primary functions: enabling students to browse and connect with vetted peer counsellors through an anonymous, low-friction interface; and providing a centralised hub for mental health resources, articles, and information about campus services. The system will be built using React plus Tailwind CSS for the frontend, FastAPI for the backend, and PostgreSQL for data persistence, OAuth2 for authentication with role-based access for students, peer counsellors, and administrators and Render for hosting. The proposed system is validated by endorsement from both the Counsellor and the Mental Health Club President at Strathmore University.
+Acknowledgement
+We would like to acknowledge the Strathmore University Mental Health Club President and the Counsellor for their early endorsement of this project and for providing invaluable insight into the mental health landscape on campus. We also thank our supervisors for their guidance throughout this process, and our families and colleagues for their continued support.
+Table of Contents
+DeclarationII
+AbstractIII
+AcknowledgementIV
+Table of ContentsV
+List of FiguresVII
+List of TablesVIII
+AbbreviationsIX
+Chapter 1: Introduction1
+1.1 Background1
+1.2 Problem Statement2
+1.3 Objectives3
+1.3.1 General Objective3
+1.3.2 Specific Objectives3
+1.3.3 Research Questions4
+1.4 Justification4
+1.5 Scope5
+1.6 Limitations5
+1.7 Delimitations5
+Chapter 2: Literature Review7
+2.1 Introduction7
+2.2 Mental Health and Peer Support in Universities7
+2.3 Mental Health Support at Strathmore University8
+2.4 Related Applications8
+2.4.1 BetterHelp9
+2.4.2 Togetherall10
+2.4.3 Wysa11
+2.5 Gaps in Current Approaches and Related Applications12
+2.6 Technologies Related to the Study12
+2.6.1 React with Tailwind CSS12
+2.6.2 FastAPI13
+2.6.3 PostgreSQL13
+2.7 Conceptual Framework13
+Chapter 3: Methodology15
+3.1 Introduction15
+3.2 System Methodology15
+3.2.1 Communication15
+3.2.2 Planning15
+3.2.3 Modelling16
+3.2.4 Construction16
+3.2.5 Deployment16
+3.2.6 Justification of Methodology16
+3.3 System Analysis17
+3.3.1 Use Case Diagram17
+3.3.2 Class Diagram17
+3.3.3 Sequence Diagram17
+3.3.4 Activity Diagram17
+3.3.5 Entity-Relationship Diagram18
+3.4 System Design18
+3.4.2 Database Schema18
+3.4.3 System Architecture18
+3.5 System Development Tools and Technologies19
+3.6 Deliverables20
+REFERENCES21
+Appendix25
+Appendix 1: Gantt Chart25
+List of Figures
+Figure 2.1: BetterHelp Platform Interface
+Figure 2.2: Togetherall Community Dashboard
+Figure 2.3: Wysa Conversational Interface
+Figure 2.4: Proposed Conceptual Framework
+Figure 3.1: Agile Incremental Development Methodology
+List of Tables
+Table 3.1: System Development Tools and Technologies
+Table 3.2: Project Deliverables
+Abbreviations
+API
+Application Programme Interface
+BICS
+Bachelor of Informatics and Computer Science
+MHC
+Mental Health Club
+OOAD
+Object-Oriented Analysis and Design
+SCES
+School of Computing and Engineering Sciences
+SU
+Strathmore University
+UI
+User Interface
+UX
+User Experience
+FRs
+Functional Requirements 
+NFRs
+Non-Functional Requirements
+Chapter 1: Introduction
+1.1 Background
+Universities around the world are increasingly recognising mental health as a central component of student success and institutional responsibility. University life introduces students to stressors like academic pressure, financial issues, and social isolation, which can cause or worsen mental health challenges (Sheldon et al., 2024). The World Health Organization (2022) estimates that mental health disorders account for a significant share of the global disease burden among young people aged eighteen to twenty-five, the cohort that makes up most university enrolments. Global research, such as the WHO World Mental Health Surveys, confirms that anxiety and depression are the most common conditions among students worldwide, with many affected individuals remaining untreated (Cuijpers et al., 2025).  Seely et al. (2022) similarly document persistently low rates of mental health service utilisation among college students in the United States, attributing this to stigma, lack of awareness, and the practical difficulty of first contact with formal services.
+In response to this challenge, universities across multiple continents have invested in peer support programmes as a complement to professional counselling. Peer support is based on the idea that students prefer seeking help from trained peers rather than professionals, making it easier for them to disclose distress (Byrom, 2022). Togetherall (2023) reports that over four hundred universities globally have adopted structured digital peer support platforms, with institutions that deploy such tools recording higher rates of student engagement with mental health resources compared to those relying solely on in-person provision. Patel et al. (2023) further demonstrate that digital delivery of peer and mental health support is particularly effective in low-to-middle-income country contexts where professional capacity is limited, as it allows scalable, anonymous, and round-the-clock access without requiring the recruitment of additional clinical staff. Several universities have integrated peer counsellor directories with centralised digital hubs, allowing students to review support options before making direct contact. These global design principles provide a framework for addressing similar challenges within the Kenyan higher education sector. Kenya's student mental health needs reflect global trends and, in certain cases, surpass them. Research at Pwani University found that nearly thirty-one per cent of students could be diagnosed with mental health conditions, with first-year students reporting the highest rates at over forty per cent (Mugotitsa et al., 2025). The Kenya Mental Health Policy 2021–2025 acknowledges that many individuals experiencing mental health conditions in Kenya are unable to access appropriate care and identifies university campuses as environments where peer-delivered support must be strengthened as a matter of strategic priority (Ministry of Health, Kenya, 2021). The Kenya National Commission on Human Rights (2023) identifies a major lack of mental health infrastructure in universities. It notes that, due to insufficient formal services, student-led clubs and peer networks have become the primary informal support system.
+Strathmore University, widely regarded as one of Kenya’s leading private institutions, combines a strong reputation for academic and professional excellence with a well-established student welfare infrastructure (EduRank, 2024; EDUopinions, 2024). Founded with a mission grounded in ethical values and human development, Strathmore has consistently invested in student support structures, including a dedicated Counsellor within the Student Affairs division and a student-led Mental Health Club that trains and deploys peer counsellors across the student body. The university has also demonstrated a clear commitment to digital innovation through initiatives such as the iLabAfrica Research Centre, which has produced mobile and web-based solutions addressing real-world challenges across East Africa (Safaricom, 2023). Despite these strengths, the current mechanisms for accessing peer counselling at Strathmore remain largely informal and non-digital. This creates a significant gap between the university’s commitment to student welfare and the practical ease with which a student in distress can reach out for help.
+1.2 Problem Statement
+Strathmore University currently lacks a centralised, digital access point for peer mental health support and counselling information. The existing mechanism for connecting with peer counsellors requires students to make direct, in-person contact with the Mental Health Club; this presents a significant hurdle for students already struggling with distress, as the psychological threshold for such visible help-seeking can be prohibitively high (UNESCO IESALC, 2024). This difficulty is increased because mental health information is primarily shared via email. Data indicates that students rarely open emails that are not related to their academic requirements (Simpson et al., 2024). As a result, many students are unaware of the help available to them. Important resources are often lost in crowded inboxes instead of being placed on a permanent, easy-to-search website or app.
+This lack of information creates a gap in support that impacts on the students who need help but are not yet in a crisis, and peer counsellors who find it difficult to reach those in need. The absence of a structured digital interface means that those who might benefit from early peer intervention either do not know where to turn or find the existing pathway too demanding to pursue during moments of vulnerability.
+These widespread issues became especially clear following the tragic loss of a Strathmore student to suicide in early 2025. This event served as a serious turning point, motivating the development of a platform dedicated to connecting students with the necessary support and comprehensive information regarding on-campus mental health resources. By replacing difficult in-person requirements and unreliable email communications with a dependable, easy-to-use digital gateway, this project directly addresses the urgent need for accessible mental health assistance.
+1.3 Objectives
+This section outlines both the general and specific objectives of the proposed system.
+1.3.1 General Objective
+To develop a web-based platform that enables Strathmore University students to access peer counselling support and mental health information through a low-barrier, centralised digital interface.
+1.3.2 Specific Objectives
+To analyse the current state of peer counselling access and mental health information dissemination at Strathmore University by conducting structured interviews with at least 10 students and 3 MHC stakeholders, identifying key gaps and requirements by the end of Week 3 (Increment 1).
+To define a complete set of functional and non-functional requirements for the platform, documented in a requirements specification covering at least 15 functional requirements, validated by the supervisor and MHC stakeholders by the end of Week 4 (Increment 1).
+To produce a full system design, including architecture diagrams, wireframes for all 8 primary views, and a database schema, reviewed and approved by the supervisor by the end of Week 7 (Increment 2). 
+To develop and deploy a functional web platform comprising the authentication module, peer counsellor directory, session request flow, resource hub, and admin dashboard, with all core features passing functional testing by the end of Week 12 (Increment 3).
+To test the system against all defined functional and non-functional requirements and gather structured feedback from a minimum of 15 target stakeholders (students, peer counsellors, and administrators), with results documented in an evaluation report by the end of Week 14 (Increment 4).
+1.3.3 Research Questions
+What are the specific barriers that prevent Strathmore University students from accessing peer counselling, and how can a digital platform reduce them?
+What functional features does a peer support platform require to facilitate effective and confidential connections between students and peer counsellors?
+How should mental health resources and service information be structured and presented in a web application to maximise student engagement?
+What user interface design principles best support students in distress when navigating a mental health platform?
+How effectively does the developed platform improve awareness of and access to peer counselling services at Strathmore University?
+1.4 Justification
+The development of this platform is justified on multiple grounds. For students, a digital access point eliminates the need for the intimidating first step of in-person contact, enabling anonymous or semi-anonymous browsing of counsellors and resources at any time. For peer counsellors, the platform provides a professional, structured environment in which to list their availability and receive support requests in an organised manner. For the Counsellor and the Mental Health Club, it creates a managed content channel through which vetted, relevant mental health information can be published and updated in real time.
+The project is further justified by the direct endorsement of both the Counsellor and the MHC President, who have confirmed its value and expressed willingness to participate in its development and adoption. From an academic standpoint, the system presents meaningful technical challenges in areas including role-based authentication, real-time communication, content management, and user experience design, all of which are relevant to the ICS curriculum.
+1.5 Scope
+The proposed system will target students, peer counsellors, and MHC administrators at Strathmore University. It will include the following core features: a peer counsellor directory with individual profiles; a session request and matching flow for students to connect with available counsellors; a resource and article hub managed by the MHC and counsellors; role-based user accounts for students, counsellors, and administrators; and a notification system for session confirmations and new content. The platform will be a web application, accessible via desktop and mobile browsers. It will not include real-time video or audio communication, initial contact will be facilitated through the platform, with sessions conducted separately according to the counsellor's preferences.
+1.6 Limitations
+The platform's effectiveness depends on voluntary adoption by peer counsellors and students, which cannot be guaranteed. As a web-based system, it requires a reliable internet connection, which may limit accessibility for some students on limited data plans. The system will initially be scoped to Strathmore University, meaning that the platform's design and content will not generalise to other institutions without customisation. Additionally, while the platform will facilitate connections to peer counsellors, it is not a substitute for professional mental health care and cannot manage crises autonomously.
+1.7 Delimitations
+This project will focus exclusively on Strathmore University's student population, peer counsellors, and MHC administrators. The platform will not include integration with the university's existing academic management systems (e.g., the SU portal or eLearning platform) within the scope of this project. Real-time messaging, video calling, or AI-driven mental health assessment features are intentionally excluded from the initial scope to ensure feasibility within the project timeline. The evaluation of the system will be limited to functional testing and structured feedback from a representative sample of stakeholders rather than a longitudinal impact study.
+Chapter 2: Literature Review
+2.1 Introduction
+This chapter reviews the current landscape of mental health support in Kenyan universities, examines the existing system at Strathmore University, surveys related digital platforms, identifies gaps in those platforms, reviews relevant technologies, and presents the conceptual framework for the proposed system.
+2.2 Mental Health and Peer Support in Universities
+Mental health conditions are a critical challenge for universities worldwide, as they often emerge while students are enrolled in higher education. Research shows that about one in four students in high-income countries, and similar or higher numbers in lower-income areas, have diagnosable conditions, mainly anxiety and depression. However, most of these students never receive formal support (Cuijpers et al., 2025; WHO, 2022). The persistence of this treatment gap is not primarily explained by a shortage of services but by a set of structural and psychological barriers that prevent students from making first contact. These barriers are based on three factors: stigma, which leads students to perceive help-seeking as a personal failing; limited awareness of available services; and the high entry cost of in-person disclosure, which many students will not overcome regardless of the severity of their distress (Gulliver et al., 2022; Liang et al., 2023).
+In response to these barriers, higher education institutions globally have increasingly turned to structured peer support models, recognising that students are way more likely to disclose distress to a trained peer than to a clinical professional (Byrom, 2022). The effectiveness of peer support is well-evidenced: systematic reviews document improvements in help-seeking behaviour, reductions in stigma, and sustained engagement that in-person professional services frequently fail to achieve (Vong & Lam, 2022). In areas where the counsellor-to-student ratio is overwhelming, peer counselling has proved to be invaluable (Sevalie et al., 2023). Evidence shows that peer support works best when it combines human connection with a digital platform. Systems that offer resources and anonymous contact outperform those that use only one of these approaches. (MHIN, 2023; Togetherall, 2023).
+This convergence of evidence establishes the informatics case for the proposed system. Where informal, word-of-mouth peer networks require a student to already know a peer counsellor before they can access support, a structured digital platform removes this precondition by providing an anonymous, searchable, and always-available gateway. Digital delivery addresses the three core barriers identified above: it eliminates the visibility associated with in-person first contact, it provides a single point of awareness for all available support, and it reduces the entry cost to a level that students experiencing non-crisis distress can overcome. The proposed platform is therefore designed not to replace Strathmore’s existing peer support infrastructure, but to make it discoverable, accessible, and usable when a student needs it.
+2.3 Mental Health Support at Strathmore University
+Strathmore University offers formal counselling services through a Counsellor based in the Student Affairs division. The institution also hosts the Mental Health Club, a student-led organisation that trains and deploys peer counsellors across the student body. Peer counsellors are identifiable by their designation but are not discoverable through any official digital channel. Students who wish to access peer support must either know a peer counsellor personally, spot a notice on a physical bulletin board, or approach the MHC directly.
+The MHC and the Counsellor disseminate mental health information primarily through email and occasional physical events. Email communications are widely acknowledged to have low open rates among students, particularly regarding non-academic content. As a result, a significant portion of the student body remains unaware of the resources available to them. This is compounded by the fact that there is no persistent, searchable repository of mental health resources associated with the institution.
+2.4 Related Applications
+The following subsections review three existing digital platforms that address aspects of the problem this project seeks to solve. Each is assessed for its features, approach, and limitations in relation to the Strathmore context.
+2.4.1 BetterHelp
+BetterHelp is a commercial online counselling platform that connects users with licensed therapists through text, voice, and video communication. The platform allows users to complete a questionnaire and be matched to a therapist. It also supports asynchronous messaging at any time. BetterHelp has demonstrated significant effectiveness in reducing the threshold for professional help-seeking by removing geographical and logistical barriers to therapy (Baumel et al., 2021). However, BetterHelp is a subscription-based commercial service (starting at approximately USD 40 per week), making it financially inaccessible for most Kenyan university students. Furthermore, it connects users to licensed clinicians rather than peer counsellors and does not include a resource hub or institutional administrative interface. Its scale and commercial model make it unsuitable for deployment as an institutional peer support tool.
+Figure 2.1: BetterHelp Platform Interface
+2.4.2 Togetherall
+Togetherall is a clinically managed online community for mental health support, deployed by over 400 universities globally. The platform provides an anonymous peer-to-peer space where students can share experiences, access self-guided courses, and communicate with trained moderators. Several UK universities, including the University of Edinburgh and the University of Leeds, have integrated Togetherall into their student wellbeing provision. The platform's anonymity features and peer community model are particularly relevant to the proposed project. However, Togetherall is an enterprise subscription product licensed at the institutional level, with licensing fees that place it beyond the reach of most Kenyan institutions. It also does not provide a structured counsellor directory or appointment booking flow, which are central to this project's objectives.
+Figure 2.2: Togetherall Community Dashboard
+2.4.3 Wysa
+Wysa is an AI-driven mental health application that uses a conversational chatbot interface to deliver evidence-based cognitive behavioural therapy (CBT) techniques to users experiencing stress, anxiety, or low mood. The platform has been evaluated in randomised controlled trials and has demonstrated measurable reductions in depressive symptoms among users (Torous et al., 2024). Wysa's strength lies in its always-available, low-stigma entry point and that users can engage with the chatbot without disclosing their identity to a human. However, Wysa is not designed for peer counsellor matching, does not support content management by institutional administrators, and is not tailored for the specific context of a university mental health club. Its AI-first approach also introduces ethical considerations around the management of crisis situations that fall outside the scope of this project.
+Figure 2.3: Wysa Conversational Interface
+2.5 Gaps in Current Approaches and Related Applications
+Analysis of the three platforms above reveals several consistent gaps in relation to the needs of Strathmore University students. First, all three are either commercially licensed or not designed for institutional deployment in the Kenyan university context, meaning that none can be adopted directly without prohibitive cost or significant customisation. Second, none of the platforms provides a structured, searchable peer counsellor directory that enables students to browse and select a counsellor based on availability, area of focus, or communication preference identified as central to reducing the first-contact barrier. Third, none of the platforms includes an integrated institutional content management interface through which a mental health club or counsellor can publish and organise resources specific to the institution. Finally, existing platforms do not account for the specific cultural and institutional context of a Kenyan university, including the role of the peer counsellor as a trusted figure embedded within the student community rather than an external professional.
+These gaps collectively justify the development of a purpose-built platform tailored to the Strathmore University context, combining a counsellor discovery interface, a session request flow, and an administrator-managed resource hub within a single, accessible web application.
+2.6 Technologies Related to the Study
+The following subsections review the key technologies that inform the development approach for the proposed platform.
+2.6.1 React with Tailwind CSS
+React is a declarative, component-based JavaScript library developed by Meta for building interactive user interfaces. Its virtual DOM model enables efficient re-rendering of only the components that change, making it well-suited to dynamic views such as the counsellor directory and session request flow, where data updates frequently without full page reloads (Dubey, 2025). Tailwind CSS is a utility-first CSS framework that applies styling directly through class names in the markup, enabling rapid, consistent UI development without the overhead of maintaining separate stylesheet files. The combination of React and Tailwind CSS provides a productive, maintainable frontend stack that is widely adopted and well-documented, reducing development friction within the project timeline.
+2.6.2 FastAPI
+FastAPI is a modern, high-performance Python web framework for building RESTful APIs, built on top of Starlette and Pydantic. It generates interactive API documentation automatically via OpenAPI and JSON Schema, which significantly accelerates development and testing cycles. FastAPI's native support for Python type hints enables data validation at the API boundary without additional boilerplate, reducing a common category of runtime errors. Its asynchronous request handling model, based on Python's asyncio, makes it well-suited to operations such as session request submissions and notification dispatch that may involve concurrent database access. FastAPI is selected over alternatives such as Flask because of its superior performance benchmarks, built-in data validation, and automatic documentation generation (Ramirez, 2023).
+2.6.3 PostgreSQL
+PostgreSQL is a robust, open-source relational database management system with strong support for complex queries, referential integrity, and role-based access control. For the proposed platform, a relational data model is appropriate given the structured relationships between users (students, counsellors, administrators), session requests, and content items. PostgreSQL's support for JSON columns also provides flexibility for storing semi-structured data such as counsellor profiles and resource metadata without requiring a separate document store.
+2.7 Conceptual Framework
+The proposed platform operates around three primary user roles: Student, Peer Counsellor, and Administrator. Students authenticate using their university email credentials and can browse the counsellor directory, submit session requests, and access the resource hub. Peer Counsellors have dedicated profile pages managed through a counsellor dashboard, where they can view and respond to incoming session requests. Administrators, made up of Counsellor and designated MHC officers, can publish, edit, and remove content in the resource hub, manage counsellor profiles, and view platform usage summaries.
+All user interactions are mediated through a RESTful API layer that enforces role-based access control. Data is persisted in a PostgreSQL database. The system is designed such that no personally identifiable information about a student is shared with a peer counsellor until the student explicitly initiates a session request, preserving a degree of anonymity during the browsing phase. Figure 2.4 illustrates the conceptual framework.
+Figure 2.4: Proposed Conceptual Framework
+Chapter 3: Methodology
+3.1 Introduction
+This chapter describes the development methodology selected for the proposed system, explains the approach to system analysis and design, enumerates the development tools and technologies to be used, and lists the project deliverables.
+3.2 System Methodology
+Due to the proposed project’s modularity and delineated components, the Object-Oriented Analysis and Design approach will be adopted and implemented through the Agile Incremental Developmental Model. Aside from modularity, OOAD will facilitate reusability and maintainability through abstraction and encapsulation (Booch et al.,2021), thereby enabling the team to develop and test each module independently before integration.
+Agile Incremental Model proved to be a better approach over the waterfall approach because it accommodates changing requirements, a scenario that will likely arise given the stakeholders whose continuous feedback will shape the system iteratively. Additionally, the model will define development into increments, each of which will deliver functional subsets of the system whilst incorporating feedback (Pressman & Maxim, 2021). This approach will ensure alignment with stakeholder requirements by providing early visibility of the functional components, thereby mitigating risk.
+3.2.1 Communication
+This phase involves engaging with the stakeholders: consultants, MHC President and a representative sample of students, to gather information and clarify the requirements initially and to gather feedback after each increment. The goal will be to establish an understanding of the project to be built in each phase, ensuring that the system meets the needs of the users.
+3.2.2 Planning
+In this phase, the developers will focus on defining the scope, timeline and the tasks for each increment. This will include setting sprint goals, assigning roles between team members and establishing a criterion to inform the success of each deliverable. The Gantt chart in Appendix A reflects the overall project plan across all increments.
+3.2.3 Modelling
+The requirements obtained in the communication phase are, in this phase, analysed and translated into system models. This process includes creating UML diagrams such as use cases, classes, sequence diagrams, activity diagrams and entity relationship diagrams that will act as a blueprint for development. The stated diagrams are described further in sections 3.3 and 3.4.
+3.2.4 Construction
+ This phase includes the writing of code and testing units as per the models described in the Modelling phase. Here, each module is developed and tested in isolation before being integrated with other previously completed modules. Similarly, integration testing is done at the end of each increment to verify that the components work well together.
+3.2.5 Deployment
+The complemented increments are subsequently deployed to a staging environment and presented to stakeholders for review. The feedback that is gathered during this phase informs the requirements for the next increment, thereby creating a continuous improvement loop throughout the development cycle.
+3.2.6 Justification of Methodology
+OOAD with Agile Incremental Development is most appropriate for this project because it accommodates the real-world constraints of a student project team while ensuring that the system is built iteratively and validated by the proposed end users throughout the whole process. Its modular nature allows for independent development, testing, and demonstration of individual components that will ultimately reduce the risk of whole project integration failure. The selection of the Agile Incremental Model is supported by precedent in analogous software projects. 
+The adoption of OOAD and Agile Incrementalism is not only theoretically sound but is also the standard practice for major health platforms. For instance, the NHS Digital Service utilizes Agile delivery to manage complex health requirements iteratively, and the Togetherall platform uses a modular, object-oriented structure to support its various support features (NHS Digital, 2023; Togetherall, 2023). This mirrors the proposed project's need for independent development and validation of the counsellor directory and resource hub modules.
+Figure 3.1: Agile Incremental Development Methodology
+3.3 System Analysis
+System analysis will produce a set of models that consist of the functional requirements and interaction patterns of the proposed system. These models will inform the resulting design phase and function as the formal specification that will guide the evaluation of the implemented system.
+3.3.1 Use Case Diagram
+Typically, a use case is used to depict the functionalities of the system and the actors who interact with them, with the aim of providing a high-level view of system behaviour from the end user’s perspective (Rutkowska, 2025). In this system, it will be used to identify three primary actors, namely: Student, Peer Counsellor, and Administrator, and map each actor to the use cases they perform, including browsing the counselling directory, submitting session requests, managing counsellor profiles and publishing resources
+3.3.2 Class Diagram
+ According to Singh (2024), a class diagram presents a static view of an object-oriented system by showing various classes, attributes, methods and relationships between them. The class diagram, in our class, will be used to identify the core entities: User, Student, Peer Counsellor, Admin, Session Request, Resource and Notification, and subsequently define their associations, generalisations, and dependencies among them.
+3.3.3 Sequence Diagram
+Primarily, a sequence diagram is used to illustrate the chronological interactions between objects in each system as they work in collaboration to execute a specified function (Athuraliya, 2022). In the proposed project, they will be produced for the system flows: student session request flow (from browsing the directory to receiving confirmation) and the admission to resource publication flow.
+3.3.4 Activity Diagram
+Ang (2025) states the main function of an activity diagram to be the modelling of the dynamic behaviour of a system by depicting the flow of activities and decision points within a given process. In the proposed project, activity diagrams will be used in modelling the complete student journey through the platform, from initial login to session confirmation, as well as the administrator workflow for content management.
+3.3.5 Entity-Relationship Diagram 
+ An Entity-Relationship Diagram (ERD) provides a visual representation of the database schema, the mapping of entities and their relationships (Xmind, 2024). For this system, it will be used in defining the relational structure of the PostgreSQL database and capturing its primary entities: Users, Counsellors, Sessions, Resources, Notification. Additionally, it will capture their cardinalities, such as the one-to-many relationship between the Counsellor and the sessions requests.
+3.4 System Design 
+System design expresses the analytical models into a concrete blueprint for implementing, outlining the user interface, database structure and the system architecture.
+3.4.1 WireframesWireframes are abstract representations of a user interface that depict the layout, navigation and content structure of every page without specifying visual styling (Bruton, 2022). The wireframes will be produced for all primary views: the main landing page, the counsellor directory, individual counsellor profile page, the session request form, the student dashboard, the counsellor dashboard, the resource hub, and the administrator content management panel. 
+3.4.2 Database Schema
+The database schema is a descriptive specification of the relational structure of the PostgreSQL database, defining tables, columns, data types, primary and foreign keys, and integrity constraints. This schema will be derived from ERD and will serve all datable operations in the implementation stage.
+3.4.3 System Architecture 
+The system architecture diagram presents a high-level view of the technical components of the project and how they interact (Raqoue, 2025). The proposed architecture follows a three- tire model: a React/Tailwind CSS frontend that renders the user interface and communicates with the API layer through HTTP requests; a FastApi backend that implements the RESTful API, enforces the business logic and manages the authentication; and a PostgreSQL database that persists all application data. The architecture will also depict the email notification service and the Render hosting environment.
+3.5 System Development Tools and Technologies
+Table 3.1 summarises the tools and technologies to be used in the development of the proposed system.
+Tool / Technology
+Category
+Purpose
+React with Tailwind CSS
+Frontend Framework
+Server-side rendering, routing, and UI components
+FastAPI (Python)
+Backend Framework
+RESTful API, business logic, and async request handling
+PostgreSQL
+Database
+Relational data persistence
+SQLAlchemy
+Database ORM
+Python ORM for type-safe database access and schema migrations
+OAuth2 (via FastAPI Security)
+Authentication
+Role-based authentication and authorisation for all user types
+Tailwind CSS
+Styling
+Utility-first CSS framework for responsive UI design
+GitHub
+Version Control
+Source code management and collaboration
+Visual Studio Code
+IDE
+Code editing, debugging, and extension support
+Postman
+API Testing
+Manual and automated testing of API endpoints
+Render
+Deployment
+Hosting for both the React frontend and FastAPI backend
+3.6 Deliverables
+Successful completion of this project will produce the following tangible deliverables, as noted in Table 3.2 succinctly.
+Deliverable
+Description
+Project Proposal
+This document outlining the background, objectives, literature review, and methodology for the project.
+Authentication Module
+Role-based login and registration for Students, Peer Counsellors, and Administrators, using OAuth2 via FastAPI Security.
+Counsellor Directory Module
+A browsable, searchable listing of peer counsellors with individual profiles showing availability, areas of focus, and contact preferences.
+Session Request Module
+A form-based flow enabling students to submit session requests to counsellors, with in-platform notification and status tracking.
+Resource Hub Module
+An administrator-managed content section where mental health articles, service information, and announcements can be published and organised.
+Admin Dashboard Module
+A management interface for Administrators to manage counsellor profiles, publish content, and review platform activity.
+System Report & Documentation
+Final technical documentation including UML diagrams, database schema, test reports, and user manuals.
+CHAPTER 4: System Analysis and Design 
+4.1 Introduction
+4.2 Requirement Analysis
+4.2.1 Functional Requirements
+FR ID
+Actor
+Functional Requirement
+Description
+FR-01
+Student
+Register
+Create an account using a valid Strathmore University email address and required personal details.
+FR-02
+Student
+Verify Email
+Confirm account ownership by clicking a verification link sent to the registered email address.
+FR-03
+Student
+Login
+Access the PeerPoint platform using valid credentials.
+FR-04
+Student
+Logout
+End the current authenticated session.
+FR-05
+Student
+Browse Counsellors
+View all active peer counsellors available on the platform.
+FR-06
+Student
+Filter Counsellors
+Narrow the counsellor list using criteria such as focus area, gender, language, or availability status.
+FR-07
+Student
+View Profile
+View the profile of a selected peer counsellor including bio, focus areas, and availability status.
+FR-08
+Student
+Submit Request
+Send a counselling session request to a selected peer counsellor.
+FR-09
+Student
+View Requests
+View previously submitted counselling requests and their current statuses.
+FR-10
+Student
+Cancel Request
+Withdraw a counselling request that has not yet been accepted.
+FR-11
+Student
+View Contact Information
+Access the peer counsellor's contact information after a session request has been accepted.
+FR-12
+Student
+Browse Resources
+View mental health and wellness resources published on the platform.
+FR-13
+Student
+Search Resources
+Locate resources using keywords or phrases.
+FR-14
+Student
+Filter Resources
+View resources belonging to specific categories.
+FR-15
+Student
+Read Resource
+Open and read the complete content of a selected resource.
+FR-16
+Student
+Update Profile
+Modify personal information such as name or contact preferences.
+FR-17
+Peer Counsellor
+Login
+Access the platform using assigned credentials.
+FR-18
+Peer Counsellor
+Logout
+End the current authenticated session.
+FR-19
+Peer Counsellor
+View Requests
+View incoming counselling requests submitted by students.
+FR-20
+Peer Counsellor
+Accept Request
+Approve a counselling request and reveal contact information to the requesting student.
+FR-21
+Peer Counsellor
+Decline Request
+Reject a counselling request that cannot be accommodated.
+FR-22
+Peer Counsellor
+Complete Session
+Mark a counselling session as completed after it has taken place.
+FR-23
+Peer Counsellor
+Update Availability
+Change availability status between Available and Unavailable.
+FR-24
+Peer Counsellor
+Update Profile
+Modify profile information including bio, focus areas, and contact preferences.
+FR-25
+Administrator
+Login
+Access the administrative dashboard using authorised credentials.
+FR-26
+Administrator
+Logout
+End the current authenticated administrative session.
+FR-27
+Administrator
+Activate Counsellor
+Assign peer counsellor privileges to an existing student account.
+FR-28
+Administrator
+Deactivate Counsellor
+Remove peer counsellor privileges from an account.
+FR-29
+Administrator
+Disable Account
+Restrict access to an account that violates platform policies or guidelines.
+FR-30
+Administrator
+Enable Account
+Restore access to a previously disabled account.
+FR-31
+Administrator
+Publish Resource
+Create and publish a new mental health resource.
+FR-32
+Administrator
+Edit Resource
+Modify the content of an existing resource.
+FR-33
+Administrator
+Unpublish Resource
+Remove a resource from public visibility while retaining it in the system.
+FR-34
+Administrator
+View Reports
+Access platform statistics and summary reports related to users, counsellors, sessions, and resources.
+The functional requirements above are described in further detail below.
+i. Authentication (FR-01 to FR-04)
+The system authenticates users using their official Strathmore University email address. Students must register and verify their email before accessing the platform. Once verified, they can log in and out of their accounts securely. This ensures that only enrolled students, active peer counsellors, and authorised administrators can access the platform and its features.
+ii. Peer Counsellor Directory and Filtering (FR-05 to FR-07)
+Students can browse a directory of all active peer counsellors available on the platform. They can narrow the list using filters such as focus area, gender, language, or availability status. Each counsellor has an individual profile showing their bio, focus areas, and current availability. This reduces the barrier to help-seeking by allowing students to review their options anonymously before making any contact.
+iii. Session Request Flow (FR-08 to FR-11)
+Students can submit a counselling session request to a selected peer counsellor directly through the platform. They can track the status of their submitted requests and withdraw any request that has not yet been accepted. Once a counsellor accepts a request, the student is granted access to the counsellor’s contact information, enabling them to arrange a session outside the platform. This staged flow protects counsellor privacy while facilitating a structured connection.
+iv. Mental Health Resource Hub (FR-12 to FR-15)
+The platform provides a centralised library of mental health and wellness resources published by the MHC and university counsellors. Students can browse, search by keyword, and filter resources by category. Each resource can be opened and read in full within the platform. This creates a persistent, searchable repository of mental health information that addresses the current gap caused by low-engagement email communications.
+v. Profile Management (FR-16 and FR-24)
+Both students and peer counsellors can update their personal information on the platform. Students can modify details such as their name and contact preferences, while peer counsellors can update their bio, listed focus areas, and contact preferences. This ensures that profiles remain accurate and relevant over time.
+vi. Peer Counsellor Session Management (FR-17 to FR-23)
+Peer counsellors access the platform using assigned credentials and can view all incoming session requests from students. They can accept or decline each request based on their current capacity. Once a session has taken place, counsellors can mark it as completed. Counsellors can also toggle their availability status between Available and Unavailable, giving them control over their workload and ensuring that students only see counsellors who can take on new requests.
+vii. Administrator Account and Counsellor Management (FR-25 to FR-30)
+Administrators access the platform through an authorised login and manage the overall user base from a centralised dashboard. They can activate or deactivate peer counsellor privileges on any student account and can disable or re-enable accounts that violate platform policies. This role-based access control ensures that only vetted, MHC-approved individuals are listed as peer counsellors on the platform.
+viii. Resource Management (FR-31 to FR-33)
+Administrators are responsible for curating the mental health resource hub. They can create and publish new resources, edit existing content, and unpublish resources that are no longer relevant, while retaining them in the system for record-keeping purposes. This gives the MHC and the university counsellor a managed channel through which accurate, vetted information can be always disseminated to the student body.
+ix. Reporting (FR-34)
+The system provides administrators with access to platform statistics and summary reports. These reports cover key metrics related to users, peer counsellors, session requests, and published resources. This functionality supports data-driven oversight of the platform and allows the MHC and university counsellor to monitor engagement trends and identify where additional support may be needed.
+4.2.2 Non-Functional Requirements
+Security
+The system shall protect user data from unauthorized access through authentication, authorization, password encryption, and secure communication channels.
+How it is supported by FRs:
+Register 
+Verify Email 
+Login 
+Logout 
+Disable Account 
+Activate Counsellor 
+Implementation
+JWT authentication 
+Password hashing using bcrypt 
+HTTPS communication 
+Role-based access control 
+Privacy
+The system shall protect the confidentiality of students seeking counselling and reveal personal information only when necessary.
+How it is supported by FRs:
+Browse Counsellors 
+View Profile 
+Submit Request 
+Accept Request 
+View Contact Information 
+Implementation
+Student phone numbers hidden until request acceptance 
+Minimal profile information displayed 
+Counsellor contact details revealed only after approval 
+Performance
+The system shall respond to user actions within three seconds under normal operating conditions.
+How it is supported by FRs:
+Browse Counsellors 
+Filter Counsellors 
+Search Resources 
+View Reports 
+Implementation
+Indexed database queries 
+FastAPI asynchronous processing 
+Optimized API requests 
+Availability
+The platform shall be accessible twenty-four hours a day and maintain high service availability.
+How it is supported by FRs;
+Login 
+Browse Resources 
+Submit Request 
+View Requests 
+Implementation
+Cloud deployment 
+Automatic server restart 
+Database backups 
+Usability
+The platform shall be easy to learn and use by first-time student users without requiring training.
+How it is supported by FRs:
+Register 
+Browse Counsellors 
+Submit Request 
+Browse Resources 
+Implementation
+Simple navigation 
+Mobile-responsive interface 
+Clear validation messages 
+Minimal number of steps per task 
+Reliability
+The system shall consistently perform intended functions and recover gracefully from errors.
+How it is supported by FRs:
+Submit Request 
+Accept Request 
+Publish Resource 
+Disable Account 
+Implementation
+Database transactions 
+Error handling 
+Input validation 
+Logging 
+Scalability
+The platform shall accommodate future growth in users, counsellors, resources, and session requests without significant degradation in performance.
+How it is supported by FRs
+Register 
+Submit Request 
+Browse Resources 
+View Reports 
+Implementation
+PostgreSQL database 
+Modular FastAPI architecture 
+Scalable cloud deployment 
+Maintainability
+The system shall be structured in a way that facilitates future updates, debugging, and feature enhancements.
+How it is supported by FRs:
+All system functionalities 
+Implementation
+Layered architecture 
+Git version control 
+API documentation 
+Modular code organization
+4.3 System Analysis Diagrams
+4.3.1 Use Case Diagram
+Figure 4.1 illustrates how the three actors in the system interact with its core use cases. The primary actors are the Student, the Peer Counsellor, and the Administrator. Use cases shared across all actors include registration, login, and logout. Students are able to browse the counsellor directory, filter and view individual counsellor profiles, submit and cancel session requests, and access the resource hub. Peer counsellors can view incoming requests, accept or decline them, mark sessions as completed, and update their availability and profile. Administrators manage the platform by activating and deactivating counsellor accounts, disabling or enabling user accounts, and publishing, editing, or unpublishing mental health resources. Administrators also have access to platform usage reports.
+4.3.2 Entity Relationship Diagram
+Figure 4.2 presents the Entity Relationship Diagram for the PeerPoint platform, describing the logical structure of the PostgreSQL database. The primary entities are User, Counsellor, Session, Resource, and Notification. The User entity captures the details of all registered users and their assigned roles. A User who is assigned a counsellor role has an associated Counsellor record containing their profile information, focus areas, and availability status. The relationship between a Student and a Session is one-to-many, meaning that one student may submit multiple session requests, while each session is linked to exactly one student and one counsellor. The Resource entity is managed by administrators and is independent of the session flow. The Notification entity captures system alerts triggered by status changes in session requests. The diagram also indicates the cardinality constraints between entities, showing whether relationships are mandatory or optional and whether they are one-to-one or one-to-many.
+4.3.3 Activity Diagram
+Figure 4.3 illustrates the end-to-end flow of activities within the system for each actor. All users share a common starting point of registration and login. Once a student is logged in, they can browse and filter the counsellor directory, view a counsellor’s profile, and submit a session request. The system records the request and notifies the relevant counsellor. The counsellor can then accept or decline the request. If accepted, the student receives the counsellor’s contact information. After the session has taken place, the counsellor marks it as completed. Students can also browse and search the resource hub at any point during their session. The administrator flow runs separately and involves reviewing user accounts, activating or deactivating counsellor privileges, managing resources, and viewing platform reports. All actors log out upon completing their tasks.
+4.3.4 System Sequence Diagram
+Figure 4.4 illustrates the temporal interactions between the system’s components during two key processes: user authentication and the session request flow. During authentication, the student inputs their Strathmore email address and the system forwards the credentials to the authentication service. Upon successful verification, the student is redirected to the platform. For the session request flow, the student selects a counsellor and submits a request through the frontend interface. The request is processed by the backend and stored in the database. The system then dispatches a notification to the counsellor. The counsellor reviews the request on their dashboard and responds with an acceptance or decline, which updates the session status in the database and triggers a notification back to the student. The diagram highlights both the synchronous exchanges, such as login verification, and the asynchronous exchanges, such as the notification dispatch, that together form the real-time behaviour of the system.
+4.3.5 Class Diagram
+Figure 4.5 models the object-oriented structure of the system. The primary classes are User, Counsellor, Session, Resource, and Notification. The User class contains attributes such as user ID, name, email, and role, with methods for registration, login, logout, and profile management. The Counsellor class is associated with the User class and includes additional attributes such as bio, focus areas, and availability status, with methods for accepting and declining requests and updating availability. The Session class captures the relationship between a student and a counsellor, and contains attributes including session ID, student ID, counsellor ID, request status, and timestamps. The Resource class contains attributes for resource ID, title, content, category, and publication status, with methods for publishing, editing, and unpublishing. The Notification class tracks alerts generated by session status changes. The diagram also shows the relationships between classes, including the one-to-many association between User and Session, and the one-to-one association between User and Counsellor where applicable.
+4.4 System Design Diagrams
+4.4.1 Database Schema
+Figure 4.6 illustrates the relational database schema for the system, implemented in PostgreSQL. The schema consists of five primary tables: users, counsellors, sessions, resources, and notifications. The users table stores all registered accounts with fields for user ID, name, email, hashed password, role, and verification status. The counsellors table extends user accounts with counsellor-specific attributes including bio, focus areas, and availability, linked to the users table via a foreign key on user ID. The sessions table records each counselling request with fields for session ID, student ID, counsellor ID, request status, and creation timestamp. Foreign key constraints on student ID and counsellor ID enforce referential integrity. The resources table stores mental health content with fields for title, category, body text, publication status, and the ID of the administrator who published it. The notifications table logs system alerts keyed to a session ID and a recipient user ID. Indexes are applied to frequently queried columns, including role in the users table and status in the sessions and resources tables, to support the performance requirements of the system.
+4.4.2 System Architecture
+Figure 4.7 illustrates the physical structure and interaction flow of the PeerPoint system. The architecture follows a three-tier model consisting of the client layer, the application layer, and the data layer. Students, peer counsellors, and administrators interact with the system through a React and Tailwind CSS frontend served over HTTPS, accessible via desktop and mobile browsers. The frontend communicates with a FastAPI backend deployed on Render, which handles all business logic including authentication, session management, resource operations, and notification dispatch. The backend connects to a PostgreSQL database, also hosted on Render, which stores all persistent data. OAuth2-based authentication is managed by the backend and enforced on all protected API endpoints using JWT tokens. The administrator accesses an administrative dashboard served from the same frontend, but with a role-protected interface that exposes management features not available to students or counsellors.
+4.4.3 Wireframes
+Landing page
+The landing page is the first screen visitors see before logging in. It provides a brief introduction to the PeerPoint platform, including its purpose and the support it offers. It features a clear call-to-action directing new users to register and returning users to log in. Navigation links to the resource hub and information about peer counselling are also accessible from this page, allowing students to explore the platform before creating an account.
+Log in
+The login page allows registered users to access the platform using their Strathmore University email address and password. It includes a link to the registration page for new users and a password reset option for users who have forgotten their credentials. Upon successful login, users are redirected to their role-specific dashboard.
+Sign up
+The registration page allows new students to create an account on the platform. Users are required to enter their Strathmore University email address, a display name, and a password. Upon submission, the system sends a verification link to the provided email address. The account becomes active only after the user confirms ownership by clicking the link. This ensures that access is restricted to members of the Strathmore community.
+Counsellor Dashboard
+The peer counsellor dashboard is the primary workspace for counsellors once they are logged in. It displays a list of all incoming session requests from students, with the status of each request shown clearly. Counsellors can accept or decline individual requests directly from this view. The dashboard also shows sessions that are currently active and allows counsellors to mark completed sessions. A toggle control is available for counsellors to update their availability status between Available and Unavailable. Navigation links to the profile settings are also accessible from this page.
+Admin Dashboard
+The administrator dashboard provides a centralised management interface for platform oversight. It displays summary statistics including the total number of registered users, active counsellors, and pending session requests. From this view, administrators can navigate to user management, where they can activate or deactivate counsellor roles and disable or enable accounts. The dashboard also provides access to the resource management panel and the platform usage reports. All administrative actions are role-protected and not accessible to students or peer counsellors.
+Mental Health Resources Page
+The mental health resources page presents a categorised library of articles, guides, and campus support information. Students can browse all available resources, filter content by category, and search using keywords. Each resource card shows the title and category, and clicking on it opens the full content. This page is accessible to any authenticated user and does not require initiating a counselling request, making it available as a standalone self-help tool.
+Student Dashboard
+The student dashboard is the main view students see after logging in. It provides a summary of the student’s activity on the platform, including the status of any submitted counselling requests. Students can navigate from this page to the counsellor directory to browse and filter available peer counsellors, access the resource hub, or update their profile. Any accepted session requests are highlighted, prompting the student to view the counsellor’s contact information and arrange a session.
+Peer Counsellor DirectoryThe peer counsellor directory displays all active counsellors available on the platform in a browsable card layout. Each card shows the counsellor’s display name, listed focus areas, and current availability status. Students can filter the directory by focus area, language, or availability, or search by name. Clicking on a counsellor card opens their individual profile page, where students can read the full bio and submit a session request. Counsellors who are marked as unavailable are still displayed but cannot receive new requests, ensuring students always have visibility of the full counsellor pool.
+REFERENCES
+Ang, J. (2025, February 17). Activity diagram: Examples, how to draw, benefits. Venngage. https://venngage.com/blog/activity-diagram/
+Athuraliya, A. (2022, December 12). Sequence diagram tutorial: Complete guide with examples. Creately. https://creately.com/guides/sequence-diagram-tutorial/
+Baumel, A., Muench, F., Edan, S., & Kane, J. M. (2021). Objective user engagement with mental health apps: Systematic search and panel-based usage analysis. Journal of Medical Internet Research, 23(9), e14567. https://doi.org/10.2196/14567
+Booch, G., Maksimchuk, R. A., Engle, M. W., Young, B. J., Conallen, J., & Houston, K. A. (2021). Object-oriented analysis and design with applications (3rd ed., updated printing). Pearson Education.
+Bruton, L. (2022, September 8). What is wireframing? A complete guide. UX Design Institute. https://www.uxdesigninstitute.com/blog/what-is-wireframing/
+Byrom, N. (2022). Peer support programmes in higher education: An evaluation framework. Student Minds.
+Cuijpers, P., Auerbach, R. P., Benjet, C., Bruffaerts, R., Ebert, D. D., Karyotaki, E., & Kessler, R. C. (2025). The World Mental Health International College Student initiative: An overview of global student mental health epidemiology. Journal of Psychiatric Research, 182, 114–125.
+Dubey, R. (2025, January 22). Most introductory React blog ever. DEV Community. https://dev.to/ritvikdubey27/most-introductory-react-blog-ever-5ei9
+EduRank. (2024). Strathmore University: Rankings & review. EduRank.
+EDUopinions. (2024). Strathmore University reviews: Student life and academic quality. EDUopinions.
+Gulliver, A., Griffiths, K. M., & Christensen, H. (2022). Perceived barriers and facilitators to mental health help-seeking in young people: A systematic review. BMC Psychiatry, 10, Article 113. https://doi.org/10.1186/1471-244X-10-113
+Kenya National Commission on Human Rights. (2023). Status of mental health services in Kenyan universities. KNCHR Thematic Report. https://www.knchr.org/
+Liang, Y., Zhang, X., & Wang, L. (2023). Stigma towards mental illness, resilience, and help‐seeking intentions among university students. Early Intervention in Psychiatry, 17(7), 682–691.
+MHIN. (2023). Mental health and wellbeing on campus: Peer support models in African universities. https://www.mhinnovation.net/innovations/mental-health-and-wellbeing-campus
+Ministry of Health Kenya. (2021). Kenya Mental Health Policy 2021–2025. Government of Kenya. https://www.health.go.ke/
+Mugotitsa, B. M., Momanyi, R. M., Kuria, J. K., Amadi, D. A., Masai, J. M., Angula, E. A., Tsofa, B., Greenfield, J., Todd, J., & Kiragga, A. (2025). Understanding mental health among university students in Kenya: What role do family support and age play? Frontiers in Public Health, 13, Article 1557058. https://doi.org/10.3389/fpubh.2025.1557058
+NHS England. (2023). NHS digital service manual. https://service-manual.nhs.uk/
+Patel, V., Chisholm, D., & Saxena, S. (2023). Digital mental health infrastructure in low- and middle-income regions: Scaling scalable solutions. The Lancet Psychiatry, 10(4), 281–293.
+Pressman, R. S., & Maxim, B. R. (2021). Software engineering: A practitioner’s approach (9th ed.). McGraw-Hill Education.
+Ramírez, S. (2023). FastAPI documentation. https://fastapi.tiangolo.com
+Raoque, C. (2025, May 14). What is a systems architecture: Startup’s strategic guide. Aloa. https://aloa.co/blog/systems-architecture
+Render. (2024). Render documentation: Deploy web services. https://render.com/docs
+Rutkowska, M. (2025, May 29). Use case diagrams: An introduction. Altkom Software. https://www.altkomsoftware.com/blog/use-case-diagrams-an-introduction/
+Safaricom. (2023, February 23). Safaricom, Strathmore University launch ICT innovation centres. Safaricom Newsroom. https://www.safaricom.co.ke/about/media-center/publications/press-releases/release/1030
+Seely, E., O’Gara, M., & Lipson, S. K. (2022). Trends in mental health service utilization among U.S. college students: A ten-year cohort evaluation. Journal of American College Health, 70(4), 1105–1114.
+Sevalie, S., Weston, M., & Sankoh, O. (2023). Mental health in Africa: Progress, structural barriers, and the path forward. The Lancet Global Health, 11(5), e642–e643.
+Sheldon, E., Simmonds-Buckley, M., & Barkham, M. (2024). Psychological distress and prevalence of depression in university undergraduates: A modern cohort comparison. Journal of Mental Health, 33(2), 184–195.
+Simpson, J., Branagan, C., Von, V. L. C., & Williams, L. (2024). Spamming our students? The use of email as a mass communication tool in higher education. Journal of Higher Education Policy and Management, 46(1).
+Singh, A. P. (2024, June 9). UML class diagram explained with examples. https://blog.algomaster.io/p/uml-class-diagram-explained-with-examples
+Togetherall. (2023). Higher education mental health impact report 2022–2023. https://togetherall.com/en-gb/insights/
+Torous, J., Bucci, S., Bell, I. H., Kessing, L. V., Berk, M., & Powell, J. (2024). Digital mental health tools and conversational AI agents in university settings: A review of user engagement and real-world evaluation. The Lancet Digital Health, 6(3), e142–e153.
+UNESCO IESALC. (2024). Mental health and wellbeing of students in higher education. UNESCO Institute for Higher Education in Latin America and the Caribbean. https://www.iesalc.unesco.org/
+Vong, S. K., & Lam, C. B. (2022). Peer support programmes and student mental health in East Asian universities: A systematic review. Asia Pacific Education Review, 23(3), 451–468. https://doi.org/10.1007/s12564-022-09745-z
+WHO. (2022). World mental health report: Transforming mental health for all. World Health Organization. https://www.who.int/publications/i/item/9789240049338
+Xmind. (2024, May 27). Everything about an entity relationship diagram (ERD). https://xmind.app/blog/entity-relationship-diagram/
+Appendix 
+Appendix 1: Gantt Chart
+ Figure A.1: Project Gantt Chart
+
+=== Wireframes.docx ===
+Admin Dashboard
+r 
+Peer Counsellor Dashboard
+Landing Page
+Sign in
+Sign up
+Student Dashboard
+

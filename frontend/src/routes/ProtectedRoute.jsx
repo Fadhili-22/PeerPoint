@@ -1,0 +1,20 @@
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+
+export default function ProtectedRoute({ children, allowedRoles }) {
+  const { user, isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (user.role === "counsellor" && !user.isVerified) {
+    return <Navigate to="/pending-approval" replace />;
+  }
+
+  return children;
+}

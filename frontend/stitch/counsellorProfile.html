@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Counsellor Profile - PeerPoint</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Work+Sans:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .soft-shadow {
+            box-shadow: 0 4px 20px 0 rgba(0, 64, 70, 0.05);
+        }
+        .glass-effect {
+            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.8);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #bec8ca;
+            border-radius: 10px;
+        }
+    </style>
+<!-- Insert Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline-variant": "#bec8ca",
+                      "on-tertiary-fixed-variant": "#474744",
+                      "inverse-primary": "#88d2e0",
+                      "secondary-fixed": "#ffdad4",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-tint": "#0a6875",
+                      "secondary-fixed-dim": "#ffb4a8",
+                      "on-primary-fixed": "#001f24",
+                      "accent-gold": "#E79D19",
+                      "surface-container": "#e3effe",
+                      "tertiary-container": "#737370",
+                      "surface-white": "#FFFFFF",
+                      "tertiary-fixed-dim": "#c8c6c3",
+                      "on-primary": "#ffffff",
+                      "inverse-on-surface": "#e7f2ff",
+                      "primary-fixed-dim": "#88d2e0",
+                      "primary-container": "#2d7d8a",
+                      "surface-container-highest": "#d7e4f3",
+                      "background": "#f7f9ff",
+                      "error": "#ba1a1a",
+                      "soft-teal-tint": "#E9F2F3",
+                      "surface": "#f7f9ff",
+                      "tertiary": "#5a5a58",
+                      "inverse-surface": "#26323d",
+                      "on-primary-fixed-variant": "#004e59",
+                      "on-surface": "#111d27",
+                      "on-secondary-fixed-variant": "#930000",
+                      "primary-fixed": "#a4eefd",
+                      "on-error-container": "#93000a",
+                      "surface-variant": "#d7e4f3",
+                      "secondary": "#bc0000",
+                      "on-error": "#ffffff",
+                      "primary": "#006470",
+                      "surface-container-low": "#ecf4ff",
+                      "on-tertiary": "#ffffff",
+                      "surface-container-high": "#dde9f9",
+                      "tertiary-fixed": "#e4e2de",
+                      "on-secondary-container": "#fffbff",
+                      "secondary-container": "#e41f13",
+                      "outline": "#6f797b",
+                      "on-tertiary-container": "#fcfaf6",
+                      "on-secondary-fixed": "#410000",
+                      "on-background": "#111d27",
+                      "on-primary-container": "#effcff",
+                      "surface-dim": "#cfdbea",
+                      "strathmore-blue": "#02338D",
+                      "on-tertiary-fixed": "#1b1c1a",
+                      "error-container": "#ffdad6",
+                      "surface-bright": "#f7f9ff",
+                      "on-surface-variant": "#3f484a",
+                      "on-secondary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "40px",
+                      "base": "8px",
+                      "container-max": "1200px",
+                      "margin-mobile": "20px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": ["Plus Jakarta Sans"],
+                      "caption": ["Work Sans"],
+                      "headline-md": ["Plus Jakarta Sans"],
+                      "headline-lg": ["Plus Jakarta Sans"],
+                      "body-lg": ["Work Sans"],
+                      "body-md": ["Work Sans"],
+                      "display-lg": ["Plus Jakarta Sans"],
+                      "label-md": ["Plus Jakarta Sans"]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}],
+                      "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col font-body-md">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 shadow-[0_4px_20px_0_rgba(0,0,0,0.05)] bg-surface-white dark:bg-surface-container-low h-16">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-full w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-soft-teal-tint rounded-full transition-colors">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<div class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+                    PeerPoint
+                </div>
+</div>
+<div class="w-10 h-10 rounded-full bg-primary-fixed-dim text-on-primary-fixed flex items-center justify-center font-bold">
+                JD
+            </div>
+</div>
+</header>
+<!-- NavigationDrawer (Desktop Only) -->
+<aside class="fixed left-0 top-0 h-full border-r border-outline-variant/20 py-8 px-4 h-screen w-72 hidden md:flex flex-col bg-surface-white dark:bg-surface-container-low shadow-[4px_0_20px_0_rgba(0,0,0,0.05)] z-40">
+<div class="mb-10 px-4">
+<h1 class="text-primary font-headline-md text-headline-md mb-1">Peer Support</h1>
+<p class="text-on-surface-variant font-body-md text-body-md">Student Account</p>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-inverse-surface transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span> Dashboard
+            </a>
+<a class="flex items-center gap-3 bg-soft-teal-tint dark:bg-primary-container text-primary dark:text-on-primary-container rounded-lg px-4 py-3 font-bold transition-transform hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">person_search</span> Directory
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-inverse-surface transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">calendar_month</span> Schedule
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-inverse-surface transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">library_books</span> Knowledge Base
+            </a>
+</nav>
+<div class="mt-auto p-4 bg-soft-teal-tint rounded-xl">
+<p class="font-label-md text-label-md text-strathmore-blue">Endorsed by Strathmore University Mental Health Club</p>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-grow md:ml-72 pb-24 md:pb-8">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-8">
+<div class="flex flex-col lg:flex-row gap-gutter">
+<!-- Profile Left Column -->
+<div class="flex-grow space-y-6">
+<!-- Header Card -->
+<div class="bg-surface-white rounded-3xl p-6 md:p-8 soft-shadow animate-fade-in">
+<div class="flex flex-col md:flex-row items-center md:items-start gap-6">
+<!-- Avatar -->
+<div class="w-32 h-32 rounded-full bg-soft-teal-tint flex items-center justify-center text-primary text-4xl font-bold ring-4 ring-primary/10">
+                                BM
+                            </div>
+<!-- Title Info -->
+<div class="flex-grow text-center md:text-left">
+<div class="flex flex-col md:flex-row items-center gap-3 mb-2">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Brian M.</h2>
+<span class="px-3 py-1 bg-[#E1F5FE] text-[#01579B] rounded-full text-sm font-semibold flex items-center gap-1">
+<span class="w-2 h-2 bg-[#01579B] rounded-full animate-pulse"></span>
+                                        Available Now
+                                    </span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-4">3rd Year — Business Science (Finance)</p>
+<div class="flex flex-wrap justify-center md:justify-start gap-2">
+<span class="px-4 py-1.5 bg-soft-teal-tint text-primary rounded-full font-label-md text-label-md border border-primary/20">Peer Mentor</span>
+<span class="px-4 py-1.5 bg-soft-teal-tint text-primary rounded-full font-label-md text-label-md border border-primary/20">English &amp; Swahili</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-outline-variant/30">
+<div class="text-center">
+<p class="text-primary font-headline-md text-headline-md">24</p>
+<p class="text-on-surface-variant font-caption text-caption uppercase tracking-wider">Sessions</p>
+</div>
+<div class="text-center border-x border-outline-variant/30">
+<p class="text-primary font-headline-md text-headline-md">Jan 2026</p>
+<p class="text-on-surface-variant font-caption text-caption uppercase tracking-wider">Joined</p>
+</div>
+<div class="text-center">
+<p class="text-primary font-headline-md text-headline-md">2hr</p>
+<p class="text-on-surface-variant font-caption text-caption uppercase tracking-wider">Response</p>
+</div>
+</div>
+</div>
+<!-- Content Details -->
+<div class="bg-surface-white rounded-3xl p-6 md:p-8 soft-shadow space-y-8">
+<section>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-4">About Brian</h3>
+<p class="text-on-surface-variant leading-relaxed mb-4">
+                                Hello! I'm a third-year finance student who understands the unique pressures of balancing a demanding academic load with personal well-being. I joined PeerPoint to help fellow students navigate the complexities of campus life, from exam stress to social integration.
+                            </p>
+<div class="p-5 bg-background rounded-2xl border-l-4 border-primary italic text-on-surface-variant">
+                                "I became a peer counsellor because I realized that often, the biggest barrier to success at Strathmore isn't the coursework—it's the feeling of going through it alone. I want to be that supportive bridge for others."
+                            </div>
+</section>
+<section>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-4">Focus Areas</h3>
+<div class="flex flex-wrap gap-3">
+<div class="px-4 py-2 bg-soft-teal-tint text-primary rounded-xl font-label-md flex items-center gap-2 hover:scale-[1.02] transition-transform">
+<span class="material-symbols-outlined text-base">school</span> Exam Anxiety
+                                </div>
+<div class="px-4 py-2 bg-soft-teal-tint text-primary rounded-xl font-label-md flex items-center gap-2 hover:scale-[1.02] transition-transform">
+<span class="material-symbols-outlined text-base">sentiment_dissatisfied</span> Grief &amp; Loss
+                                </div>
+<div class="px-4 py-2 bg-soft-teal-tint text-primary rounded-xl font-label-md flex items-center gap-2 hover:scale-[1.02] transition-transform">
+<span class="material-symbols-outlined text-base">work</span> Career Pressure
+                                </div>
+<div class="px-4 py-2 bg-soft-teal-tint text-primary rounded-xl font-label-md flex items-center gap-2 hover:scale-[1.02] transition-transform">
+<span class="material-symbols-outlined text-base">groups</span> Social Isolation
+                                </div>
+<div class="px-4 py-2 bg-soft-teal-tint text-primary rounded-xl font-label-md flex items-center gap-2 hover:scale-[1.02] transition-transform">
+<span class="material-symbols-outlined text-base">balance</span> Work-Life Balance
+                                </div>
+</div>
+</section>
+<section>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-4">Weekly Availability</h3>
+<div class="overflow-x-auto pb-2">
+<div class="flex gap-4 min-w-max">
+<div class="flex flex-col items-center gap-2 bg-background p-4 rounded-2xl w-24">
+<span class="text-caption font-caption text-on-surface-variant">MON</span>
+<span class="font-bold">12</span>
+<div class="flex flex-col gap-1 w-full">
+<div class="h-1 bg-primary/20 rounded-full"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 bg-soft-teal-tint p-4 rounded-2xl w-24 border border-primary/20">
+<span class="text-caption font-caption text-primary">TUE</span>
+<span class="font-bold text-primary">13</span>
+<div class="flex flex-col gap-1 w-full">
+<div class="h-1 bg-primary rounded-full"></div>
+<div class="h-1 bg-primary rounded-full"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 bg-background p-4 rounded-2xl w-24">
+<span class="text-caption font-caption text-on-surface-variant">WED</span>
+<span class="font-bold">14</span>
+<div class="flex flex-col gap-1 w-full">
+<div class="h-1 bg-primary/20 rounded-full"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 bg-soft-teal-tint p-4 rounded-2xl w-24 border border-primary/20">
+<span class="text-caption font-caption text-primary">THU</span>
+<span class="font-bold text-primary">15</span>
+<div class="flex flex-col gap-1 w-full">
+<div class="h-1 bg-primary rounded-full"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 bg-soft-teal-tint p-4 rounded-2xl w-24 border border-primary/20">
+<span class="text-caption font-caption text-primary">FRI</span>
+<span class="font-bold text-primary">16</span>
+<div class="flex flex-col gap-1 w-full">
+<div class="h-1 bg-primary rounded-full"></div>
+<div class="h-1 bg-primary rounded-full"></div>
+<div class="h-1 bg-primary rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+<p class="mt-4 text-sm text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-base">info</span>
+                                Teal blocks represent open slots for peer sessions.
+                            </p>
+</section>
+</div>
+</div>
+<!-- Sticky Sidebar CTA -->
+<aside class="lg:w-96 flex-shrink-0">
+<div class="sticky top-24 space-y-6">
+<div class="bg-primary rounded-3xl p-8 text-white soft-shadow overflow-hidden relative">
+<!-- Background Decoration -->
+<div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+<h3 class="font-headline-md text-headline-md mb-2 relative z-10">Ready to connect?</h3>
+<p class="font-body-md text-white/80 mb-6 relative z-10">
+                                Book a confidential 30-minute introductory session to see if Brian is the right fit for your needs.
+                            </p>
+<button class="w-full py-4 bg-white text-primary rounded-2xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-lg relative z-10">
+                                Request a Session
+                            </button>
+<div class="mt-6 flex items-start gap-3 p-4 bg-white/10 rounded-xl border border-white/20 relative z-10">
+<span class="material-symbols-outlined text-sm mt-0.5">lock</span>
+<p class="text-sm font-body-md text-white/90">
+                                    Privacy Note: Brian won't see your name until you confirm a specific time slot.
+                                </p>
+</div>
+</div>
+<!-- Secondary Support Card -->
+<div class="bg-surface-white rounded-3xl p-6 soft-shadow border border-outline-variant/10">
+<h4 class="font-label-md text-label-md text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">local_library</span>
+                                Shared Resources
+                            </h4>
+<div class="space-y-3">
+<a class="flex items-center justify-between p-3 rounded-xl hover:bg-soft-teal-tint transition-colors group" href="#">
+<span class="text-sm font-medium">Navigating Exam Stress</span>
+<span class="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+</a>
+<a class="flex items-center justify-between p-3 rounded-xl hover:bg-soft-teal-tint transition-colors group" href="#">
+<span class="text-sm font-medium">Healthy Routine Guide</span>
+<span class="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center py-2 px-4 md:hidden bg-surface-white dark:bg-surface-container-low shadow-[0_-4px_20px_0_rgba(0,0,0,0.05)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant p-2" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-md text-label-md">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-soft-teal-tint dark:bg-primary-container text-primary dark:text-on-primary-container rounded-full px-4 py-1" href="#">
+<span class="material-symbols-outlined">search</span>
+<span class="font-label-md text-label-md">Find</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant p-2" href="#">
+<span class="material-symbols-outlined">event_available</span>
+<span class="font-label-md text-label-md">Sessions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant p-2" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-label-md text-label-md">Resources</span>
+</a>
+</nav>
+<!-- Footer -->
+<footer class="w-full py-8 mt-auto border-t border-outline-variant/30 bg-background dark:bg-on-surface md:ml-72">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop w-full max-w-container-max mx-auto gap-4">
+<div class="font-label-md text-label-md text-strathmore-blue">
+                Endorsed by Strathmore University Mental Health Club
+            </div>
+<div class="flex gap-6">
+<a class="text-on-surface-variant font-caption text-caption hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="text-on-surface-variant font-caption text-caption hover:text-primary transition-colors" href="#">Contact Support</a>
+<a class="text-on-surface-variant font-caption text-caption hover:text-primary transition-colors" href="#">Terms of Service</a>
+</div>
+</div>
+</footer>
+<script>
+        // Simple animation for elements on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const elements = document.querySelectorAll('.animate-fade-in');
+            elements.forEach((el, index) => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(10px)';
+                el.style.transition = 'all 0.6s ease-out';
+                setTimeout(() => {
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body></html>

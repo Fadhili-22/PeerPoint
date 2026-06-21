@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Find a Peer Counsellor | PeerPoint</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Work+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline-variant": "#bec8ca",
+                      "on-tertiary-fixed-variant": "#474744",
+                      "inverse-primary": "#88d2e0",
+                      "secondary-fixed": "#ffdad4",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-tint": "#0a6875",
+                      "secondary-fixed-dim": "#ffb4a8",
+                      "on-primary-fixed": "#001f24",
+                      "accent-gold": "#E79D19",
+                      "surface-container": "#e3effe",
+                      "tertiary-container": "#737370",
+                      "surface-white": "#FFFFFF",
+                      "tertiary-fixed-dim": "#c8c6c3",
+                      "on-primary": "#ffffff",
+                      "inverse-on-surface": "#e7f2ff",
+                      "primary-fixed-dim": "#88d2e0",
+                      "primary-container": "#2d7d8a",
+                      "surface-container-highest": "#d7e4f3",
+                      "background": "#f7f9ff",
+                      "error": "#ba1a1a",
+                      "soft-teal-tint": "#E9F2F3",
+                      "surface": "#f7f9ff",
+                      "tertiary": "#5a5a58",
+                      "inverse-surface": "#26323d",
+                      "on-primary-fixed-variant": "#004e59",
+                      "on-surface": "#111d27",
+                      "on-secondary-fixed-variant": "#930000",
+                      "primary-fixed": "#a4eefd",
+                      "on-error-container": "#93000a",
+                      "surface-variant": "#d7e4f3",
+                      "secondary": "#bc0000",
+                      "on-error": "#ffffff",
+                      "primary": "#006470",
+                      "surface-container-low": "#ecf4ff",
+                      "on-tertiary": "#ffffff",
+                      "surface-container-high": "#dde9f9",
+                      "tertiary-fixed": "#e4e2de",
+                      "on-secondary-container": "#fffbff",
+                      "secondary-container": "#e41f13",
+                      "outline": "#6f797b",
+                      "on-tertiary-container": "#fcfaf6",
+                      "on-secondary-fixed": "#410000",
+                      "on-background": "#111d27",
+                      "on-primary-container": "#effcff",
+                      "surface-dim": "#cfdbea",
+                      "strathmore-blue": "#02338D",
+                      "on-tertiary-fixed": "#1b1c1a",
+                      "error-container": "#ffdad6",
+                      "surface-bright": "#f7f9ff",
+                      "on-surface-variant": "#3f484a",
+                      "on-secondary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "40px",
+                      "base": "8px",
+                      "container-max": "1200px",
+                      "margin-mobile": "20px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": ["Plus Jakarta Sans"],
+                      "caption": ["Work Sans"],
+                      "headline-md": ["Plus Jakarta Sans"],
+                      "headline-lg": ["Plus Jakarta Sans"],
+                      "body-lg": ["Work Sans"],
+                      "body-md": ["Work Sans"],
+                      "display-lg": ["Plus Jakarta Sans"],
+                      "label-md": ["Plus Jakarta Sans"]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}],
+                      "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col font-body-md">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 shadow-[0_4px_20px_0_rgba(0,0,0,0.05)] bg-surface-white dark:bg-surface-container-low">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-2 font-headline-md text-headline-md text-primary dark:text-primary-fixed">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+<span>PeerPoint</span>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-on-surface-variant dark:text-outline-variant font-label-md text-label-md hover:scale-[1.02] transition-all" href="#">Home</a>
+<a class="text-primary dark:text-primary-fixed font-bold font-label-md text-label-md hover:scale-[1.02] transition-all" href="#">Find</a>
+<a class="text-on-surface-variant dark:text-outline-variant font-label-md text-label-md hover:scale-[1.02] transition-all" href="#">Sessions</a>
+<a class="text-on-surface-variant dark:text-outline-variant font-label-md text-label-md hover:scale-[1.02] transition-all" href="#">Resources</a>
+</nav>
+<div class="w-10 h-10 rounded-full bg-soft-teal-tint flex items-center justify-center text-primary font-bold cursor-pointer hover:scale-[1.05] transition-all">
+                JD
+            </div>
+</div>
+</header>
+<div class="flex flex-1 w-full max-w-container-max mx-auto">
+<!-- NavigationDrawer (Desktop Only) -->
+<aside class="fixed left-0 top-0 h-full border-r border-outline-variant/20 py-8 px-4 h-screen w-72 hidden md:flex flex-col bg-surface-white dark:bg-surface-container-low shadow-[4px_0_20px_0_rgba(0,0,0,0.05)] mt-16">
+<div class="flex flex-col gap-1 mb-8 px-4">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-12 h-12 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</div>
+<div>
+<p class="font-bold text-primary">Peer Support</p>
+<p class="text-sm text-on-surface-variant">Student Account</p>
+</div>
+</div>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-inverse-surface transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 bg-soft-teal-tint dark:bg-primary-container text-primary dark:text-on-primary-container rounded-lg px-4 py-3 font-bold scale-100 hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="person_search">person_search</span>
+<span>Directory</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-inverse-surface transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+<span>Schedule</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-inverse-surface transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="library_books">library_books</span>
+<span>Knowledge Base</span>
+</a>
+</nav>
+<div class="mt-auto px-4 py-4 opacity-60">
+<img alt="Strathmore University" class="h-8 grayscale" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD70oojvqP-soicUZanOXShatmvLG456YFboiR8cLv9QREj2xBGSDVbBvgz9OVYBRCPDv0EF9YIMRyfHup9MaIXyzMY05ZB0sTUEtpE7iXoLUEOaAYwS2iAkijdFuyZsZvrTdndRh6TIAYNbMR4QkoV6RGjqFKKso_gMYuQGUPeFAxJ3Zg_VGrLICa2gRKniLFDcKdt0ovG7_QNnqsQNC8IGYIIBocJODtQcFFO_DlXkntJFXda1rHjOONTnJNrcMmz2Bp0dXrRjc8"/>
+<p class="text-[10px] mt-2 text-strathmore-blue">Mental Health Club Partner</p>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-72 p-margin-mobile md:p-margin-desktop pb-24 md:pb-12">
+<!-- Header Section -->
+<section class="mb-10">
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-2">Find a Peer Counsellor</h1>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="visibility_off">visibility_off</span>
+                    Your privacy is our priority. All conversations are fully anonymous and confidential.
+                </p>
+</section>
+<!-- Filter Bar Section -->
+<section class="mb-8">
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="filter_list">filter_list</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Filters</span>
+</div>
+<div class="flex overflow-x-auto hide-scrollbar gap-3 pb-2">
+<!-- Pill Filters -->
+<button class="whitespace-nowrap px-6 py-2 rounded-full border border-primary bg-soft-teal-tint text-primary font-label-md text-label-md flex items-center gap-2">
+                        Availability: Now
+                        <span class="material-symbols-outlined text-sm" data-icon="close">close</span>
+</button>
+<button class="whitespace-nowrap px-6 py-2 rounded-full border border-outline-variant bg-surface-white text-on-surface-variant font-label-md text-label-md flex items-center gap-2 hover:bg-soft-teal-tint hover:border-primary transition-all">
+                        Focus Area: Anxiety
+                    </button>
+<button class="whitespace-nowrap px-6 py-2 rounded-full border border-outline-variant bg-surface-white text-on-surface-variant font-label-md text-label-md flex items-center gap-2 hover:bg-soft-teal-tint hover:border-primary transition-all">
+                        Relationships
+                    </button>
+<button class="whitespace-nowrap px-6 py-2 rounded-full border border-outline-variant bg-surface-white text-on-surface-variant font-label-md text-label-md flex items-center gap-2 hover:bg-soft-teal-tint hover:border-primary transition-all">
+                        Stress
+                    </button>
+<button class="whitespace-nowrap px-6 py-2 rounded-full border border-outline-variant bg-surface-white text-on-surface-variant font-label-md text-label-md flex items-center gap-2 hover:bg-soft-teal-tint hover:border-primary transition-all">
+                        Language: English
+                    </button>
+<button class="whitespace-nowrap px-6 py-2 rounded-full border border-outline-variant bg-surface-white text-on-surface-variant font-label-md text-label-md flex items-center gap-2 hover:bg-soft-teal-tint hover:border-primary transition-all">
+                        Gender
+                    </button>
+</div>
+</section>
+<!-- Counsellor Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+<!-- Card 1 -->
+<div class="bg-surface-white rounded-[24px] p-6 shadow-[0_4px_20px_0_rgba(0,0,0,0.05)] border border-transparent hover:border-primary/20 transition-all duration-300 group">
+<div class="flex justify-between items-start mb-4">
+<div class="relative">
+<div class="w-16 h-16 rounded-full bg-soft-teal-tint flex items-center justify-center text-primary font-bold text-xl">
+                                BM
+                            </div>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-surface-white rounded-full"></div>
+</div>
+<span class="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-caption font-caption flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                            Available
+                        </span>
+</div>
+<div class="mb-4">
+<h3 class="font-headline-md text-headline-md text-on-surface">Brian M. <span class="text-body-md font-normal text-on-surface-variant ml-2">(Year 3)</span></h3>
+<div class="flex flex-wrap gap-2 mt-2">
+<span class="px-3 py-1 rounded-full bg-soft-teal-tint text-primary font-caption text-caption">Anxiety</span>
+<span class="px-3 py-1 rounded-full bg-soft-teal-tint text-primary font-caption text-caption">Academic Stress</span>
+</div>
+</div>
+<p class="text-on-surface-variant font-body-md text-body-md mb-6 line-clamp-2">
+                        I'm here to provide a non-judgmental space for students struggling with transition to university life and exam-related pressure.
+                    </p>
+<div class="flex gap-3">
+<button class="flex-1 py-3 px-4 rounded-[16px] border border-primary text-primary font-label-md text-label-md hover:bg-soft-teal-tint transition-all">View Profile</button>
+<button class="flex-1 py-3 px-4 rounded-[16px] bg-primary text-on-primary font-label-md text-label-md shadow-md hover:scale-[1.02] transition-all">Request Session</button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-white rounded-[24px] p-6 shadow-[0_4px_20px_0_rgba(0,0,0,0.05)] border border-transparent hover:border-primary/20 transition-all duration-300 group">
+<div class="flex justify-between items-start mb-4">
+<div class="relative">
+<div class="w-16 h-16 rounded-full bg-soft-teal-tint flex items-center justify-center text-primary font-bold text-xl">
+                                SA
+                            </div>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-surface-white rounded-full"></div>
+</div>
+<span class="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-caption font-caption flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                            Available
+                        </span>
+</div>
+<div class="mb-4">
+<h3 class="font-headline-md text-headline-md text-on-surface">Sarah A. <span class="text-body-md font-normal text-on-surface-variant ml-2">(Year 4)</span></h3>
+<div class="flex flex-wrap gap-2 mt-2">
+<span class="px-3 py-1 rounded-full bg-soft-teal-tint text-primary font-caption text-caption">Relationships</span>
+<span class="px-3 py-1 rounded-full bg-soft-teal-tint text-primary font-caption text-caption">Personal Growth</span>
+</div>
+</div>
+<p class="text-on-surface-variant font-body-md text-body-md mb-6 line-clamp-2">
+                        Passionate about helping peers navigate interpersonal dynamics and building self-confidence in a supportive environment.
+                    </p>
+<div class="flex gap-3">
+<button class="flex-1 py-3 px-4 rounded-[16px] border border-primary text-primary font-label-md text-label-md hover:bg-soft-teal-tint transition-all">View Profile</button>
+<button class="flex-1 py-3 px-4 rounded-[16px] bg-primary text-on-primary font-label-md text-label-md shadow-md hover:scale-[1.02] transition-all">Request Session</button>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-white rounded-[24px] p-6 shadow-[0_4px_20px_0_rgba(0,0,0,0.05)] border border-transparent hover:border-primary/20 transition-all duration-300 group">
+<div class="flex justify-between items-start mb-4">
+<div class="relative">
+<div class="w-16 h-16 rounded-full bg-soft-teal-tint flex items-center justify-center text-primary font-bold text-xl">
+                                EK
+                            </div>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-amber-400 border-2 border-surface-white rounded-full"></div>
+</div>
+<span class="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-caption font-caption flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
+                            Busy until 4 PM
+                        </span>
+</div>
+<div class="mb-4">
+<h3 class="font-headline-md text-headline-md text-on-surface">Emmanuel K. <span class="text-body-md font-normal text-on-surface-variant ml-2">(Year 2)</span></h3>
+<div class="flex flex-wrap gap-2 mt-2">
+<span class="px-3 py-1 rounded-full bg-soft-teal-tint text-primary font-caption text-caption">Time Management</span>
+<span class="px-3 py-1 rounded-full bg-soft-teal-tint text-primary font-caption text-caption">Stress</span>
+</div>
+</div>
+<p class="text-on-surface-variant font-body-md text-body-md mb-6 line-clamp-2">
+                        Focusing on practical strategies for balancing student leadership roles with heavy academic workloads.
+                    </p>
+<div class="flex gap-3">
+<button class="flex-1 py-3 px-4 rounded-[16px] border border-primary text-primary font-label-md text-label-md hover:bg-soft-teal-tint transition-all">View Profile</button>
+<button class="flex-1 py-3 px-4 rounded-[16px] bg-primary text-on-primary font-label-md text-label-md shadow-md hover:scale-[1.02] transition-all">Request Session</button>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-white rounded-[24px] p-6 shadow-[0_4px_20px_0_rgba(0,0,0,0.05)] border border-transparent hover:border-primary/20 transition-all duration-300 group">
+<div class="flex justify-between items-start mb-4">
+<div class="relative">
+<div class="w-16 h-16 rounded-full bg-soft-teal-tint flex items-center justify-center text-primary font-bold text-xl">
+                                LW
+                            </div>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-surface-white rounded-full"></div>
+</div>
+<span class="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-caption font-caption flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                            Available
+                        </span>
+</div>
+<div class="mb-4">
+<h3 class="font-headline-md text-headline-md text-on-surface">Lisa W. <span class="text-body-md font-normal text-on-surface-variant ml-2">(Year 3)</span></h3>
+<div class="flex flex-wrap gap-2 mt-2">
+<span class="px-3 py-1 rounded-full bg-soft-teal-tint text-primary font-caption text-caption">Grief</span>
+<span class="px-3 py-1 rounded-full bg-soft-teal-tint text-primary font-caption text-caption">Social Anxiety</span>
+</div>
+</div>
+<p class="text-on-surface-variant font-body-md text-body-md mb-6 line-clamp-2">
+                        Providing a calm presence and empathetic ear for those navigating loss or difficulty in social settings.
+                    </p>
+<div class="flex gap-3">
+<button class="flex-1 py-3 px-4 rounded-[16px] border border-primary text-primary font-label-md text-label-md hover:bg-soft-teal-tint transition-all">View Profile</button>
+<button class="flex-1 py-3 px-4 rounded-[16px] bg-primary text-on-primary font-label-md text-label-md shadow-md hover:scale-[1.02] transition-all">Request Session</button>
+</div>
+</div>
+</div>
+<!-- Footer Pagination -->
+<footer class="mt-12 flex justify-between items-center py-8 border-t border-outline-variant/30">
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md opacity-50 cursor-not-allowed">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+                    Previous
+                </button>
+<div class="flex gap-2">
+<button class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold">1</button>
+<button class="w-8 h-8 rounded-full hover:bg-soft-teal-tint text-on-surface-variant flex items-center justify-center">2</button>
+<button class="w-8 h-8 rounded-full hover:bg-soft-teal-tint text-on-surface-variant flex items-center justify-center">3</button>
+</div>
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md">
+                    Next
+                    <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</footer>
+</main>
+</div>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center py-2 px-4 md:hidden shadow-[0_-4px_20px_0_rgba(0,0,0,0.05)] bg-surface-white dark:bg-surface-container-low rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant py-1 px-4 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-[10px] font-bold mt-0.5">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-soft-teal-tint dark:bg-primary-container text-primary dark:text-on-primary-container rounded-full px-4 py-1 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="text-[10px] font-bold mt-0.5">Find</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant py-1 px-4 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="event_available">event_available</span>
+<span class="text-[10px] font-bold mt-0.5">Sessions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant py-1 px-4 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="text-[10px] font-bold mt-0.5">Resources</span>
+</a>
+</nav>
+<!-- Global Footer -->
+<footer class="w-full py-8 bg-background dark:bg-on-surface mt-auto border-t border-outline-variant/30 hidden md:block">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop w-full max-w-container-max mx-auto gap-4">
+<p class="font-caption text-caption text-on-surface-variant dark:text-outline-variant">© 2024 PeerPoint. Endorsed by Strathmore University Mental Health Club</p>
+<div class="flex gap-6">
+<a class="text-on-surface-variant dark:text-outline-variant hover:text-primary transition-colors font-caption text-caption" href="#">Privacy Policy</a>
+<a class="text-on-surface-variant dark:text-outline-variant hover:text-primary transition-colors font-caption text-caption" href="#">Contact Support</a>
+<a class="text-on-surface-variant dark:text-outline-variant hover:text-primary transition-colors font-caption text-caption" href="#">Terms of Service</a>
+</div>
+</div>
+</footer>
+<script>
+        // Simple Interaction logic for filters
+        const filterButtons = document.querySelectorAll('.hide-scrollbar button');
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Toggle active state visual (simulated)
+                if (btn.classList.contains('bg-surface-white')) {
+                    btn.classList.remove('bg-surface-white', 'text-on-surface-variant', 'border-outline-variant');
+                    btn.classList.add('bg-soft-teal-tint', 'text-primary', 'border-primary');
+                } else if (!btn.innerText.includes('Availability')) {
+                    btn.classList.add('bg-surface-white', 'text-on-surface-variant', 'border-outline-variant');
+                    btn.classList.remove('bg-soft-teal-tint', 'text-primary', 'border-primary');
+                }
+            });
+        });
+    </script>
+</body></html>

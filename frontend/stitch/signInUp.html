@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PeerPoint | Join the Sanctuary</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Work+Sans:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .blob-shape {
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline-variant": "#bec8ca",
+                      "on-tertiary-fixed-variant": "#474744",
+                      "inverse-primary": "#88d2e0",
+                      "secondary-fixed": "#ffdad4",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-tint": "#0a6875",
+                      "secondary-fixed-dim": "#ffb4a8",
+                      "on-primary-fixed": "#001f24",
+                      "accent-gold": "#E79D19",
+                      "surface-container": "#e3effe",
+                      "tertiary-container": "#737370",
+                      "surface-white": "#FFFFFF",
+                      "tertiary-fixed-dim": "#c8c6c3",
+                      "on-primary": "#ffffff",
+                      "inverse-on-surface": "#e7f2ff",
+                      "primary-fixed-dim": "#88d2e0",
+                      "primary-container": "#2d7d8a",
+                      "surface-container-highest": "#d7e4f3",
+                      "background": "#f7f9ff",
+                      "error": "#ba1a1a",
+                      "soft-teal-tint": "#E9F2F3",
+                      "surface": "#f7f9ff",
+                      "tertiary": "#5a5a58",
+                      "inverse-surface": "#26323d",
+                      "on-primary-fixed-variant": "#004e59",
+                      "on-surface": "#111d27",
+                      "on-secondary-fixed-variant": "#930000",
+                      "primary-fixed": "#a4eefd",
+                      "on-error-container": "#93000a",
+                      "surface-variant": "#d7e4f3",
+                      "secondary": "#bc0000",
+                      "on-error": "#ffffff",
+                      "primary": "#006470",
+                      "surface-container-low": "#ecf4ff",
+                      "on-tertiary": "#ffffff",
+                      "surface-container-high": "#dde9f9",
+                      "tertiary-fixed": "#e4e2de",
+                      "on-secondary-container": "#fffbff",
+                      "secondary-container": "#e41f13",
+                      "outline": "#6f797b",
+                      "on-tertiary-container": "#fcfaf6",
+                      "on-secondary-fixed": "#410000",
+                      "on-background": "#111d27",
+                      "on-primary-container": "#effcff",
+                      "surface-dim": "#cfdbea",
+                      "strathmore-blue": "#02338D",
+                      "on-tertiary-fixed": "#1b1c1a",
+                      "error-container": "#ffdad6",
+                      "surface-bright": "#f7f9ff",
+                      "on-surface-variant": "#3f484a",
+                      "on-secondary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "2xl": "24px",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "40px",
+                      "base": "8px",
+                      "container-max": "1200px",
+                      "margin-mobile": "20px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": ["Plus Jakarta Sans"],
+                      "caption": ["Work Sans"],
+                      "headline-md": ["Plus Jakarta Sans"],
+                      "headline-lg": ["Plus Jakarta Sans"],
+                      "body-lg": ["Work Sans"],
+                      "body-md": ["Work Sans"],
+                      "display-lg": ["Plus Jakarta Sans"],
+                      "label-md": ["Plus Jakarta Sans"]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}],
+                      "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background min-h-screen flex flex-col font-body-md text-on-surface">
+<!-- Top Decorative Header Section -->
+<section class="relative w-full h-[353px] md:h-[397px] bg-soft-teal-tint flex flex-col items-center justify-center overflow-hidden">
+<!-- Floating Blobs for Organic Feel -->
+<div class="absolute -top-10 -left-10 w-64 h-64 bg-primary-fixed/20 blob-shape animate-pulse"></div>
+<div class="absolute top-20 -right-20 w-80 h-80 bg-accent-gold/10 blob-shape" style="animation: bounce 10s infinite"></div>
+<div class="relative z-10 text-center px-margin-mobile">
+<div class="flex items-center justify-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary text-4xl" data-icon="forum">forum</span>
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">PeerPoint</h1>
+</div>
+<p class="font-headline-md text-headline-md text-on-surface-variant max-w-md mx-auto">
+                A safe space, always available.
+            </p>
+</div>
+<!-- Privacy Reassurance Chips -->
+<div class="relative z-10 mt-8 flex flex-wrap justify-center gap-4 px-margin-mobile">
+<div class="flex items-center gap-2 bg-white/60 px-4 py-2 rounded-full border border-primary/10 transition-transform hover:scale-105 duration-300">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="lock_person">lock_person</span>
+<span class="font-label-md text-label-md text-on-surface-variant">100% Anonymous</span>
+</div>
+<div class="flex items-center gap-2 bg-white/60 px-4 py-2 rounded-full border border-primary/10 transition-transform hover:scale-105 duration-300">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="shield_with_heart">shield_with_heart</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Private &amp; Secure</span>
+</div>
+</div>
+</section>
+<!-- Main Authentication Content -->
+<main class="flex-grow flex items-start justify-center -mt-16 relative z-20 pb-20 px-margin-mobile">
+<div class="w-full max-w-[480px] bg-surface-white rounded-2xl shadow-[0_12px_40px_0_rgba(0,100,112,0.08)] overflow-hidden transition-all duration-500">
+<!-- Auth Tabs -->
+<div class="flex border-b border-outline-variant/20">
+<button class="flex-1 py-5 font-headline-md text-headline-md text-primary border-b-2 border-primary bg-surface-white transition-all" id="tab-signin" onclick="toggleAuth('signin')">
+                    Sign In
+                </button>
+<button class="flex-1 py-5 font-headline-md text-headline-md text-outline-variant hover:text-on-surface-variant transition-all" id="tab-signup" onclick="toggleAuth('signup')">
+                    Sign Up
+                </button>
+</div>
+<div class="p-8 md:p-10">
+<!-- Sign In Form -->
+<form class="space-y-6" id="form-signin">
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant ml-1">Strathmore Email</label>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors" data-icon="alternate_email">alternate_email</span>
+<input class="w-full pl-12 pr-4 py-4 rounded-xl border border-outline-variant bg-transparent focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-body-md" placeholder="student@strathmore.edu" required="" type="email"/>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-label-md text-on-surface-variant ml-1">Password</label>
+<a class="font-label-md text-label-md text-primary hover:underline" href="#">Forgot password?</a>
+</div>
+<div class="relative group" x-data="{ show: false }">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors" data-icon="lock">lock</span>
+<input class="w-full pl-12 pr-12 py-4 rounded-xl border border-outline-variant bg-transparent focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-body-md" id="signin-password" placeholder="••••••••" required="" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors" onclick="togglePasswordVisibility('signin-password', this)" type="button">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<button class="w-full bg-primary text-on-primary py-4 rounded-2xl font-headline-md text-headline-md hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20" type="submit">
+                        Sign In
+                    </button>
+<div class="relative flex items-center justify-center py-2">
+<div class="flex-grow border-t border-outline-variant/30"></div>
+<span class="mx-4 font-caption text-caption text-outline">OR</span>
+<div class="flex-grow border-t border-outline-variant/30"></div>
+</div>
+<button class="w-full flex items-center justify-center gap-3 py-4 rounded-2xl border border-outline-variant hover:bg-surface-container-low transition-colors font-label-md text-label-md text-on-surface" type="button">
+<img alt="Google Icon" class="w-5 h-5" data-alt="The iconic Google logo 'G' with its distinct four colors: blue, red, yellow, and green, rendered in a crisp vector format. The logo is centered on a clean white background, symbolizing professional integration and modern authentication standards. The visual style is minimal and corporate-aligned." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCg-aRnXDn8xKJPbpD6MjK2Mm6thi_EcMNQgcXetJdjIgRAzKe0a5jL0X4X36LGQO8vwYyT-qYazrYMowzCZbsnCTqFCl-hzS2OQCe9gSdX4zDAjqYFe9hWRC6gxAzkSapNlP7jF95De2vsK6oWV303BegoQAR8BiTBfqpF0Xu1pQCQ6CqCJP34FyOEyBfHla7rPKqdTdJL7fa5JFHhtf42wWjr9nqyBi1BS4YyPujGH-Qzjye2ShIF9QV2J07gKOttOg9nw_o6aLw"/>
+                        Continue with Google
+                    </button>
+</form>
+<!-- Sign Up Form (Initially Hidden) -->
+<form class="hidden space-y-5" id="form-signup">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant ml-1">Full Name</label>
+<input class="w-full px-4 py-4 rounded-xl border border-outline-variant bg-transparent focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-body-md" placeholder="John Doe" required="" type="text"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant ml-1">Student ID</label>
+<input class="w-full px-4 py-4 rounded-xl border border-outline-variant bg-transparent focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-body-md" placeholder="123456" required="" type="text"/>
+</div>
+</div>
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant ml-1">Strathmore Email</label>
+<input class="w-full px-4 py-4 rounded-xl border border-outline-variant bg-transparent focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-body-md" placeholder="student@strathmore.edu" required="" type="email"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant ml-1">Password</label>
+<div class="relative group">
+<input class="w-full px-4 pr-12 py-4 rounded-xl border border-outline-variant bg-transparent focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-body-md" id="signup-password" placeholder="Min. 8 characters" required="" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-outline" onclick="togglePasswordVisibility('signup-password', this)" type="button">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant ml-1">Role</label>
+<div class="relative">
+<select class="w-full px-4 py-4 rounded-xl border border-outline-variant bg-transparent focus:border-primary focus:ring-1 focus:ring-primary outline-none appearance-none transition-all font-body-md text-body-md">
+<option>Student</option>
+<option>Peer Counsellor</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<div class="flex items-start gap-3 py-2">
+<input class="mt-1 rounded border-outline-variant text-primary focus:ring-primary" required="" type="checkbox"/>
+<span class="font-caption text-caption text-on-surface-variant">
+                            I agree to the <a class="text-primary underline" href="#">Privacy Policy</a> and understand that everything I do here is private.
+                        </span>
+</div>
+<button class="w-full bg-primary text-on-primary py-4 rounded-2xl font-headline-md text-headline-md hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20" type="submit">
+                        Create Account
+                    </button>
+</form>
+<!-- Shared Privacy Disclaimer -->
+<div class="mt-8 p-4 bg-surface-container-low rounded-xl border border-outline-variant/20 flex gap-4">
+<span class="material-symbols-outlined text-primary shrink-0" data-icon="info">info</span>
+<p class="font-caption text-caption text-on-surface-variant">
+                        Everything you do here is private. We never share your information without your consent. Your student identity is used only for authentication.
+                    </p>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full py-8 mt-auto border-t border-outline-variant/30 bg-background flex flex-col md:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop gap-4">
+<div class="flex flex-col md:flex-row items-center gap-4">
+<span class="font-label-md text-label-md text-strathmore-blue">PeerPoint</span>
+<span class="font-caption text-caption text-on-surface-variant">Endorsed by Strathmore University Mental Health Club</span>
+</div>
+<div class="flex gap-6">
+<a class="font-caption text-caption text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="font-caption text-caption text-on-surface-variant hover:text-primary transition-colors" href="#">Contact Support</a>
+<a class="font-caption text-caption text-on-surface-variant hover:text-primary transition-colors" href="#">Terms of Service</a>
+</div>
+</footer>
+<script>
+        function toggleAuth(type) {
+            const formSignin = document.getElementById('form-signin');
+            const formSignup = document.getElementById('form-signup');
+            const tabSignin = document.getElementById('tab-signin');
+            const tabSignup = document.getElementById('tab-signup');
+
+            if (type === 'signin') {
+                formSignin.classList.remove('hidden');
+                formSignup.classList.add('hidden');
+                tabSignin.classList.add('text-primary', 'border-primary', 'border-b-2');
+                tabSignin.classList.remove('text-outline-variant');
+                tabSignup.classList.add('text-outline-variant');
+                tabSignup.classList.remove('text-primary', 'border-primary', 'border-b-2');
+            } else {
+                formSignin.classList.add('hidden');
+                formSignup.classList.remove('hidden');
+                tabSignup.classList.add('text-primary', 'border-primary', 'border-b-2');
+                tabSignup.classList.remove('text-outline-variant');
+                tabSignin.classList.add('text-outline-variant');
+                tabSignin.classList.remove('text-primary', 'border-primary', 'border-b-2');
+            }
+        }
+
+        function togglePasswordVisibility(id, btn) {
+            const input = document.getElementById(id);
+            const icon = btn.querySelector('.material-symbols-outlined');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.textContent = 'visibility_off';
+            } else {
+                input.type = 'password';
+                icon.textContent = 'visibility';
+            }
+        }
+
+        // Atmospheric micro-interaction: subtle mouse parallax for blobs
+        document.addEventListener('mousemove', (e) => {
+            const blobs = document.querySelectorAll('.blob-shape');
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            
+            blobs.forEach((blob, index) => {
+                const speed = (index + 1) * 20;
+                blob.style.transform = `translate(${x * speed}px, ${y * speed}px)`;
+            });
+        });
+    </script>
+</body></html>

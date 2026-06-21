@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PeerPoint Student Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Work+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline-variant": "#bec8ca",
+                        "on-tertiary-fixed-variant": "#474744",
+                        "inverse-primary": "#88d2e0",
+                        "secondary-fixed": "#ffdad4",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-tint": "#0a6875",
+                        "secondary-fixed-dim": "#ffb4a8",
+                        "on-primary-fixed": "#001f24",
+                        "accent-gold": "#E79D19",
+                        "surface-container": "#e3effe",
+                        "tertiary-container": "#737370",
+                        "surface-white": "#FFFFFF",
+                        "tertiary-fixed-dim": "#c8c6c3",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#e7f2ff",
+                        "primary-fixed-dim": "#88d2e0",
+                        "primary-container": "#2d7d8a",
+                        "surface-container-highest": "#d7e4f3",
+                        "background": "#f7f9ff",
+                        "error": "#ba1a1a",
+                        "soft-teal-tint": "#E9F2F3",
+                        "surface": "#f7f9ff",
+                        "tertiary": "#5a5a58",
+                        "inverse-surface": "#26323d",
+                        "on-primary-fixed-variant": "#004e59",
+                        "on-surface": "#111d27",
+                        "on-secondary-fixed-variant": "#930000",
+                        "primary-fixed": "#a4eefd",
+                        "on-error-container": "#93000a",
+                        "surface-variant": "#d7e4f3",
+                        "secondary": "#bc0000",
+                        "on-error": "#ffffff",
+                        "primary": "#006470",
+                        "surface-container-low": "#ecf4ff",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-high": "#dde9f9",
+                        "tertiary-fixed": "#e4e2de",
+                        "on-secondary-container": "#fffbff",
+                        "secondary-container": "#e41f13",
+                        "outline": "#6f797b",
+                        "on-tertiary-container": "#fcfaf6",
+                        "on-secondary-fixed": "#410000",
+                        "on-background": "#111d27",
+                        "on-primary-container": "#effcff",
+                        "surface-dim": "#cfdbea",
+                        "strathmore-blue": "#02338D",
+                        "on-tertiary-fixed": "#1b1c1a",
+                        "error-container": "#ffdad6",
+                        "surface-bright": "#f7f9ff",
+                        "on-surface-variant": "#3f484a",
+                        "on-secondary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "40px",
+                        "base": "8px",
+                        "container-max": "1200px",
+                        "margin-mobile": "20px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "caption": ["Work Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Work Sans"],
+                        "body-md": ["Work Sans"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}],
+                        "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #f7f9ff;
+            color: #111d27;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #bec8ca;
+            border-radius: 10px;
+        }
+        .glass-effect {
+            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.7);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-body-md">
+<!-- Top Navigation Bar (Mobile only visibility handled by JSON style_shell_layout) -->
+<header class="w-full top-0 sticky shadow-sm bg-surface-white dark:bg-surface-container-low z-40 md:hidden">
+<div class="flex justify-between items-center px-margin-mobile h-16 w-full mx-auto">
+<div class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+<span class="material-symbols-outlined">forum</span>
+<span>PeerPoint</span>
+</div>
+<div class="h-10 w-10 rounded-full bg-soft-teal-tint flex items-center justify-center text-primary font-bold">
+                JD
+            </div>
+</div>
+</header>
+<div class="flex min-h-screen">
+<!-- Sidebar Navigation Drawer (Desktop) -->
+<aside class="fixed left-0 top-0 h-full border-r border-outline-variant/20 py-8 px-4 bg-surface-white dark:bg-surface-container-low shadow-[4px_0_20px_0_rgba(0,0,0,0.05)] h-screen w-72 hidden md:flex flex-col z-50">
+<div class="text-primary font-headline-md text-headline-md flex items-center gap-2 mb-10 px-4">
+<span class="material-symbols-outlined">forum</span>
+<span>PeerPoint</span>
+</div>
+<nav class="flex-1 space-y-2">
+<!-- Active Tab: Dashboard -->
+<a class="flex items-center gap-3 bg-soft-teal-tint dark:bg-primary-container text-primary dark:text-on-primary-container rounded-lg px-4 py-3 font-bold scale-100 hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-inverse-surface transition-colors scale-100 hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined">person_search</span>
+<span>Directory</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-inverse-surface transition-colors scale-100 hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span>Schedule</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-inverse-surface transition-colors scale-100 hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined">library_books</span>
+<span>Knowledge Base</span>
+</a>
+</nav>
+<!-- Crisis Card -->
+<div class="mt-auto p-4 bg-secondary-container/10 border border-secondary-container/20 rounded-2xl">
+<div class="flex items-center gap-2 text-secondary mb-2">
+<span class="material-symbols-outlined">emergency</span>
+<span class="font-label-md text-label-md">Need urgent help?</span>
+</div>
+<p class="text-caption font-caption text-on-surface-variant mb-4">Our crisis support team is available 24/7 for immediate assistance.</p>
+<button class="w-full bg-secondary text-on-secondary py-2 rounded-xl font-label-md text-label-md hover:opacity-90 transition-opacity">Contact Crisis Team</button>
+</div>
+<div class="mt-6 flex items-center gap-3 px-4 py-3 border-t border-outline-variant/20 pt-6">
+<div class="h-10 w-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold">JD</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">John Doe</p>
+<p class="text-caption font-caption text-on-surface-variant">Student Account</p>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-72 pb-24 md:pb-12">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-8">
+<!-- Greeting & Hero -->
+<section class="mb-10">
+<h1 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-2">Good morning, John 👋</h1>
+<p class="text-body-lg font-body-lg text-on-surface-variant">Your space for mindful growth and peer support.</p>
+</section>
+<!-- Mood Check -->
+<section class="mb-10 bg-white p-6 md:p-8 rounded-[24px] shadow-[0_4px_20px_0_rgba(0,0,0,0.05)]">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-6">How are you feeling today?</h2>
+<div class="flex flex-wrap gap-4">
+<button class="flex items-center gap-3 px-5 py-3 rounded-full bg-soft-teal-tint text-on-surface hover:scale-[1.02] transition-transform duration-200">
+<span class="text-2xl">😔</span>
+</button>
+<button class="flex items-center gap-3 px-5 py-3 rounded-full bg-soft-teal-tint text-on-surface hover:scale-[1.02] transition-transform duration-200">
+<span class="text-2xl">😕</span>
+</button>
+<button class="flex items-center gap-3 px-5 py-3 rounded-full bg-soft-teal-tint text-on-surface hover:scale-[1.02] transition-transform duration-200 border-2 border-primary">
+<span class="text-2xl">😐</span>
+</button>
+<button class="flex items-center gap-3 px-5 py-3 rounded-full bg-soft-teal-tint text-on-surface hover:scale-[1.02] transition-transform duration-200">
+<span class="text-2xl">🙂</span>
+</button>
+<button class="flex items-center gap-3 px-5 py-3 rounded-full bg-soft-teal-tint text-on-surface hover:scale-[1.02] transition-transform duration-200">
+<span class="text-2xl">😊</span>
+</button>
+</div>
+</section>
+<!-- Quick Actions Grid -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-12">
+<div class="bg-primary text-on-primary p-6 rounded-[24px] shadow-lg hover:scale-[1.02] transition-transform duration-300 group cursor-pointer">
+<span class="material-symbols-outlined text-4xl mb-4 group-hover:rotate-12 transition-transform">person_search</span>
+<h3 class="font-headline-md text-headline-md mb-2">Find a Counsellor</h3>
+<p class="font-body-md text-body-md opacity-90 mb-6">Connect with a certified peer supporter today.</p>
+<span class="flex items-center gap-2 font-label-md text-label-md">Explore Directory <span class="material-symbols-outlined">arrow_forward</span></span>
+</div>
+<div class="bg-surface-white p-6 rounded-[24px] shadow-[0_4px_20px_0_rgba(0,0,0,0.05)] border border-soft-teal-tint hover:scale-[1.02] transition-transform duration-300 cursor-pointer">
+<span class="material-symbols-outlined text-primary text-4xl mb-4">event_available</span>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2">Upcoming Sessions</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">View and manage your scheduled peer meetings.</p>
+<span class="flex items-center gap-2 font-label-md text-label-md text-primary">View Calendar <span class="material-symbols-outlined">arrow_forward</span></span>
+</div>
+<div class="bg-surface-white p-6 rounded-[24px] shadow-[0_4px_20px_0_rgba(0,0,0,0.05)] border border-soft-teal-tint hover:scale-[1.02] transition-transform duration-300 cursor-pointer">
+<span class="material-symbols-outlined text-primary text-4xl mb-4">menu_book</span>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2">Browse Resources</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">Articles and tools to support your mental wellbeing.</p>
+<span class="flex items-center gap-2 font-label-md text-label-md text-primary">Read More <span class="material-symbols-outlined">arrow_forward</span></span>
+</div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+<!-- My Sessions List -->
+<section>
+<div class="flex justify-between items-center mb-6">
+<h2 class="font-headline-md text-headline-md text-on-surface">My Sessions</h2>
+<button class="text-primary font-label-md text-label-md">View All</button>
+</div>
+<div class="space-y-4">
+<!-- Session Item -->
+<div class="bg-white p-4 rounded-[20px] flex items-center justify-between shadow-sm border border-soft-teal-tint">
+<div class="flex items-center gap-4">
+<div class="h-12 w-12 rounded-full bg-surface-container text-primary flex items-center justify-center font-bold">AK</div>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface">Dr. Anne Kiama</h4>
+<p class="text-caption font-caption text-on-surface-variant">Tomorrow at 10:00 AM</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-2">
+<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-caption font-caption">Confirmed</span>
+<button class="text-primary font-label-md text-label-md text-sm hover:underline">View Details</button>
+</div>
+</div>
+<!-- Session Item -->
+<div class="bg-white p-4 rounded-[20px] flex items-center justify-between shadow-sm border border-soft-teal-tint">
+<div class="flex items-center gap-4">
+<div class="h-12 w-12 rounded-full bg-surface-container text-primary flex items-center justify-center font-bold">SM</div>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface">Samuel Mutua</h4>
+<p class="text-caption font-caption text-on-surface-variant">Fri, 24th Oct • 2:30 PM</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-2">
+<span class="px-3 py-1 bg-accent-gold/20 text-accent-gold rounded-full text-caption font-caption">Pending</span>
+<button class="text-primary font-label-md text-label-md text-sm hover:underline">View Details</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Recommended Resources -->
+<section>
+<div class="flex justify-between items-center mb-6">
+<h2 class="font-headline-md text-headline-md text-on-surface">Recommended for You</h2>
+<button class="text-primary font-label-md text-label-md">Explore All</button>
+</div>
+<div class="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x">
+<!-- Article Card -->
+<div class="min-w-[280px] bg-white rounded-[24px] overflow-hidden shadow-sm border border-soft-teal-tint snap-start">
+<img alt="Mindfulness" class="w-full h-32 object-cover" data-alt="A serene landscape with soft morning light hitting a calm lake and rolling green hills. The aesthetic is minimalist and peaceful, using a soft teal and white color palette to evoke tranquility and mental clarity. High-quality photography with shallow depth of field." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAajAnjD-DH_nDYYqSahNTTPhdo52Ub3qOmNlYmhc3J-3hIFHqTvYaqRzZ0KrefALO_xYE7om6J1MfSiF0ULEgRE4zHbt8lGnotNegiee8f8K--tr0tKY4HWb_7wwG59tESEp5NT9toCv8thFjV60dlCftvhWt2ZY4nuh6kBk7hKrVXjujWWoq6xeIFdG68IGFwdBs94QdSxy-2I0MGjNW0UglA3StntQPzyKK4wiUw2xVgmdyDpHqX6b2swxdOw7gTWkmNQNb3ryE"/>
+<div class="p-4">
+<div class="flex gap-2 mb-2">
+<span class="px-2 py-0.5 bg-soft-teal-tint text-primary rounded-full text-[10px] font-bold uppercase tracking-wider">Anxiety</span>
+</div>
+<h4 class="font-label-md text-label-md text-on-surface mb-2">5-Minute Breathing for Exam Stress</h4>
+<a class="text-primary font-label-md text-label-md inline-flex items-center gap-1 group" href="#">
+                                        Read More <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">chevron_right</span>
+</a>
+</div>
+</div>
+<!-- Article Card -->
+<div class="min-w-[280px] bg-white rounded-[24px] overflow-hidden shadow-sm border border-soft-teal-tint snap-start">
+<img alt="Self-care" class="w-full h-32 object-cover" data-alt="An overhead view of a clean, organized desk with a journal, a small green plant, and a cup of tea. The lighting is warm and natural, creating a supportive sanctuary vibe. The color scheme is light-mode professional, featuring whites, creams, and accents of Strathmore blue." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_0PV1bDE1y2FS_aaGF8mMP2IR4N-AUiTw9f7t0Eft6h2925k13Cs1kh_J6t-GuELqPOecr5xfytSeyiBq8q9oiT6Tf3CH2CuXPpq1TYJ5nW7L1UMqPBSzKQOpIfO7boaY5PVMfqEgoPJhsjHQw8DgR7Zi2yyJxDrjHZClej-PLhj2hvcmKjmFNhw03EF_PIkCAsLknFCQXVm_T8w8wC0eUZAZ2Z6L13VOK8Q6NOkV93icGSpfIu_AI71LmYrB3ecAWr4AcRQ5Kg8"/>
+<div class="p-4">
+<div class="flex gap-2 mb-2">
+<span class="px-2 py-0.5 bg-soft-teal-tint text-primary rounded-full text-[10px] font-bold uppercase tracking-wider">Stress</span>
+</div>
+<h4 class="font-label-md text-label-md text-on-surface mb-2">Journaling Your Way to Clarity</h4>
+<a class="text-primary font-label-md text-label-md inline-flex items-center gap-1 group" href="#">
+                                        Read More <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">chevron_right</span>
+</a>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- Footer Section -->
+<footer class="w-full py-8 mt-auto border-t border-outline-variant/30 bg-background dark:bg-on-surface">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop w-full max-w-container-max mx-auto gap-4">
+<p class="font-caption text-caption text-on-surface-variant dark:text-outline-variant">© 2024 PeerPoint. Endorsed by Strathmore University Mental Health Club</p>
+<div class="flex gap-6">
+<a class="font-caption text-caption text-on-surface-variant dark:text-outline-variant hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="font-caption text-caption text-on-surface-variant dark:text-outline-variant hover:text-primary transition-colors" href="#">Contact Support</a>
+</div>
+</div>
+</footer>
+</main>
+</div>
+<!-- Bottom Navigation Bar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center py-2 px-4 md:hidden bg-surface-white dark:bg-surface-container-low shadow-[0_-4px_20px_0_rgba(0,0,0,0.05)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center bg-soft-teal-tint dark:bg-primary-container text-primary dark:text-on-primary-container rounded-full px-4 py-1" href="#">
+<span class="material-symbols-outlined" data-weight="fill">home</span>
+<span class="font-label-md text-label-md">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-soft-teal-tint dark:hover:bg-primary-container/50 px-4 py-1 transition-colors" href="#">
+<span class="material-symbols-outlined">search</span>
+<span class="font-label-md text-label-md">Find</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-soft-teal-tint dark:hover:bg-primary-container/50 px-4 py-1 transition-colors" href="#">
+<span class="material-symbols-outlined">event_available</span>
+<span class="font-label-md text-label-md">Sessions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-soft-teal-tint dark:hover:bg-primary-container/50 px-4 py-1 transition-colors" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-label-md text-label-md">Resources</span>
+</a>
+</nav>
+<script>
+        // Micro-interactions for mood buttons
+        const moodButtons = document.querySelectorAll('.mood-check button');
+        moodButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                moodButtons.forEach(b => b.classList.remove('border-2', 'border-primary'));
+                btn.classList.add('border-2', 'border-primary', 'scale-105');
+                setTimeout(() => btn.classList.remove('scale-105'), 200);
+            });
+        });
+
+        // Atmospheric effect: Subtle pulse for crisis card on mobile if visible
+        const crisisBtn = document.querySelector('.bg-secondary');
+        if(crisisBtn) {
+            setInterval(() => {
+                crisisBtn.classList.add('opacity-80');
+                setTimeout(() => crisisBtn.classList.remove('opacity-80'), 1000);
+            }, 3000);
+        }
+    </script>
+</body></html>

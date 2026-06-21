@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mental Health Resource Hub | PeerPoint</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Work+Sans:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "outline-variant": "#bec8ca",
+                "on-tertiary-fixed-variant": "#474744",
+                "inverse-primary": "#88d2e0",
+                "secondary-fixed": "#ffdad4",
+                "surface-container-lowest": "#ffffff",
+                "surface-tint": "#0a6875",
+                "secondary-fixed-dim": "#ffb4a8",
+                "on-primary-fixed": "#001f24",
+                "accent-gold": "#E79D19",
+                "surface-container": "#e3effe",
+                "tertiary-container": "#737370",
+                "surface-white": "#FFFFFF",
+                "tertiary-fixed-dim": "#c8c6c3",
+                "on-primary": "#ffffff",
+                "inverse-on-surface": "#e7f2ff",
+                "primary-fixed-dim": "#88d2e0",
+                "primary-container": "#2d7d8a",
+                "surface-container-highest": "#d7e4f3",
+                "background": "#f7f9ff",
+                "error": "#ba1a1a",
+                "soft-teal-tint": "#E9F2F3",
+                "surface": "#f7f9ff",
+                "tertiary": "#5a5a58",
+                "inverse-surface": "#26323d",
+                "on-primary-fixed-variant": "#004e59",
+                "on-surface": "#111d27",
+                "on-secondary-fixed-variant": "#930000",
+                "primary-fixed": "#a4eefd",
+                "on-error-container": "#93000a",
+                "surface-variant": "#d7e4f3",
+                "secondary": "#bc0000",
+                "on-error": "#ffffff",
+                "primary": "#006470",
+                "surface-container-low": "#ecf4ff",
+                "on-tertiary": "#ffffff",
+                "surface-container-high": "#dde9f9",
+                "tertiary-fixed": "#e4e2de",
+                "on-secondary-container": "#fffbff",
+                "secondary-container": "#e41f13",
+                "outline": "#6f797b",
+                "on-tertiary-container": "#fcfaf6",
+                "on-secondary-fixed": "#410000",
+                "on-background": "#111d27",
+                "on-primary-container": "#effcff",
+                "surface-dim": "#cfdbea",
+                "strathmore-blue": "#02338D",
+                "on-tertiary-fixed": "#1b1c1a",
+                "error-container": "#ffdad6",
+                "surface-bright": "#f7f9ff",
+                "on-surface-variant": "#3f484a",
+                "on-secondary": "#ffffff"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "margin-desktop": "40px",
+                "base": "8px",
+                "container-max": "1200px",
+                "margin-mobile": "20px",
+                "gutter": "24px"
+            },
+            "fontFamily": {
+                "headline-lg-mobile": ["Plus Jakarta Sans"],
+                "caption": ["Work Sans"],
+                "headline-md": ["Plus Jakarta Sans"],
+                "headline-lg": ["Plus Jakarta Sans"],
+                "body-lg": ["Work Sans"],
+                "body-md": ["Work Sans"],
+                "display-lg": ["Plus Jakarta Sans"],
+                "label-md": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}],
+                "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .blob-bg {
+            background: radial-gradient(circle at 50% 50%, rgba(164, 238, 253, 0.2) 0%, rgba(247, 249, 255, 0) 70%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md selection:bg-primary-fixed-dim">
+<!-- Desktop Navigation Drawer -->
+<aside class="fixed left-0 top-0 h-full border-r border-outline-variant/20 py-8 px-4 bg-surface-white dark:bg-surface-container-low shadow-[4px_0_20px_0_rgba(0,0,0,0.05)] h-screen w-72 hidden md:flex flex-col z-50">
+<div class="mb-10 px-4">
+<h1 class="text-primary font-headline-md text-headline-md">PeerPoint</h1>
+<p class="text-on-surface-variant text-caption font-caption">Mental Health Support</p>
+</div>
+<nav class="flex-grow space-y-2">
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-inverse-surface transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-inverse-surface transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="person_search">person_search</span>
+<span class="font-body-md text-body-md">Directory</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline-variant px-4 py-3 hover:bg-surface-container dark:hover:bg-inverse-surface transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+<span class="font-body-md text-body-md">Schedule</span>
+</a>
+<a class="flex items-center gap-3 bg-soft-teal-tint dark:bg-primary-container text-primary dark:text-on-primary-container rounded-lg px-4 py-3 font-bold" href="#">
+<span class="material-symbols-outlined" data-icon="library_books">library_books</span>
+<span class="font-body-md text-body-md">Knowledge Base</span>
+</a>
+</nav>
+<div class="mt-auto border-t border-outline-variant/20 pt-6 px-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-fixed-dim flex items-center justify-center text-primary font-bold">JD</div>
+<div class="overflow-hidden">
+<p class="font-label-md text-label-md truncate">John Doe</p>
+<p class="text-caption font-caption text-on-surface-variant">Student Account</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Mobile Top App Bar -->
+<header class="w-full top-0 sticky shadow-[0_4px_20px_0_rgba(0,0,0,0.05)] bg-surface-white dark:bg-surface-container-low z-40 md:hidden">
+<div class="flex justify-between items-center px-margin-mobile h-16 w-full">
+<div class="flex items-center gap-2 font-headline-md text-headline-md text-primary dark:text-primary-fixed">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+<span class="font-bold">PeerPoint</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-soft-teal-tint flex items-center justify-center text-primary text-xs font-bold">JD</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="md:ml-72 min-h-screen relative pb-24 md:pb-12">
+<div class="blob-bg absolute inset-0 -z-10 pointer-events-none"></div>
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop pt-8 md:pt-12">
+<!-- Header Section -->
+<header class="mb-8 md:mb-12">
+<h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-2">Mental Health Resources</h2>
+<p class="text-on-surface-variant font-body-md text-body-md max-w-2xl">A curated collection of guides, articles, and professional tools designed to support your academic and emotional journey at Strathmore.</p>
+</header>
+<!-- Filters Pill Buttons -->
+<div class="flex flex-wrap gap-3 mb-10 overflow-x-auto pb-2 scrollbar-hide">
+<button class="px-6 py-2 rounded-full bg-primary text-on-primary font-label-md text-label-md transition-all hover:scale-105">All Resources</button>
+<button class="px-6 py-2 rounded-full bg-surface-white border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:bg-soft-teal-tint hover:border-primary transition-all">Anxiety</button>
+<button class="px-6 py-2 rounded-full bg-surface-white border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:bg-soft-teal-tint hover:border-primary transition-all">Depression</button>
+<button class="px-6 py-2 rounded-full bg-surface-white border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:bg-soft-teal-tint hover:border-primary transition-all">Stress</button>
+<button class="px-6 py-2 rounded-full bg-surface-white border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:bg-soft-teal-tint hover:border-primary transition-all">Academic Focus</button>
+<button class="px-6 py-2 rounded-full bg-surface-white border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:bg-soft-teal-tint hover:border-primary transition-all">Self-Care</button>
+</div>
+<!-- Featured Article -->
+<section class="mb-12">
+<div class="group relative bg-surface-white rounded-[32px] overflow-hidden shadow-[0_4px_30px_0_rgba(0,0,0,0.05)] flex flex-col md:flex-row min-h-[400px] transition-transform duration-300 hover:scale-[1.01]">
+<div class="w-full md:w-1/2 h-64 md:h-auto overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="A serene digital illustration of a calm, sun-drenched library interior with floating dust motes and soft teal accents. Large windows look out onto a peaceful green garden, creating a sense of quiet academic reflection. The lighting is warm and diffused, embodying the supportive sanctuary aesthetic with a palette of soft whites and calming blues." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1vTDSBSzDeznTLOEpj0OtMBEt06_64W4stn_SIhfIGbyLAhidO3h8qaltQWgxHvJniZEjyT1lDCspumuZD4BmbZuSkHtGLDXKXSC9_DxDxQohxVdi2etEZmFgi0slnf9KQsRRSIPpuzdxqJp1UR1TPGLU4C2U4ssY9dxbyHW0LCL-BXXd_CBujhmVR-rVQjJ_KRxFAQ-deIl8QCPmNRo0vW8UEHQXaQMK8WLyhBI6hKyTb2sXLNU6iYnv_uS0lGIashcFNcWI6qc"/>
+</div>
+<div class="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
+<div class="inline-flex items-center px-3 py-1 rounded-full bg-accent-gold/10 text-accent-gold font-label-md text-label-md mb-6 w-fit">Featured Insight</div>
+<h3 class="font-headline-lg text-headline-md md:text-headline-lg mb-4">Navigating Exam Stress with Mindfulness</h3>
+<p class="text-on-surface-variant font-body-md text-body-md mb-8 leading-relaxed">Practical techniques to stay grounded during the most demanding weeks of the semester. Learn how five minutes of breathing can transform your focus.</p>
+<a class="flex items-center gap-2 text-primary font-bold hover:gap-4 transition-all" href="#">
+                            Read the full guide
+                            <span class="material-symbols-outlined">arrow_forward</span>
+</a>
+</div>
+</div>
+</section>
+<!-- Resources Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter mb-16">
+<!-- Card 1 -->
+<div class="bg-surface-white p-6 rounded-3xl shadow-[0_4px_20px_0_rgba(0,0,0,0.04)] hover:shadow-[0_8px_40px_0_rgba(0,0,0,0.08)] transition-all flex flex-col">
+<img class="w-full h-48 object-cover rounded-2xl mb-6" data-alt="A minimalist overhead shot of a clean workspace with a journal, a small green plant, and a steaming cup of tea. The scene is bright and airy, using light mode colors like soft white and pale teal. The composition evokes clarity and mental organization, reflecting a non-clinical and empathetic supportive environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAN5jWl_rP_bvEcHNJI_NLrsJig7ibJcDkuKnK0NkCxHYpusEbQTcl50B4TArKz-JjxXAbAqIxrXpWPEE_62TrQmohFCPX-EYK8qjAOn7OV8Fz7XsxNgRCZqisg5CCjhpnBolOubJc1j-zDHVFCCMvKHSnPPGahcqBemV2vhb3fAVIIcTaG-CpRbBbr-OmYUdfafVEMYjq0fQnOsXHQx9XluDFVC7NSW-RORpe9hnrpagr1OgjlyYuY7o7lJQghiAaXBSax_gXWJcA"/>
+<div class="flex gap-2 mb-4">
+<span class="px-3 py-1 rounded-full bg-soft-teal-tint text-primary font-label-md text-label-md">Self-Care</span>
+</div>
+<h4 class="font-headline-md text-headline-md mb-3">Creating a Nighttime Routine for Better Sleep</h4>
+<p class="text-on-surface-variant text-body-md font-body-md mb-6 flex-grow line-clamp-2">Consistent sleep is the foundation of mental clarity. Discover rituals to disconnect from screens and rest deeply.</p>
+<a class="text-primary font-bold inline-flex items-center gap-1 hover:underline" href="#">
+                        Read More <span class="material-symbols-outlined text-sm">open_in_new</span>
+</a>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-white p-6 rounded-3xl shadow-[0_4px_20px_0_rgba(0,0,0,0.04)] hover:shadow-[0_8px_40px_0_rgba(0,0,0,0.08)] transition-all flex flex-col">
+<img class="w-full h-48 object-cover rounded-2xl mb-6" data-alt="A candid photo of two university students in deep, supportive conversation in a brightly lit, modern common area. The environment is comfortable and safe, with warm wood textures and soft daylight. The aesthetic is modern-organic, highlighting human-centric design and the importance of peer connection in mental health." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcXeSQkAkDsRZ7te_zl0gK2WEG3FEA9JH4ifOBU9M0n84_ARQwBajQN6x2tN7IeFGYY11rMdrYba3GGRLGL5YxDApnLHdyt6yKOyvaSz5vtfXNIp42d1trXTRpweBdGm3OJGCeWHPIeQbDkRtn1K8druLpEABFh12tzh1a2UnMOxo4bLvrb_02d03Jq6hDHfBRxuI1YDejFntcsXAO1lyONnKvHySTS2jDICUDHr5yYLHrSpIc3Sansc3Fxp3XVl7vQFtv3J4Q7WA"/>
+<div class="flex gap-2 mb-4">
+<span class="px-3 py-1 rounded-full bg-soft-teal-tint text-primary font-label-md text-label-md">Relationships</span>
+</div>
+<h4 class="font-headline-md text-headline-md mb-3">Supporting a Friend in Distress</h4>
+<p class="text-on-surface-variant text-body-md font-body-md mb-6 flex-grow line-clamp-2">How to listen actively and provide meaningful support without becoming overwhelmed yourself.</p>
+<a class="text-primary font-bold inline-flex items-center gap-1 hover:underline" href="#">
+                        Read More <span class="material-symbols-outlined text-sm">open_in_new</span>
+</a>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-white p-6 rounded-3xl shadow-[0_4px_20px_0_rgba(0,0,0,0.04)] hover:shadow-[0_8px_40px_0_rgba(0,0,0,0.08)] transition-all flex flex-col">
+<img class="w-full h-48 object-cover rounded-2xl mb-6" data-alt="A wide shot of a peaceful meditation studio with soft morning light streaming through large windows. The floor is pale wood and a single teal yoga mat is unrolled in the center. The mood is exceptionally calm and still, emphasizing the breathing room and spaciousness of the modern-organic UI style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAAeSU6b18ZOp29tVXKc9fqZjphWdp6qumT4elvkpWk3l7ibVc8N--63Z-8Dn5Kj3t4Dls4sMJ8lv8Y66KGLoIxaP7wBOisewBQ160KHR0JMgON11KYz5n-bir7Sbb_kE4sk7pqpqOAfzDFnjVHk7ycSyS_Db5fbMmX_mFhQyXPzs3FnEZi6FSD6FNhGInrLn306Wu_OFJ6nOnnn_9n65RHQYkRBZn-yCKSL5YbPOwy8Sn88QzWyFZk3R4QKD9M8MG8Elfsp3mer1s"/>
+<div class="flex gap-2 mb-4">
+<span class="px-3 py-1 rounded-full bg-soft-teal-tint text-primary font-label-md text-label-md">Anxiety</span>
+</div>
+<h4 class="font-headline-md text-headline-md mb-3">Panic Attack SOS: Grounding Techniques</h4>
+<p class="text-on-surface-variant text-body-md font-body-md mb-6 flex-grow line-clamp-2">Immediate, evidence-based steps to manage physical symptoms of anxiety in public spaces.</p>
+<a class="text-primary font-bold inline-flex items-center gap-1 hover:underline" href="#">
+                        Read More <span class="material-symbols-outlined text-sm">open_in_new</span>
+</a>
+</div>
+</section>
+<!-- Campus Support Section -->
+<section class="mb-16">
+<div class="flex items-center justify-between mb-8">
+<h2 class="font-headline-lg text-headline-md md:text-headline-lg">Campus Support Network</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Counsellor Card -->
+<div class="bg-surface-white p-8 rounded-[24px] border border-outline-variant/10 shadow-sm flex flex-col items-center text-center group hover:border-primary transition-all">
+<div class="w-16 h-16 rounded-full bg-soft-teal-tint flex items-center justify-center text-primary mb-6 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined !text-4xl" data-icon="psychology">psychology</span>
+</div>
+<h5 class="font-headline-md text-headline-md mb-2">SU Counsellors</h5>
+<p class="text-on-surface-variant text-body-md font-body-md mb-6">Confidential, professional one-on-one sessions with university specialists.</p>
+<button class="mt-auto w-full py-3 rounded-2xl bg-soft-teal-tint text-primary font-bold hover:bg-primary hover:text-on-primary transition-all">Book Session</button>
+</div>
+<!-- Club Card -->
+<div class="bg-surface-white p-8 rounded-[24px] border border-outline-variant/10 shadow-sm flex flex-col items-center text-center group hover:border-primary transition-all">
+<div class="w-16 h-16 rounded-full bg-soft-teal-tint flex items-center justify-center text-primary mb-6 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined !text-4xl" data-icon="groups">groups</span>
+</div>
+<h5 class="font-headline-md text-headline-md mb-2">Mental Health Club</h5>
+<p class="text-on-surface-variant text-body-md font-body-md mb-6">Join a community of peers dedicated to breaking the stigma and providing mutual aid.</p>
+<button class="mt-auto w-full py-3 rounded-2xl bg-soft-teal-tint text-primary font-bold hover:bg-primary hover:text-on-primary transition-all">Join Club</button>
+</div>
+<!-- Crisis Card -->
+<div class="bg-secondary-container p-8 rounded-[24px] shadow-lg flex flex-col items-center text-center text-on-secondary-container relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined !text-8xl" data-icon="warning">warning</span>
+</div>
+<div class="w-16 h-16 rounded-full bg-on-secondary-container/20 flex items-center justify-center mb-6">
+<span class="material-symbols-outlined !text-4xl" data-icon="emergency">emergency</span>
+</div>
+<h5 class="font-headline-md text-headline-md mb-2">Crisis Support</h5>
+<p class="text-on-secondary-container/90 text-body-md font-body-md mb-6">Available 24/7 for urgent distress. You are not alone; immediate help is one call away.</p>
+<button class="mt-auto w-full py-4 rounded-2xl bg-on-secondary-container text-secondary font-bold text-lg hover:scale-[1.03] transition-transform flex items-center justify-center gap-3 shadow-md">
+<span class="material-symbols-outlined">call</span>
+                            Call Helpline
+                        </button>
+</div>
+</div>
+</section>
+<!-- Newsletter Subscription Strip -->
+<section class="mb-20">
+<div class="bg-primary p-8 md:p-12 rounded-[32px] flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
+<svg height="100%" preserveaspectratio="none" viewbox="0 0 100 100" width="100%">
+<path d="M0 100 C 20 0 50 0 100 100 Z" fill="white"></path>
+</svg>
+</div>
+<div class="relative z-10 max-w-lg text-center md:text-left">
+<h3 class="font-headline-lg text-on-primary mb-2">Wellness in your inbox</h3>
+<p class="text-on-primary-container/80 font-body-md text-body-md">Get weekly mindfulness tips, resources, and event updates from the Strathmore community.</p>
+</div>
+<div class="relative z-10 w-full md:w-auto flex flex-col sm:flex-row gap-3">
+<input class="w-full sm:w-80 px-6 py-4 rounded-2xl border-none bg-surface-white text-on-surface focus:ring-4 focus:ring-primary-fixed-dim placeholder:text-outline transition-all" placeholder="student@strathmore.edu" type="email"/>
+<button class="whitespace-nowrap px-8 py-4 rounded-2xl bg-on-primary-container text-primary font-bold hover:bg-soft-teal-tint transition-all">Subscribe</button>
+</div>
+</div>
+</section>
+</div>
+<!-- Footer -->
+<footer class="w-full py-8 mt-auto border-t border-outline-variant/30 bg-background dark:bg-on-surface">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop w-full max-w-container-max mx-auto gap-4">
+<div class="flex flex-col items-center md:items-start gap-1">
+<div class="font-label-md text-label-md text-strathmore-blue">PeerPoint</div>
+<p class="font-caption text-caption text-on-surface-variant dark:text-outline-variant">Endorsed by Strathmore University Mental Health Club</p>
+</div>
+<div class="flex gap-8">
+<a class="font-caption text-caption text-on-surface-variant dark:text-outline-variant hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="font-caption text-caption text-on-surface-variant dark:text-outline-variant hover:text-primary transition-colors" href="#">Contact Support</a>
+<a class="font-caption text-caption text-on-surface-variant dark:text-outline-variant hover:text-primary transition-colors" href="#">Terms of Service</a>
+</div>
+</div>
+</footer>
+</main>
+<!-- Mobile Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center py-2 px-4 md:hidden bg-surface-white dark:bg-surface-container-low shadow-[0_-4px_20px_0_rgba(0,0,0,0.05)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant p-2" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-md text-label-md">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant p-2" href="#">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="font-label-md text-label-md">Find</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant p-2" href="#">
+<span class="material-symbols-outlined" data-icon="event_available">event_available</span>
+<span class="font-label-md text-label-md">Sessions</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-soft-teal-tint dark:bg-primary-container text-primary dark:text-on-primary-container rounded-full px-4 py-1" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-label-md text-label-md">Resources</span>
+</a>
+</nav>
+<script>
+        // Simple interaction for category pills
+        const filterButtons = document.querySelectorAll('.flex-wrap button');
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterButtons.forEach(b => {
+                    b.classList.remove('bg-primary', 'text-on-primary');
+                    b.classList.add('bg-surface-white', 'border', 'border-outline-variant', 'text-on-surface-variant');
+                });
+                btn.classList.add('bg-primary', 'text-on-primary');
+                btn.classList.remove('bg-surface-white', 'border', 'border-outline-variant', 'text-on-surface-variant');
+            });
+        });
+
+        // Atmospheric fade-in effect on scroll
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('opacity-100', 'translate-y-0');
+                    entry.target.classList.remove('opacity-0', 'translate-y-8');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('section').forEach(section => {
+            section.classList.add('transition-all', 'duration-700', 'opacity-0', 'translate-y-8');
+            observer.observe(section);
+        });
+    </script>
+</body></html>
