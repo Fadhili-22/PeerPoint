@@ -14,7 +14,7 @@ from app.models import (
     User,
 )
 from app.schemas.enums import AvailabilityStatus
-from app.services.availability import js_day_of_week
+from app.services.availability import get_bookable_slots_for_date
 
 router = APIRouter(prefix="/counsellors", tags=["Counsellors"])
 
@@ -184,22 +184,8 @@ def get_counsellor_slots(
     if target_date < _today():
         return schemas.CounsellorSlotsResponse(slots=[])
 
-    if date in profile.unavailable_dates:
-        return schemas.CounsellorSlotsResponse(slots=[])
-
-    weekday = js_day_of_week(target_date)
-    row = next(
-        (
-            r
-            for r in profile.availability_schedule
-            if r.day_of_week == weekday and r.enabled
-        ),
-        None,
-    )
-    if row is None:
-        return schemas.CounsellorSlotsResponse(slots=[])
-
-    return schemas.CounsellorSlotsResponse(slots=row.slots)
+    slots = get_bookable_slots_for_date(profile, target_date, today=_today())
+    return schemas.CounsellorSlotsResponse(slots=slots)
 
 
 def date_from_iso(value: str) -> date:

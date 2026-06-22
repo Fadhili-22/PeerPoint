@@ -224,3 +224,229 @@ types were introduced) and uses **absolute imports** throughout, per `cursorrule
 - Two routers (`counsellor_availability` and the new `counsellor_profile`) share the
   `/counsellor/me` prefix with distinct sub-paths — this is intentional and supported
   by FastAPI.
+
+---
+
+## Prompt 2 — Full Session Request Lifecycle
+
+### What this prompt was
+
+Implement the full session-request lifecycle end-to-end. A `session_request` **is**
+the session — there is no separate `sessions` table and no sequential S-1001 string
+IDs. This prompt **supersedes** earlier `cursorrules` guidance that treated
+`CounsellingSession` / `sessions` as finalized do-not-touch scaffolding.
+
+Status machine: `pending` → `accepted` | `rejected`; then `accepted` → `completed`
+(counsellor-only, manual). All reads/writes go through `session_requests.id` (integer).
+
+### Architecture correction
+
+- **Dropped** the unused `CounsellingSession` SQLAlchemy model and `sessions` table
+  (migration `004_drop_sessions`; table was never populated).
+- **Session IDs** are integer `session_requests.id` everywhere — no accept-side row
+  creation, no string `S-1001` pattern.
+- **`cursorrules`** §3 and §5 updated so future agents see `session_requests` as the
+  canonical session entity.
+
+### Endpoint-by-endpoint: what it does and why
+
+**`POST /session-requests`** + **`GET /session-requests/mine`**
+(`app/routers/session_requests.py`, `require_student`)
+- Create validates booking rules server-side (audit §5.3, §6.4): active counsellor,
+  topic/`Other`+`other_topic`, `preferred_date >= today`, not in `unavailable_dates`,
+  weekday has enabled slots, `preferred_time` in slot list (shared helper with
+  `GET /counsellors/{id}/slots`), `format ∈ SessionFormat`, notes ≤500, no
+  self-booking. Invalid → **422** with per-field errors. Returns `{ id, status:
+  "pending" }`.
+- Mine lists all caller-owned requests with computed `overdue` (`pending` and
+  `requested_at` older than 24h).
+
+**`GET /students/me/sessions`** + **`GET /students/me/sessions/{session_id}`**
+(`app/routers/student_sessions.py`, `require_student`)
+- Reads accepted/completed `session_requests` for the caller (not a separate table).
+- `session_id` is integer `session_requests.id`. `scheduled_at` is derived from
+  `preferred_date` + `preferred_time`; `duration_minutes` defaults to 45 (UI range
+  45–60; no DB column yet).
+
+**Counsellor session-request routes** (`app/routers/counsellor_sessions.py`,
+`require_active_counsellor`)
+- **`GET /counsellor/session-requests`** — caller-owned list; optional `?status=`.
+- **`GET /counsellor/session-requests/{request_id}`** — detail incl. notes,
+  `duration_minutes`, and post-acceptance `student_email`.
+- **`POST .../accept`** — `pending` → `accepted`; reveals student identity (accept =
+  consent to share, regardless of `anonymous_until_accepted`).
+- **`POST .../reject`** — `pending` → `rejected`; optional `reason` →
+  `rejection_reason`.
+- **`POST .../complete`** — **NEW** — `accepted` → `completed`; counsellor-only.
+- **`GET /counsellor/me/sessions/upcoming`** — accepted requests with
+  `preferred_date >= today`, ordered by computed `scheduled_at`.
+- **`PATCH /counsellor/me/availability-status`** — unchanged from Prompt 1.
+
+### Anonymity
+
+Pre-acceptance when `anonymous_until_accepted == True` and `status == pending`:
+`student_display_name = "Anonymous {LastInitial}."` (e.g. `"Anonymous M."`).
+Otherwise pending shows real `full_name`. Post-acceptance (`accepted` / `completed`):
+always real name; `student_email` included in detail response only.
+
+### Product decisions applied (not re-litigated)
+
+| Decision | Implementation |
+|----------|----------------|
+| Format | Stored as `in-person` \| `video` \| `phone` — no enum mapping; counsellor UI may collapse video+phone to "Online session" at display layer only |
+| Platform | Share contact on accept; no meeting links / calendar / video integration |
+| `sessions_count` | **Not implemented** — deferred; later prompt should use `COUNT(*) WHERE status = 'completed'` |
+| `BookingSessionStatus` / `SessionOutcome` | Left on admin stub schemas only; not used in session-request flows |
+| Wrong owner / bad transition | **404** (not 403) to avoid ID leakage |
+
+### Files touched (one line each)
+
+- `cursorrules` — replaced outdated `Session`/`sessions` do-not-touch guidance with
+  `session_requests`-as-canonical-session guidance.
+- `app/models.py` — removed `CounsellingSession`, `User.bookings_*`, `SessionRequest.booking`.
+- `app/schemas/session.py` — integer session IDs, `SessionRequestStatus` on student/upcoming
+  items, `student_email` on detail, admin enums kept for later admin prompt.
+- `app/services/availability.py` — extracted `get_bookable_slots_for_date` (shared with
+  slots GET and booking validation).
+- `app/services/session_requests.py` — **NEW:** validation, anonymity, overdue, lifecycle,
+  response mappers.
+- `app/routers/session_requests.py` — implemented create + mine.
+- `app/routers/student_sessions.py` — implemented list + detail from `session_requests`.
+- `app/routers/counsellor_sessions.py` — implemented list/detail/accept/reject/complete/upcoming;
+  left availability-status PATCH untouched.
+- `app/routers/counsellors.py` — slots handler refactored to shared availability helper.
+- `alembic/versions/004_drop_sessions_table.py` — **NEW:** drops `sessions` table.
+
+### Verification
+
+- `alembic upgrade head` applied `004_drop_sessions` cleanly (local PostgreSQL).
+- App imports without `CounsellingSession` references (`from app.main import app` OK).
+
+### Pre-existing bugs noted (NOT fixed)
+
+- `app/routers/users.py` `list_counsellors` missing `UserRoleAssignment` import
+  (same as Prompt 1).
+
+### Deferred / out of scope
+
+- Admin session log, `sessions_count` on counsellor profile, resource CMS, landing carousel full wire.
+
+---
+
+## Prompt 3 — Frontend session-request lifecycle + auth
+
+### What this prompt was
+
+Wire the React frontend to the live FastAPI backend for authentication and the full
+session-request lifecycle (book → accept/reject → student view → counsellor complete).
+Mock auth and local-only session state were replaced on the wired pages; other areas
+(admin sessions, resource CMS, landing carousel) remain on mocks.
+
+### Frontend modules added
+
+- `frontend/.env.development` — `VITE_API_URL`
+- `frontend/src/api/client.js` — `apiFetch`, bearer token, 422 field errors, 401 handler
+- `frontend/src/api/auth.js` — login (form-encoded), register + auto-login, `/auth/me`
+- `frontend/src/api/counsellors.js` — directory list + profile + availability mappers
+- `frontend/src/api/sessions.js` — all session-request/session endpoints + display helpers
+- `frontend/INTEGRATION.md` — handoff summary
+
+### Booking path
+
+`CounsellorDirectory` now calls `GET /counsellors` so booking links use backend
+`users.id` (integer). `SessionBookingPage` loads counsellor, availability, and slots
+from the API. Profile page (`CounsellorProfile.jsx`) is still mock for non-booking fields.
+
+### Auth notes
+
+- Login uses OAuth2 form body (`username` = email), not JSON.
+- Primary `role` for UI: student > counsellor > admin; `ProtectedRoute` checks
+  `user.roles` so dual-role accounts can reach both student and counsellor routes.
+- Backend `redirect_to` on login is used for post-login navigation.
+
+### Backend change
+
+- `app/main.py` — CORS for `http://localhost:5173` and `http://127.0.0.1:5173`.
+
+---
+
+## Prompt 4 — Promotion auto-verifies + counsellor profile & availability integration
+
+### What this prompt was
+
+Close the promotion → login gap: admin promotion now sets `users.is_verified = true` in
+the same transaction as the counsellor role grant and default profile creation, so
+newly promoted counsellors land on `/counsellor` instead of `/pending-approval`. Wire
+the student counsellor profile page and counsellor availability editor to the live
+API (Prompt 1 endpoints).
+
+### Product decisions applied
+
+| Decision | Implementation |
+|----------|----------------|
+| Promotion = verification | `grant_counsellor_role` sets `user.is_verified = True` on every successful promotion, including idempotent re-promote (stays `True` if already set) |
+| `/pending-approval` | Retained for edge cases only (e.g. legacy rows promoted before this fix with `is_verified = false`) — not the normal post-promotion path |
+| No separate admin verify endpoint | Out of scope; promotion is the approval step |
+| Shared resources on profile | Placeholder/mock until resource CMS exists |
+| Time slot palette | Frontend `src/constants/timeSlots.js` mirrors backend `TIME_SLOT_OPTIONS` (8:00 AM … 6:00 PM) |
+
+### Backend change
+
+- `app/services/user_roles.py` — `grant_counsellor_role` sets `user.is_verified = True`
+  after `ensure_counsellor_profile`, same transaction as role grant.
+
+**Existing DB rows:** Users promoted before this fix may still have `is_verified = false`.
+Re-run `POST /admin/counsellors/promote/{user_id}` (idempotent) or
+`UPDATE users SET is_verified = true WHERE id = …`. No migration required.
+
+### Frontend modules added / wired
+
+- `frontend/src/constants/timeSlots.js` — canonical slot palette (must match backend)
+- `frontend/src/api/counsellorAvailability.js` — `GET/PUT /counsellor/me/availability`
+- `frontend/src/api/counsellors.js` — profile page mappers (`mapCounsellorProfileForPage`, etc.)
+- `CounsellorProfile.jsx` — `GET /counsellors/{id}` (+ mappers); book link uses numeric `users.id`
+- `CounsellorAvailability.jsx` — load/save weekly schedule via counsellor availability API
+- `frontend/INTEGRATION.md`, `frontend/.cursorrules` — updated wired-pages table and promotion note
+
+### Verification
+
+- Promote student via Swagger → login → `/counsellor` (not `/pending-approval`)
+- Student: directory → profile → book with numeric IDs
+- Counsellor: `/counsellor/availability` load/save persists; slots appear on student booking
+
+---
+
+## Swagger Authorize — flat token endpoint (OpenAPI-only fix)
+
+### Problem
+
+Swagger UI's OAuth2 password Authorize dialog POSTs to the OpenAPI `tokenUrl` and
+reads **top-level** `access_token` from the JSON body. `POST /auth/login` returns
+`{ user, token: { access_token, ... }, redirect_to }`, so Swagger stored
+`undefined` and sent `Authorization: Bearer undefined` on Try-it-out requests.
+
+### Approach considered
+
+1. **Configure nested token path in the OAuth2 scheme** — **Not supported.** Swagger UI
+   only allows selecting a different *top-level* field name via `x-tokenName` (e.g.
+   `id_token`), not a nested path like `token.access_token`. FastAPI's
+   `OAuth2PasswordBearer` has no nested-path option either.
+
+2. **Separate Swagger-only token route** — **Used.** Added `POST /auth/swagger-token`
+   returning flat `schemas.Token` (`{ access_token, token_type }`). Changed
+   `OAuth2PasswordBearer(tokenUrl="auth/swagger-token")` in `app/oauth2.py` so the
+   OpenAPI security scheme (and Authorize dialog) hit this route instead of
+   `/auth/login`. Runtime bearer validation is unchanged — it still reads the
+   `Authorization` header only.
+
+### Contract preserved
+
+`POST /auth/login` response shape is **unchanged** — `token.access_token` remains
+nested. Real clients and frontend work must keep using `/auth/login`.
+
+### Files touched
+
+- `app/oauth2.py` — `tokenUrl` → `auth/swagger-token` (+ comment).
+- `app/routers/auth.py` — `_authenticate_user` helper; new `POST /auth/swagger-token`;
+  login refactored to share auth logic.
+- `cursorrules` §2 — documents the swagger-token vs login split.

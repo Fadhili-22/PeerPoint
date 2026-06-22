@@ -10,6 +10,8 @@ from app.schemas.enums import (
     SessionTopic,
 )
 
+# BookingSessionStatus / SessionOutcome remain for admin session-log stubs (later prompt).
+
 
 class SessionRequestCreate(BaseModel):
     counsellor_id: int
@@ -38,6 +40,7 @@ class SessionRequestStudentView(BaseModel):
     status: SessionRequestStatus
     requested_at: datetime
     overdue: bool
+    rejection_reason: str | None = None
 
 
 class SessionRequestListResponse(BaseModel):
@@ -65,6 +68,7 @@ class SessionRequestCounsellorListResponse(BaseModel):
 
 class SessionRequestDetail(SessionRequestCounsellorView):
     duration_minutes: int | None = None
+    student_email: str | None = None
 
 
 class SessionRequestReject(BaseModel):
@@ -78,14 +82,14 @@ class SessionRequestActionResponse(BaseModel):
 
 
 class StudentSessionItem(BaseModel):
-    id: str
+    id: int
     counsellor_id: int
     counsellor_name: str
     scheduled_at: datetime
     topic: str
     format: str
     duration_minutes: int
-    status: BookingSessionStatus
+    status: SessionRequestStatus
 
 
 class StudentSessionListResponse(BaseModel):
@@ -97,13 +101,13 @@ class StudentSessionDetail(StudentSessionItem):
 
 
 class CounsellorUpcomingSession(BaseModel):
-    id: str
+    id: int
     student_display_id: str
     scheduled_at: datetime
     topic: str
     format: str
     duration_minutes: int
-    status: BookingSessionStatus
+    status: SessionRequestStatus
 
 
 class CounsellorUpcomingSessionsResponse(BaseModel):

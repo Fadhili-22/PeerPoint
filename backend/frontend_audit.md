@@ -69,7 +69,7 @@ Password is **never** exposed to the client after signup (stored in mock/localSt
 | Student ID (signup UI) | Collected but **not saved** anywhere | Decide: persist as `studentId` or drop field |
 | Counsellor creation | Admin promotes student (`AdminCounsellors`) | `PATCH /users/:id/role` or promotion endpoint |
 | Admin accounts | Predefined (`admin@strathmore.edu`) | Seed/system accounts only |
-| Counsellor verification | `isVerified: false` → `/pending-approval` | Admin approval sets `isVerified: true` |
+| Counsellor verification | Admin promotion sets `isVerified: true` (same transaction as role grant). `/pending-approval` is legacy/edge-case only for rows promoted before auto-verify. | `POST /admin/counsellors/promote/:userId` sets verified |
 | Test accounts | student/counsellor/admin @strathmore.edu, password `123456` | Seed data for demo |
 
 ### 3.3 Route protection (`ProtectedRoute.jsx`)

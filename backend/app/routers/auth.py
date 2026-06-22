@@ -13,6 +13,18 @@ from fastapi.security import OAuth2PasswordRequestForm
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
+def _authenticate_user(
+    db: Session, email: str, password: str
+) -> models.User:
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user or not utils.verify_password(password, user.password):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid credentials",
+        )
+    return user
+
+
 def _build_auth_user_response(user: models.User, db: Session) -> schemas.AuthUserResponse:
     active_roles = get_active_role_values(db, user.id)
     return schemas.AuthUserResponse(
@@ -65,21 +77,36 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 
+@router.post(
+    "/swagger-token",
+    response_model=schemas.Token,
+    summary="Swagger Authorize only (flat OAuth2 token)",
+    description=(
+        "OpenAPI/Swagger UI only. Returns `{access_token, token_type}` at the top "
+        "level so the /docs Authorize dialog can store the bearer token. Real "
+        "clients must use POST /auth/login, which keeps the nested "
+        "`token.access_token` contract."
+    ),
+)
+def swagger_token(
+    user_credentials: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):
+    user = _authenticate_user(
+        db, user_credentials.username, user_credentials.password
+    )
+    active_roles = get_active_role_values(db, user.id)
+    access_token = oauth2.create_access_token(
+        data={"user_id": user.id, "roles": active_roles}
+    )
+    return schemas.Token(access_token=access_token, token_type="bearer")
+
+
 @router.post("/login", response_model=schemas.LoginResponse)
 def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.email == user_credentials.username).first()
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid credentials"
-        )
-
-    if not utils.verify_password(user_credentials.password, user.password):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid credentials"
-        )
+    user = _authenticate_user(
+        db, user_credentials.username, user_credentials.password
+    )
 
     active_roles = get_active_role_values(db, user.id)
     access_token = oauth2.create_access_token(

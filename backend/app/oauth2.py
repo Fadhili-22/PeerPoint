@@ -7,7 +7,9 @@ from . import models, schemas
 from .database import get_db
 from .config import settings
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+# Swagger UI's Authorize dialog POSTs here — it requires a flat OAuth2 body
+# ({access_token, token_type}). Real clients use POST /auth/login (nested token).
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/swagger-token")
 
 def create_access_token(data: dict):
     to_encode = data.copy()

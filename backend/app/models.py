@@ -19,6 +19,11 @@ from app.database import Base
 import enum
 
 
+def _enum_values(enum_class: type[enum.Enum]) -> list[str]:
+    """Persist Python enum member values (not names) to Postgres native enums."""
+    return [member.value for member in enum_class]
+
+
 class UserRole(enum.Enum):
     student = "student"
     counsellor = "counsellor"
@@ -162,16 +167,6 @@ class User(Base):
         back_populates="counsellor",
         foreign_keys="SessionRequest.counsellor_id",
     )
-    bookings_as_student = relationship(
-        "CounsellingSession",
-        back_populates="student",
-        foreign_keys="CounsellingSession.student_id",
-    )
-    bookings_as_counsellor = relationship(
-        "CounsellingSession",
-        back_populates="counsellor",
-        foreign_keys="CounsellingSession.counsellor_id",
-    )
     resource_saves = relationship("ResourceSave", back_populates="user")
     role_assignments = relationship(
         "UserRoleAssignment",
@@ -310,15 +305,15 @@ class SessionRequest(Base):
     counsellor_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    topic = Column(Enum(SessionTopic), nullable=False)
+    topic = Column(Enum(SessionTopic, values_callable=_enum_values), nullable=False)
     other_topic = Column(String, nullable=True)
     preferred_date = Column(Date, nullable=False)
     preferred_time = Column(String, nullable=False)
-    format = Column(Enum(SessionFormat), nullable=False)
+    format = Column(Enum(SessionFormat, values_callable=_enum_values), nullable=False)
     notes = Column(String(500), nullable=True)
     anonymous_until_accepted = Column(Boolean, nullable=False, server_default="FALSE")
     status = Column(
-        Enum(SessionRequestStatus),
+        Enum(SessionRequestStatus, values_callable=_enum_values),
         nullable=False,
         server_default=SessionRequestStatus.pending.value,
     )
@@ -335,60 +330,6 @@ class SessionRequest(Base):
     counsellor = relationship(
         "User",
         back_populates="session_requests_as_counsellor",
-        foreign_keys=[counsellor_id],
-    )
-    booking = relationship(
-        "CounsellingSession", back_populates="request", uselist=False
-    )
-
-
-class CounsellingSession(Base):
-    """Confirmed booking — design docs refer to this entity as Session."""
-
-    __tablename__ = "sessions"
-
-    id = Column(String, primary_key=True, nullable=False)
-    request_id = Column(
-        Integer,
-        ForeignKey("session_requests.id", ondelete="SET NULL"),
-        nullable=True,
-        unique=True,
-    )
-    student_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
-    counsellor_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
-    scheduled_at = Column(TIMESTAMP(timezone=True), nullable=False)
-    topic = Column(String, nullable=False)
-    format = Column(String, nullable=False)
-    duration_minutes = Column(Integer, nullable=False, server_default="45")
-    status = Column(
-        Enum(BookingSessionStatus),
-        nullable=False,
-        server_default=BookingSessionStatus.upcoming.value,
-    )
-    outcome = Column(
-        Enum(SessionOutcome),
-        nullable=False,
-        server_default=SessionOutcome.pending.value,
-    )
-    notes = Column(Text, nullable=True)
-    student_display_id = Column(String, nullable=False)
-    created_at = Column(
-        TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")
-    )
-
-    request = relationship("SessionRequest", back_populates="booking")
-    student = relationship(
-        "User",
-        back_populates="bookings_as_student",
-        foreign_keys=[student_id],
-    )
-    counsellor = relationship(
-        "User",
-        back_populates="bookings_as_counsellor",
         foreign_keys=[counsellor_id],
     )
 

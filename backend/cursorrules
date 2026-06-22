@@ -45,12 +45,14 @@ than silently picking one.**
   some flows and mysteriously fails in others). **Never "fix" this pin without
   understanding why it's there** — if you think it needs to change, flag it,
   don't just bump it.
-- **Swagger / OAuth2 setup:** `tokenUrl` in the OAuth2 scheme must match the
-  actual *mounted* route path (e.g. `"auth/login"`, not `"login"`) or Swagger's
-  "Authorize" flow will silently fail. Login endpoints must accept
-  `OAuth2PasswordRequestForm` and read credentials via `.username` (even though
-  the field is conceptually an email) — using a custom Pydantic body here causes
-  422 errors against Swagger's form-encoded submission.
+- **Swagger / OAuth2 setup:** `OAuth2PasswordBearer(tokenUrl=...)` points at
+  `auth/swagger-token`, **not** `auth/login`. Swagger UI's password flow reads
+  top-level `access_token` from the token response; `/auth/login` nests the token
+  at `token.access_token` (stable client contract — do not flatten it). The
+  swagger-token route returns flat `{access_token, token_type}` for /docs only.
+  Both token routes must accept `OAuth2PasswordRequestForm` and read credentials
+  via `.username` (even though the field is conceptually an email) — using a
+  custom Pydantic body causes 422 against Swagger's form-encoded submission.
 - **Design layer vs. code layer:** `PeerCounsellor extends Student` is a
   confirmed decision **at the OO design/class-diagram layer only** (already
   reflected in submitted diagrams). At the code layer, this is implemented via
@@ -70,8 +72,10 @@ just because it isn't there yet.
 **Already built and verified (do not casually rewrite):**
 - Authentication and role-based access control — complete, verified end-to-end in
   Swagger UI. This includes registration, login, and JWT issuance.
-- The `Session` SQLAlchemy model — finalized, with dual foreign keys into the
-  `users` table (one for the student, one for the counsellor).
+- **`session_requests` is the canonical session entity.** All session reads and
+  writes go through the `session_requests` table (integer `id`). The legacy
+  `CounsellingSession` / `sessions` table and string S-1001-style IDs were
+  dropped in migration `004_drop_sessions` — do not reintroduce them.
 - A `require_active_counsellor` dependency that checks both role and
   verification status before allowing counsellor-only actions.
 
@@ -211,7 +215,6 @@ revisit them.
   single `role` column, once that migration lands) but its underlying safety
   check (a counsellor must be properly verified to act as one) must not be
   removed or weakened.
-- The `Session` model's dual-FK structure into `users`.
 - The `bcrypt==4.0.1` pin (see Section 2).
 
 ---

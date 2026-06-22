@@ -46,3 +46,37 @@ def js_day_of_week(value: date) -> int:
 def invalid_slots(slots: list[str]) -> list[str]:
     """Return any submitted slot strings that are not in the canonical palette."""
     return [slot for slot in slots if slot not in TIME_SLOT_OPTIONS_SET]
+
+
+def get_bookable_slots_for_date(
+    profile,
+    target_date: date,
+    *,
+    today: date | None = None,
+) -> list[str]:
+    """Return bookable slot strings for a date (audit §6.4).
+
+    Past dates, dates in ``unavailable_dates``, and weekdays with no enabled
+    schedule row all yield an empty list — the same rules as
+    ``GET /counsellors/{id}/slots``.
+    """
+    today = today if today is not None else date.today()
+    if target_date < today:
+        return []
+
+    if target_date.isoformat() in profile.unavailable_dates:
+        return []
+
+    weekday = js_day_of_week(target_date)
+    row = next(
+        (
+            r
+            for r in profile.availability_schedule
+            if r.day_of_week == weekday and r.enabled
+        ),
+        None,
+    )
+    if row is None or not row.slots:
+        return []
+
+    return list(row.slots)

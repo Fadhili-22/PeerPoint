@@ -189,6 +189,10 @@ def grant_counsellor_role(
     # counsellor must have a profile to be visible in the directory / act as one.
     ensure_counsellor_profile(db, user)
 
+    # Admin promotion is approval: verified counsellors skip /pending-approval.
+    # Idempotent on re-promote — leaves is_verified True if already set.
+    user.is_verified = True
+
     # Update non-authoritative primary context hint for UI defaults.
     user.role = UserRole.counsellor
     return assignment
