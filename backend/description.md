@@ -295,7 +295,7 @@ always real name; `student_email` included in detail response only.
 |----------|----------------|
 | Format | Stored as `in-person` \| `video` \| `phone` — no enum mapping; counsellor UI may collapse video+phone to "Online session" at display layer only |
 | Platform | Share contact on accept; no meeting links / calendar / video integration |
-| `sessions_count` | **Not implemented** — deferred; later prompt should use `COUNT(*) WHERE status = 'completed'` |
+| `sessions_count` | **Computed at read time** (Prompt 9): `COUNT(*) WHERE counsellor_id = ? AND status = 'completed'` — DB column left in place but not read |
 | `BookingSessionStatus` / `SessionOutcome` | Left on admin stub schemas only; not used in session-request flows |
 | Wrong owner / bad transition | **404** (not 403) to avoid ID leakage |
 
@@ -450,3 +450,443 @@ nested. Real clients and frontend work must keep using `/auth/login`.
 - `app/routers/auth.py` — `_authenticate_user` helper; new `POST /auth/swagger-token`;
   login refactored to share auth logic.
 - `cursorrules` §2 — documents the swagger-token vs login split.
+
+---
+
+## Prompt 5 — Multi-role portal picker (frontend-only)
+
+### Summary
+
+Dual/triple-role users now **choose which portal shell** (student / peer counsellor /
+admin) they see and can **switch anytime**. This is entirely a **frontend, client-side**
+concern. **No new API, no schema change, no "active role" column or endpoint.**
+
+### Backend stance (unchanged)
+
+- Authorization remains on the `user_roles` table via the `require_*` dependencies —
+  **never** the singular `users.role` column.
+- `/auth/login` and `/auth/me` keep returning the full active `roles[]` array. The
+  frontend derives its `availablePortals` from that array (plus `is_verified` for the
+  counsellor portal).
+- The selected portal is **client-only** (`localStorage: peerpoint_active_portal`); it is
+  never sent to the backend and does not affect JWT claims.
+
+### Doc-only touches this prompt
+
+- `compute_login_redirect` — comment clarifying it is a single-role best guess that the
+  frontend may override for multi-role users. Behaviour unchanged (still prioritises
+  admin → counsellor → student for the single returned path).
+- `grant_counsellor_role` — the `user.role = UserRole.counsellor` write is now explicitly
+  documented as cosmetic/legacy (not used by auth or the picker). Left in place; removal
+  deferred (out of scope: `users.role` column drop/migration).
+
+---
+
+## Prompt 6 — Admin counsellor management (promote flow end-to-end)
+
+### What this prompt was
+
+Make the admin promote flow fully usable inside the app (no Swagger). The two admin
+list endpoints (`GET /admin/counsellors`, `GET /admin/counsellors/promotion-candidates`)
+were typed stubs; `POST /admin/counsellors/promote/{user_id}` worked but had no
+training gate. This fills in both lists, adds server-side promotion validation, and
+ships a seed script so a demo always has a promotable candidate.
+
+### Endpoint-by-endpoint
+
+**`GET /admin/counsellors`** (`require_admin`, `app/services/admin_counsellors.py`)
+- Returns users that have **both** an active `counsellor` role in `user_roles` **and** a
+  `counsellor_profiles` row (inner join across `CounsellorProfile → User → UserRoleAssignment`,
+  filtered to active counsellor assignments). A user with a profile but no active role —
+  or vice versa — is correctly excluded.
+- Optional `?status=active|inactive` filters on `CounsellorProfile.status`.
+- **Order: `full_name` ASC** (stable, scannable directory).
+- Maps to `AdminCounsellorItem`: `id` = `counsellor_profiles.id` (profile PK), `user_id`
+  = `users.id` (the promote target), `full_name`/`email` from `User`, and
+  `year`/`program`/`specialties`/`sessions_count`/`rating`/`status`/`availability_status`/
+  `last_active_at` from the profile.
+- **`sessions_count`** is read straight from the stub `counsellor_profiles.sessions_count`
+  column (still 0). Computing real `COUNT(completed)` is explicitly out of scope (carried
+  over from Prompt 2's deferral).
+
+**`GET /admin/counsellors/promotion-candidates`** (`require_admin`)
+- Returns `promotion_candidates` joined to `users`, **excluding** any user who already
+  holds an active counsellor role (`user_id NOT IN (active counsellor user_ids)`). So a
+  candidate **disappears from this list the moment they are promoted** — which is what
+  makes the demo's "promote → leaves candidates → appears in counsellors" story work.
+- **Order: `applied_on` DESC** (newest application first).
+- Maps to `PromotionCandidateItem`: `id` = `promotion_candidates.id`, `user_id` =
+  `users.id`, `name` = `users.full_name`, plus `email`/`course`/`year`/`training_status`/
+  `sessions_attended`/`applied_on`.
+
+**`POST /admin/counsellors/promote/{user_id}`** (`require_admin`) — extended, not rewritten
+- **Idempotent re-promote first:** if the user already has an active counsellor role,
+  return **200** with the current roles and an "already a counsellor" message. Chose
+  idempotent 200 over 409 per the task's admin-UX preference — re-clicking promote (or
+  promoting a dual-role user) is never an error.
+- **Training gate (audit §6.6), server-side:** `validate_promotion_candidate` loads the
+  `PromotionCandidate` for `user_id`:
+  - no row → **422** `"User is not a promotion candidate"`
+  - `training_status != "Training Complete"` → **422** `"Training must be complete before promotion"`
+  This blocks the Swagger-only path of promoting an arbitrary `user_id` with no candidate
+  row, and the "In Review" candidate, even though the UI also disables the button.
+- Only after the gate passes does it call the existing `grant_counsellor_role`, which
+  (Prompt 4) grants the role, creates the default profile idempotently, **and sets
+  `is_verified = true`** in the same transaction. **Promotion = verification** — there is
+  no separate verify step.
+
+### Why the gate lives server-side AND in the UI
+
+The disabled button is UX; the 422 is the actual enforcement. An admin hitting the API
+directly (Swagger, curl) cannot bypass the training requirement. The two are independent
+layers guarding the same product rule.
+
+### Seed script (`scripts/seed_promotion_candidate.py`)
+
+NEW. Creates/updates a student user (active student role + `StudentProfile`) and a
+`promotion_candidates` row. Defaults to `training_status = "Training Complete"` so the
+candidate is immediately promotable; `--in-review` seeds the negative-path candidate
+whose Promote button stays disabled and whose API promote returns 422. Idempotent on
+re-run (matches by email). Mirrors the structure of `seed_student.py` / `seed_counsellor.py`.
+
+```
+python -m scripts.seed_promotion_candidate \
+  --email trainee@strathmore.edu --password 123456 \
+  --full-name "Trainee Student" --course "BSc Computer Science" --year "Year 3"
+```
+
+### Files touched
+
+- `app/services/admin_counsellors.py` — NEW: list queries + mappers + `validate_promotion_candidate`.
+- `app/routers/admin.py` — implemented the two GET handlers; added idempotent-re-promote
+  short-circuit + training-gate call to `promote_counsellor`.
+- `scripts/seed_promotion_candidate.py` — NEW seed script.
+
+### Out of scope (unchanged)
+
+Admin dashboard KPIs, students/sessions/account-requests endpoints, revoke/deactivate
+counsellor, creating candidates from the admin UI, and real `sessions_count` from
+completed `session_requests`.
+
+---
+
+## Prompt 7 — Student Resource Hub (Read API + Frontend Integration)
+
+### What this prompt was
+
+Student resource pages (`/student/resources`, detail, dashboard recommended strip)
+previously read from in-memory `ResourcesContext` + `mockResources.js` — lost on
+refresh and disconnected from the backend `resources` table. This prompt implements
+the six **student read** route stubs in `app/routers/resources.py`, adds query/mapper
+logic in `app/services/resources.py`, seeds published demo articles, and wires the
+three student-facing pages to the API. Admin/counsellor resource CMS stays on local
+mock until Prompt 8.
+
+### Published-only rule (student reads)
+
+Every student read endpoint filters to `status == published`. Draft, pending_review,
+rejected, and archived rows are **excluded from lists** and return **404** on detail,
+related, and view routes. This matches audit §5.5 and prevents leaking unpublished
+counsellor submissions to students.
+
+### Endpoint-by-endpoint
+
+**`GET /resources`** (`require_student`)
+- Query: optional `?category=` (`ResourceCategory` enum), optional `?search=` (case-insensitive ILIKE on title, description, and category string).
+- Order: `published_at DESC`.
+
+**`GET /resources/featured`** (`require_student`)
+- Query: `?limit=` default 2, max 10.
+- Published + `featured == true`.
+- Sort: `featured_order ASC NULLS LAST`, then `published_at DESC` (audit §6.3).
+
+**`GET /resources/recommended`** (`require_student`) — NEW route fixing audit risk #5
+- Up to **2** published resources for the student dashboard carousel.
+- Prefer featured (same sort as featured endpoint).
+- If fewer than 2 featured, backfill from non-featured published by `published_at DESC` without duplicating IDs.
+
+**`GET /resources/{resource_id}`** (`require_student`)
+- Lookup by string PK `resources.id` (slug, e.g. `featured-exam-stress`).
+- 404 if missing or not published. Returns full `ResourceResponse` including `body[]`.
+
+**`GET /resources/{resource_id}/related`** (`require_student`)
+- Base resource must exist and be published; else 404.
+- Up to 3 other published resources: same category first, then other categories; exclude self; order within tier by `published_at DESC`.
+
+**`POST /resources/{resource_id}/view`** (`require_student`)
+- Published only; else 404.
+- Atomically increments `views` (`SELECT … FOR UPDATE` + increment in same transaction).
+- Returns `{ id, views }`. Frontend calls once on detail page load (Strict Mode guarded).
+
+### Mapper notes (`to_resource_response`)
+
+- `last_edited_by` / `reviewed_by` → `User.full_name` or null.
+- `submitted_by` → `ResourceSubmittedBy` when `submitted_by_id` is set.
+- Enum fields serialize as string values via Pydantic `ResourceResponse`.
+
+### Student pages bypass ResourcesContext
+
+`ResourceHub.jsx`, `ResourceDetails.jsx`, and the dashboard recommended strip in
+`StudentDashboard.jsx` call `frontend/src/api/resources.js` directly. **Do not**
+refactor `ResourcesProvider` for CMS — `/admin/resources/*` and
+`/counsellor/resources/*` continue using local mock state until Prompt 8.
+
+### Seed script (`scripts/seed_resources.py`)
+
+NEW. Idempotent upsert by `resources.id`. Seeds **7 published** articles translated
+from `mockResources.js` `createInitialResources()` (including 2 featured with
+`featured_order` for the hub hero), plus **1 draft** and **1 pending_review** row
+to verify they stay hidden from student routes. Uses real external image URLs from
+the mock file.
+
+```
+python -m scripts.seed_resources
+```
+
+### Files touched
+
+- `app/services/resources.py` — NEW: queries, mappers, featured/recommended/related helpers.
+- `app/routers/resources.py` — implemented all six student read handlers.
+- `scripts/seed_resources.py` — NEW seed script.
+- `frontend/src/api/resources.js` — NEW API module + camelCase mapper.
+- `frontend/src/pages/ResourceHub.jsx`, `ResourceDetails.jsx`, `StudentDashboard.jsx` — API-driven.
+
+### Out of scope (unchanged)
+
+Admin resource CMS (`admin_resources.py` stubs), counsellor submissions
+(`counsellor_resources.py` stubs), `POST /media/upload`, resource saves/bookmarks,
+refactoring `ResourcesContext` for admin/counsellor, landing page browse link fix,
+newsletter subscribe API.
+
+---
+
+## Prompt 8 — Resource CMS (Counsellor Submissions + Admin Review)
+
+### What this prompt was
+
+Completes the resource **write path**: counsellor draft → submit for review → admin
+approve/reject/publish → published article on student hub. Replaces in-memory
+`ResourcesContext` CMS mutators with real API calls. Student reads from Prompt 7 are
+unchanged.
+
+### Permission matrix
+
+| Action | Counsellor | Admin |
+|--------|------------|-------|
+| List own submissions | Yes (`submitted_by_id == self`) | — |
+| List all resources | — | Yes (all statuses) |
+| Create | Draft only; author locked server-side | Draft or publish immediately |
+| Edit | Own only; `draft` / `rejected` only | Any resource |
+| Submit for review | Own draft/rejected; completeness check | — |
+| Review queue | — | `pending_review` counsellor submissions |
+| Publish / unpublish / feature / archive / restore | — | Yes |
+| Set featured | No | Published only |
+| Edit published (counsellor) | Blocked (404 / read-only UI) | Yes |
+
+Wrong owner or invalid status transition → **404** (not 403).
+
+### Counsellor author fields (server-enforced)
+
+- `author` = counsellor `full_name`
+- `author_role` = `"Peer Counsellor, PeerPoint"`
+- Client overrides ignored on create/update.
+
+### Review decision mapping
+
+| `decision` | Result |
+|------------|--------|
+| `approve_publish` | `status = published`, set `published_at` if missing, clear `rejection_reason` |
+| `approve_draft` | `status = draft`, clear `published_at` and `rejection_reason` |
+| `reject` | `status = rejected`, optional `rejection_reason` |
+
+Sets `reviewed_by_id`, `reviewed_at` on all review paths.
+
+### CMS service (`app/services/resource_cms.py`)
+
+Shared helpers:
+
+- `generate_unique_resource_id(db, title)` — slugify title + numeric suffix on collision (mirrors frontend `slugifyTitle` / `ensureUniqueId`).
+- `validate_resource_payload(payload)` — title, description, image URL, image alt, ≥1 body paragraph.
+- `is_submittable(resource)` — mirrors frontend `isResourceSubmittable`.
+- `estimate_read_time(body)` — ~200 words/minute heuristic; empty body → `"5 min read"`.
+
+Reuses `to_resource_response()` from `app/services/resources.py`.
+
+### Counsellor endpoints (`require_active_counsellor`)
+
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/counsellor/resources` | Own submissions; optional `?status=` |
+| GET | `/counsellor/resources/{id}` | Own resource any status; else 404 |
+| POST | `/counsellor/resources` | Create draft; `publish: true` → 422 |
+| PUT | `/counsellor/resources/{id}` | Own; draft/rejected only |
+| POST | `/counsellor/resources/{id}/submit` | Completeness → `pending_review`, `submitted_at` |
+
+### Admin endpoints (`require_admin`)
+
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/admin/resources` | All; `?status=` + `?search=` |
+| GET | `/admin/resources/stats` | KPI counts |
+| GET | `/admin/resources/pending-review` | Counsellor queue |
+| GET | `/admin/resources/{id}` | Any resource (edit/preview load) |
+| POST | `/admin/resources` | Create; optional `publish: true` |
+| PUT | `/admin/resources/{id}` | Edit any |
+| POST | `/{id}/publish` | → published |
+| POST | `/{id}/unpublish` | → draft, clear `published_at` |
+| POST | `/{id}/feature` | Published only |
+| POST | `/{id}/archive` | → archived |
+| POST | `/{id}/restore` | → draft |
+| POST | `/{id}/review` | Counsellor `pending_review` only |
+
+Static routes (`/stats`, `/pending-review`) registered before `/{id}`.
+
+### Frontend integration
+
+- `frontend/src/api/resources.js` — CMS methods + `toApiPayload` / `mapResourceStats`.
+- Counsellor/admin CMS pages call API directly (same pattern as Prompt 7 student pages).
+- `ResourcesContext` gutted to **activity-feed stubs only** (`counsellorActivity`,
+  `adminResourceActivity`); mock resource array and CMS mutators removed.
+- Pure helpers remain in `mockResources.js` (`isResourceSubmittable`,
+  `formatResourceDisplayDate`, `COUNSELLOR_AUTHOR_ROLE`).
+
+Activity feeds (`counsellorActivity` / `adminResourceActivity`) stay client-side mock;
+backend persistence deferred.
+
+### Files touched
+
+- `app/services/resource_cms.py` — NEW CMS write/query layer.
+- `app/routers/counsellor_resources.py` — 5 handlers (+ GET detail).
+- `app/routers/admin_resources.py` — 12 handlers (+ GET detail).
+- `frontend/src/api/resources.js` — counsellor + admin CMS methods.
+- CMS pages under `frontend/src/pages/` (Counsellor/Admin resources, forms, previews, dashboard widgets).
+- `frontend/src/context/ResourcesContext.jsx` — activity feeds only.
+
+### Out of scope (unchanged)
+
+`POST /media/upload`, resource saves/bookmarks, admin dashboard non-resource KPIs,
+session log, students list, landing carousel, persisting activity feeds to backend.
+
+### Handoff
+
+Prompt 9: admin session log, dashboard KPIs, public stats, landing carousel — see § Prompt 9 below.
+
+---
+
+## Prompt 9 — Admin session log, dashboard KPIs, landing carousel (2026-06-24)
+
+### Scope delivered
+
+- **`sessions_count`** — computed at read time via
+  `count_completed_sessions_for_counsellor()` in `app/services/session_requests.py`;
+  used in counsellor directory, own profile GET, and admin counsellor list. The
+  `counsellor_profiles.sessions_count` column remains (no migration) but is not read.
+- **`GET /admin/sessions`** — accepted + completed + rejected (`rejected` → `cancelled`
+  for admin display); excludes pending. Optional `?status=` and `?search=`. Real student
+  and counsellor names (no anonymity). Outcome defaults to `Pending`; `null` on completed.
+- **`GET /admin/dashboard`** — headline KPI counts from DB (students, counsellors,
+  active sessions, pending/overdue requests, published/pending-review resources,
+  newsletter subscribers).
+- **`GET /public/stats`** — counsellor count, students supported, sessions completed,
+  resources published (no auth).
+- **`GET /public/counsellors/featured`** — already existed; frontend wired in Prompt 9.
+- **`scripts/seed_sessions.py`** — idempotent sample `session_requests` across statuses.
+
+### Admin session status mapping
+
+| DB status | Admin `BookingSessionStatus` |
+|-----------|------------------------------|
+| `accepted` | `upcoming` (always, until counsellor marks complete) |
+| `completed` | `completed` |
+| `rejected` | `cancelled` |
+
+### Frontend wiring
+
+- `frontend/src/api/admin.js` — `listAdminSessions`, `mapAdminSession`,
+  `getAdminDashboard`, `mapAdminDashboard`, `computeAdminSessionStats`.
+- `frontend/src/api/public.js` — **NEW** — `getFeaturedCounsellors`, `mapCounsellorCard`,
+  `getPublicStats`, `mapPublicStats`.
+- `AdminSessions.jsx`, `AdminDashboard.jsx` (headline KPIs + platform KPI cards only),
+  `LandingCounsellorCarousel.jsx`, `LandingStats.jsx`.
+
+Admin session header stats are **computed client-side from the API response list**
+(filtered when status/search query params are applied).
+
+### Still mock / stub (unchanged at Prompt 9 delivery)
+
+- Admin dashboard `platformHealth` / attention widgets (satisfaction, response SLA — no DB).
+
+---
+
+## Prompt 10 — Admin account requests, students directory, platform notifications (2026-06-25)
+
+### Scope delivered
+
+- **`account_approval_requests` queue** — `GET /admin/account-requests` lists open rows
+  (`status IN (pending_review, verifying_id)`); approve/reject **deletes** the row.
+  Signup approve sets `is_verified=true`, ensures student role + `StudentProfile`.
+  Signup reject revokes student role. Promotion approve reuses
+  `validate_promotion_candidate` + `grant_counsellor_role`; promotion reject deletes
+  request only (keeps `promotion_candidates` row).
+- **`POST /auth/register`** — after `grant_role(student)`, creates
+  `AccountApprovalRequest(type=signup, status=verifying_id)` when none open.
+- **`scripts/seed_promotion_candidate`** — also upserts open promotion account request.
+- **`scripts/seed_account_requests`** — idempotent sample rows for existing users.
+- **`GET /admin/students`** + **`GET /admin/students/{id}`** — active student role
+  directory; session counts via `count_completed_sessions_for_student()`; detail
+  includes synthesized `recent_activity` from `session_requests`.
+- **`GET /admin/notifications`** — reads `platform_activity` with server-computed
+  `relative_time`; `record_platform_activity()` called on signup/promotion approve.
+- **`app/services/admin_account_requests.py`**, **`admin_students.py`**,
+  **`platform_activity.py`** — new service modules.
+
+### Student stats choice
+
+Admin students page header KPIs (`total`, `activeThisWeek`, `newThisMonth`, `flagged`)
+are **computed client-side** from the loaded student list (`computeAdminStudentStats`).
+Server helper `get_admin_student_stats()` exists for future use but is not exposed as
+an endpoint.
+
+### Frontend wiring
+
+- `frontend/src/api/admin.js` — account requests, students, notifications helpers.
+- `AdminDashboard.jsx` — accounts tab + activity/notifications merge with
+  `adminResourceActivity`.
+- `AdminStudents.jsx`, `AdminPageHeader.jsx` — API-driven lists and notifications.
+
+### Still mock / stub (unchanged)
+
+- Auth password-reset stubs, admin edit student / book session actions.
+
+---
+
+## Prompt 11 — Admin analytics, reports, and `last_active_at` (2026-06-25)
+
+### Scope delivered
+
+- **`POST /auth/login`** (+ **`swagger-token`**) — sets `users.last_active_at` and
+  `counsellor_profiles.last_active_at` (when active counsellor) on successful auth.
+  Not updated on `GET /auth/me`.
+- **`GET /admin/analytics`** — single bundle for dashboard + reports:
+  - Session trend: last 8 weeks of **completed** sessions bucketed by **`requested_at`**
+    week (Monday-start); bar `height` computed server-side (max week = 100).
+  - Status distribution: completed / upcoming (accepted) / cancelled (rejected); pending
+    excluded.
+  - Counsellor performance: active counsellors with completed session counts, availability
+    from profile, proxy response rate per counsellor.
+  - Top 3 published resources by `views`; top 5 session categories from completed rows.
+  - Reports extras: monthly active users, sessions completed this month,
+    `avg_satisfaction` / `avg_response_hours` = `null` (UI shows `—`).
+  - Growth + usage breakdown as proxy metrics from existing tables.
+- **`GET /admin/reports/*`** — `/analytics` full bundle; `/trends`, `/sessions`,
+  `/resources` partial slices; `/exports` → **501**.
+- **`app/services/admin_analytics.py`** — shared query helpers.
+
+### Frontend wiring
+
+- `frontend/src/api/admin.js` — `getAdminAnalytics` + mappers.
+- `AdminDashboard.jsx` — session chart, status donut, counsellor table, top resources
+  from API; `platformHealth` + `attentionItems` remain mock.
+- `AdminReports.jsx` — API-driven KPIs, growth, usage, categories.
+- Filter enums moved to `frontend/src/constants/counsellorFilters.js`;
+  `mockCounsellorProfile.js` deleted.

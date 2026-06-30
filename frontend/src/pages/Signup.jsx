@@ -97,6 +97,7 @@ export default function Signup() {
   const [agreed, setAgreed] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [formError, setFormError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const validateEmail = (value) => {
     if (!value.toLowerCase().endsWith("@strathmore.edu")) {
@@ -114,7 +115,7 @@ export default function Signup() {
     }
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     setFormError("");
 
@@ -129,15 +130,17 @@ export default function Signup() {
       return;
     }
 
-    const result = signup({
+    setSubmitting(true);
+    const result = await signup({
       fullName: fullName.trim(),
       email: trimmedEmail,
       password,
-      role: "student",
+      admissionNumber: studentId.trim(),
     });
+    setSubmitting(false);
 
     if (result.success) {
-      navigate(result.redirectTo);
+      navigate("/verify-email-pending", { state: { email: result.email } });
       return;
     }
 
@@ -202,7 +205,7 @@ export default function Signup() {
                     htmlFor="signup-student-id"
                     className="ml-1 font-heading text-sm font-semibold text-on-surface-muted"
                   >
-                    Student ID
+                    Admission Number
                   </label>
                   <input
                     id="signup-student-id"
@@ -313,9 +316,10 @@ export default function Signup() {
 
               <button
                 type="submit"
-                className="w-full rounded-2xl bg-primary py-4 font-heading text-2xl font-semibold text-on-primary shadow-lg shadow-primary/20 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
+                disabled={submitting}
+                className="w-full rounded-2xl bg-primary py-4 font-heading text-2xl font-semibold text-on-primary shadow-lg shadow-primary/20 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Create Account
+                {submitting ? "Creating Account..." : "Create Account"}
               </button>
             </form>
 

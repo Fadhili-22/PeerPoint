@@ -1,12 +1,16 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, BookOpen, Calendar, ExternalLink, Info } from "lucide-react";
+import { ApiError } from "../api/client";
+import {
+  getCounsellor,
+  mapCounsellorProfileForPage,
+} from "../api/counsellors";
 import AvailabilityCard from "../components/AvailabilityCard";
 import ComingSoonText from "../components/ComingSoonText";
 import ProfileHeader from "../components/ProfileHeader";
 import SessionRequestCTA from "../components/SessionRequestCTA";
 import SpecialtyBadge from "../components/SpecialtyBadge";
-import { getCounsellorProfile } from "../data/mockCounsellorProfile";
 
 function CounsellorNotFound() {
   return (
@@ -64,8 +68,76 @@ function SharedResourcesCard({ resources }) {
 
 export default function CounsellorProfile() {
   const { counsellorId } = useParams();
-  const counsellor = useMemo(() => getCounsellorProfile(counsellorId), [counsellorId]);
+  const numericId = Number(counsellorId);
+
+  const [counsellor, setCounsellor] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [selectedDay, setSelectedDay] = useState("Tue");
+
+  useEffect(() => {
+    if (!Number.isInteger(numericId) || numericId <= 0) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadProfile() {
+      setLoading(true);
+      setLoadError("");
+      try {
+        const profile = await getCounsellor(numericId);
+        if (!cancelled) {
+          setCounsellor(mapCounsellorProfileForPage(profile));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          if (error instanceof ApiError && error.status === 404) {
+            setCounsellor(null);
+          } else {
+            setLoadError(
+              error.message || "Unable to load counsellor profile. Please try again.",
+            );
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, [numericId]);
+
+  if (loading) {
+    return (
+      <div className="mx-auto flex w-full max-w-2xl flex-col items-center py-16">
+        <p className="font-body text-sm text-on-surface-muted">
+          Loading counsellor profile...
+        </p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="mx-auto flex w-full max-w-2xl flex-col items-center rounded-3xl border border-outline-muted/20 bg-surface px-6 py-16 text-center shadow-sm">
+        <p className="mb-6 font-body text-sm text-danger">{loadError}</p>
+        <Link
+          to="/student/directory"
+          className="inline-flex items-center gap-2 font-heading text-sm font-semibold text-primary"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back to Directory
+        </Link>
+      </div>
+    );
+  }
 
   if (!counsellor) {
     return <CounsellorNotFound />;
@@ -92,15 +164,17 @@ export default function CounsellorProfile() {
             <p className="mt-3 font-body text-sm leading-relaxed text-on-surface-muted">
               {counsellor.bio}
             </p>
-            <blockquote className="relative mt-5 overflow-hidden rounded-2xl border border-primary/10 bg-gradient-to-r from-soft-teal/80 to-surface-muted/50 p-5 pl-6">
-              <span
-                className="absolute left-0 top-0 h-full w-1 bg-primary"
-                aria-hidden="true"
-              />
-              <p className="font-body text-sm italic leading-relaxed text-on-surface-muted">
-                &ldquo;{counsellor.quote}&rdquo;
-              </p>
-            </blockquote>
+            {counsellor.quote && (
+              <blockquote className="relative mt-5 overflow-hidden rounded-2xl border border-primary/10 bg-gradient-to-r from-soft-teal/80 to-surface-muted/50 p-5 pl-6">
+                <span
+                  className="absolute left-0 top-0 h-full w-1 bg-primary"
+                  aria-hidden="true"
+                />
+                <p className="font-body text-sm italic leading-relaxed text-on-surface-muted">
+                  &ldquo;{counsellor.quote}&rdquo;
+                </p>
+              </blockquote>
+            )}
           </section>
 
           <section className="rounded-3xl border border-outline-muted/20 bg-surface p-6 shadow-[0_8px_30px_rgba(17,29,39,0.05)]">

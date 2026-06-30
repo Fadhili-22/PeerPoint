@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
   Calendar,
@@ -12,13 +12,14 @@ import AdminPageHeader from "../components/AdminPageHeader";
 import AdminKpiCard from "../components/AdminKpiCard";
 import ComingSoonButton from "../components/ComingSoonButton";
 import {
-  exportOptions,
-  growthMetrics,
-  reportKpis,
-  sessionTrend,
-  topCategories,
-  usageBreakdown,
-} from "../data/mockAdminReports";
+  getAdminAnalytics,
+  mapGrowthMetrics,
+  mapReportsKpis,
+  mapSessionTrendWeeks,
+  mapTopCategories,
+  mapUsageBreakdown,
+} from "../api/admin";
+import { exportOptions } from "../data/mockAdminReports";
 
 const kpiIcons = {
   users: Users,
@@ -124,6 +125,47 @@ function SessionBarChart({ weeks }) {
 export default function AdminReports() {
   const [search, setSearch] = useState("");
   const [trendPeriod, setTrendPeriod] = useState("8weeks");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [reportKpis, setReportKpis] = useState([]);
+  const [growthMetrics, setGrowthMetrics] = useState([]);
+  const [sessionTrendWeeks, setSessionTrendWeeks] = useState([]);
+  const [usageBreakdown, setUsageBreakdown] = useState([]);
+  const [topCategories, setTopCategories] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadReports() {
+      setLoading(true);
+      setError(null);
+      try {
+        const api = await getAdminAnalytics();
+        if (cancelled) return;
+        setReportKpis(mapReportsKpis(api));
+        setGrowthMetrics(mapGrowthMetrics(api.growth_metrics));
+        setSessionTrendWeeks(mapSessionTrendWeeks(api));
+        setUsageBreakdown(mapUsageBreakdown(api.usage_breakdown));
+        setTopCategories(mapTopCategories(api.top_categories));
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message ?? "Failed to load reports.");
+          setReportKpis([]);
+          setGrowthMetrics([]);
+          setSessionTrendWeeks([]);
+          setUsageBreakdown([]);
+          setTopCategories([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadReports();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredCategories = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -131,16 +173,16 @@ export default function AdminReports() {
     return topCategories.filter((category) =>
       category.label.toLowerCase().includes(query),
     );
-  }, [search]);
+  }, [search, topCategories]);
 
   const trendWeeks = useMemo(() => {
-    if (trendPeriod === "8weeks") return sessionTrend.weeks;
-    return sessionTrend.weeks.map((week) => ({
+    if (trendPeriod === "8weeks") return sessionTrendWeeks;
+    return sessionTrendWeeks.map((week) => ({
       ...week,
       value: Math.round(week.value * 1.35),
       height: Math.min(100, Math.round(week.height * 1.15)),
     }));
-  }, [trendPeriod]);
+  }, [trendPeriod, sessionTrendWeeks]);
 
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
@@ -159,21 +201,36 @@ export default function AdminReports() {
         }
       />
 
+      {error ? (
+        <div
+          role="alert"
+          className="rounded-2xl border border-danger/20 bg-danger/5 px-4 py-3 font-body text-sm text-danger"
+        >
+          {error}
+        </div>
+      ) : null}
+
       <section aria-label="Report key metrics">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {reportKpis.map((kpi) => (
-            <AdminKpiCard
-              key={kpi.id}
-              icon={kpiIcons[kpi.icon]}
-              label={kpi.label}
-              value={kpi.value}
-              trend={kpi.trend}
-              trendDown={kpi.id === "response"}
-              sublabel={kpi.sublabel}
-              iconBg={kpi.iconBg}
-              iconColor={kpi.iconColor}
-            />
-          ))}
+          {loading ? (
+            <p className="col-span-full font-body text-sm text-on-surface-muted">
+              Loading report metrics…
+            </p>
+          ) : (
+            reportKpis.map((kpi) => (
+              <AdminKpiCard
+                key={kpi.id}
+                icon={kpiIcons[kpi.icon]}
+                label={kpi.label}
+                value={kpi.value}
+                trend={kpi.trend}
+                trendDown={kpi.id === "response"}
+                sublabel={kpi.sublabel}
+                iconBg={kpi.iconBg}
+                iconColor={kpi.iconColor}
+              />
+            ))
+          )}
         </div>
       </section>
 
@@ -202,7 +259,11 @@ export default function AdminReports() {
               <option value="6months">Last 6 Months</option>
             </select>
           </div>
-          <SessionBarChart weeks={trendWeeks} />
+          {loading ? (
+            <p className="font-body text-sm text-on-surface-muted">Loading trends…</p>
+          ) : (
+            <SessionBarChart weeks={trendWeeks} />
+          )}
         </section>
 
         <section
@@ -212,17 +273,21 @@ export default function AdminReports() {
           <h2 className="mb-5 font-heading text-lg font-semibold text-on-surface">
             Growth Metrics
           </h2>
-          <div className="space-y-4">
-            {growthMetrics.map((metric) => (
-              <PulseBar
-                key={metric.id}
-                label={metric.label}
-                value={metric.percent}
-                valueLabel={metric.value}
-                tone={metric.tone}
-              />
-            ))}
-          </div>
+          {loading ? (
+            <p className="font-body text-sm text-on-surface-muted">Loading…</p>
+          ) : (
+            <div className="space-y-4">
+              {growthMetrics.map((metric) => (
+                <PulseBar
+                  key={metric.id}
+                  label={metric.label}
+                  value={metric.percent}
+                  valueLabel={metric.value}
+                  tone={metric.tone}
+                />
+              ))}
+            </div>
+          )}
         </section>
 
         <section
@@ -232,16 +297,20 @@ export default function AdminReports() {
           <h2 className="mb-5 font-heading text-lg font-semibold text-on-surface">
             Usage Analytics
           </h2>
-          <div className="space-y-4">
-            {usageBreakdown.map((item) => (
-              <PulseBar
-                key={item.id}
-                label={item.label}
-                value={item.percent}
-                valueLabel={item.value}
-              />
-            ))}
-          </div>
+          {loading ? (
+            <p className="font-body text-sm text-on-surface-muted">Loading…</p>
+          ) : (
+            <div className="space-y-4">
+              {usageBreakdown.map((item) => (
+                <PulseBar
+                  key={item.id}
+                  label={item.label}
+                  value={item.percent}
+                  valueLabel={item.value}
+                />
+              ))}
+            </div>
+          )}
         </section>
 
         <section
@@ -269,33 +338,41 @@ export default function AdminReports() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-muted/10">
-                {filteredCategories.map((category) => (
-                  <tr
-                    key={category.id}
-                    className="transition-colors hover:bg-surface-muted/40"
-                  >
-                    <td className="px-5 py-4 font-body font-medium text-on-surface">
-                      {category.label}
-                    </td>
-                    <td className="px-5 py-4 font-body text-sm text-on-surface">
-                      {category.sessions}
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="rounded-full bg-soft-teal px-2.5 py-1 font-heading text-xs font-bold text-primary">
-                        {category.percent}%
-                      </span>
+                {loading ? (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="px-5 py-8 text-center font-body text-sm text-on-surface-muted"
+                    >
+                      Loading categories…
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredCategories.map((category) => (
+                    <tr
+                      key={category.id}
+                      className="transition-colors hover:bg-surface-muted/40"
+                    >
+                      <td className="px-5 py-4 font-body font-medium text-on-surface">
+                        {category.label}
+                      </td>
+                      <td className="px-5 py-4 font-body text-sm text-on-surface">
+                        {category.sessions}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="rounded-full bg-soft-teal px-2.5 py-1 font-heading text-xs font-bold text-primary">
+                          {category.percent}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </section>
 
-        <section
-          aria-label="Export reports"
-          className="lg:col-span-12"
-        >
+        <section aria-label="Export reports" className="lg:col-span-12">
           <div className="mb-4 flex items-center gap-2">
             <Download className="h-5 w-5 text-primary" aria-hidden="true" />
             <h2 className="font-heading text-lg font-semibold text-on-surface">

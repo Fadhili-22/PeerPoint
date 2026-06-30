@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app import schemas
@@ -22,6 +23,35 @@ from app.services.availability import get_bookable_slots_for_date
 
 DEFAULT_SESSION_DURATION_MINUTES = 45
 OVERDUE_PENDING_HOURS = 24
+
+
+def count_completed_sessions_for_counsellor(db: Session, counsellor_user_id: int) -> int:
+    """Completed session count for counsellor reads (Prompt 9).
+
+    Computed at read time — do not rely on ``counsellor_profiles.sessions_count``.
+    """
+    return (
+        db.query(func.count(SessionRequest.id))
+        .filter(
+            SessionRequest.counsellor_id == counsellor_user_id,
+            SessionRequest.status == SessionRequestStatusModel.completed,
+        )
+        .scalar()
+        or 0
+    )
+
+
+def count_completed_sessions_for_student(db: Session, student_user_id: int) -> int:
+    """Completed session count for admin student directory (Prompt 10)."""
+    return (
+        db.query(func.count(SessionRequest.id))
+        .filter(
+            SessionRequest.student_id == student_user_id,
+            SessionRequest.status == SessionRequestStatusModel.completed,
+        )
+        .scalar()
+        or 0
+    )
 
 
 def field_validation_error(field: str, message: str) -> HTTPException:

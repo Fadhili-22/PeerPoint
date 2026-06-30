@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarClock,
   Check,
@@ -10,13 +10,15 @@ import {
   WifiOff,
   X,
 } from "lucide-react";
+import { ApiError } from "../api/client";
 import {
-  timeSlotOptions,
-  weeklySchedule,
-} from "../data/mockCounsellorAvailability";
+  TIME_SLOT_OPTIONS,
+  getMyAvailability,
+  updateMyAvailability,
+} from "../api/counsellorAvailability";
 
 function DayCard({ day, isEditing, onToggleDay, onRemoveSlot, onAddSlot }) {
-  const availableOptions = timeSlotOptions.filter(
+  const availableOptions = TIME_SLOT_OPTIONS.filter(
     (slot) => !day.slots.includes(slot),
   );
 
@@ -124,9 +126,45 @@ function DayCard({ day, isEditing, onToggleDay, onRemoveSlot, onAddSlot }) {
 }
 
 export default function CounsellorAvailability() {
-  const [schedule, setSchedule] = useState(weeklySchedule);
+  const [schedule, setSchedule] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [saveSuccess, setSaveSuccess] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAvailability() {
+      setLoading(true);
+      setLoadError("");
+      try {
+        const data = await getMyAvailability();
+        if (!cancelled) {
+          setSchedule(data.schedule);
+          setIsOnline(data.isOnline);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setLoadError(
+            error.message || "Unable to load availability. Please try again.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadAvailability();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const summary = useMemo(() => {
     const activeDays = schedule.filter((day) => day.enabled);
@@ -149,7 +187,13 @@ export default function CounsellorAvailability() {
     setSchedule((prev) =>
       prev.map((day) =>
         day.id === id
-          ? { ...day, slots: [...day.slots, slot].sort() }
+          ? {
+              ...day,
+              slots: [...day.slots, slot].sort(
+                (a, b) =>
+                  TIME_SLOT_OPTIONS.indexOf(a) - TIME_SLOT_OPTIONS.indexOf(b),
+              ),
+            }
           : day,
       ),
     );
@@ -165,6 +209,79 @@ export default function CounsellorAvailability() {
     );
   };
 
+  const persistAvailability = async (nextSchedule, nextOnline) => {
+    setSaving(true);
+    setSaveError("");
+    setSaveSuccess("");
+    try {
+      const result = await updateMyAvailability({
+        schedule: nextSchedule,
+        isOnline: nextOnline,
+      });
+      setSchedule(result.schedule);
+      setIsOnline(result.isOnline);
+      return true;
+    } catch (error) {
+      const message =
+        error instanceof ApiError
+          ? error.message || "Unable to save schedule."
+          : "Unable to save schedule.";
+      setSaveError(message);
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditToggle = async () => {
+    if (!isEditing) {
+      setSaveError("");
+      setSaveSuccess("");
+      setIsEditing(true);
+      return;
+    }
+
+    const saved = await persistAvailability(schedule, isOnline);
+    if (saved) {
+      setIsEditing(false);
+      setSaveSuccess("Schedule saved successfully.");
+    }
+  };
+
+  const handleOnlineToggle = async () => {
+    const nextOnline = !isOnline;
+    setIsOnline(nextOnline);
+
+    if (isEditing) {
+      return;
+    }
+
+    const saved = await persistAvailability(schedule, nextOnline);
+    if (saved) {
+      setSaveSuccess("Booking status updated.");
+    } else {
+      setIsOnline(!nextOnline);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="mx-auto flex w-full max-w-[1200px] flex-col items-center py-16">
+        <p className="font-body text-sm text-on-surface-muted">
+          Loading availability...
+        </p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="mx-auto flex w-full max-w-[1200px] flex-col items-center py-16">
+        <p className="mb-4 font-body text-sm text-danger">{loadError}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col">
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -178,8 +295,9 @@ export default function CounsellorAvailability() {
         </div>
         <button
           type="button"
-          onClick={() => setIsEditing((prev) => !prev)}
-          className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 font-heading text-sm font-semibold transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+          onClick={handleEditToggle}
+          disabled={saving}
+          className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 font-heading text-sm font-semibold transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${
             isEditing
               ? "bg-primary text-on-primary hover:bg-primary-light"
               : "border-2 border-primary/20 text-primary hover:bg-soft-teal"
@@ -188,7 +306,7 @@ export default function CounsellorAvailability() {
           {isEditing ? (
             <>
               <Save className="h-4 w-4" aria-hidden="true" />
-              Save Schedule
+              {saving ? "Saving..." : "Save Schedule"}
             </>
           ) : (
             <>
@@ -198,6 +316,19 @@ export default function CounsellorAvailability() {
           )}
         </button>
       </header>
+
+      {saveError && (
+        <div className="mb-5 rounded-xl border border-danger/20 bg-danger/5 px-4 py-3 font-body text-sm text-danger">
+          {saveError}
+        </div>
+      )}
+
+      {saveSuccess && (
+        <div className="mb-5 flex items-center gap-2 rounded-xl border border-primary/10 bg-soft-teal/60 px-4 py-3 font-body text-sm text-primary-dark">
+          <Check className="h-4 w-4 shrink-0" aria-hidden="true" />
+          {saveSuccess}
+        </div>
+      )}
 
       <section
         aria-label="Availability summary"
@@ -241,8 +372,9 @@ export default function CounsellorAvailability() {
               role="switch"
               aria-checked={isOnline}
               aria-label="Toggle online availability status"
-              onClick={() => setIsOnline((prev) => !prev)}
-              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+              disabled={saving}
+              onClick={handleOnlineToggle}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${
                 isOnline ? "bg-primary" : "bg-outline-muted"
               }`}
             >

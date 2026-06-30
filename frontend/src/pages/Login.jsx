@@ -11,6 +11,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { resolvePostAuthRedirect } from "../api/auth";
 import ComingSoonText from "../components/ComingSoonText";
 
 function AuthHero() {
@@ -88,7 +89,7 @@ function PrivacyDisclaimer() {
 }
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, activePortal, setActivePortal } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -96,6 +97,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const validateEmail = (value) => {
     if (!value.toLowerCase().endsWith("@strathmore.edu")) {
@@ -113,7 +115,7 @@ export default function Login() {
     }
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
 
@@ -123,10 +125,20 @@ export default function Login() {
       return;
     }
 
-    const result = login(trimmedEmail, password.trim());
+    setSubmitting(true);
+    const result = await login(trimmedEmail, password.trim());
+    setSubmitting(false);
 
     if (result.success) {
-      navigate(result.redirectTo);
+      const { portal, path } = resolvePostAuthRedirect(
+        result.user,
+        activePortal,
+        result.redirectTo,
+      );
+      if (portal) {
+        setActivePortal(portal);
+      }
+      navigate(path);
       return;
     }
 
@@ -221,9 +233,12 @@ export default function Login() {
                   >
                     Password
                   </label>
-                  <ComingSoonText className="font-heading text-sm font-semibold text-primary">
+                  <Link
+                    to="/forgot-password"
+                    className="font-heading text-sm font-semibold text-primary hover:underline"
+                  >
                     Forgot password?
-                  </ComingSoonText>
+                  </Link>
                 </div>
                 <div className="group relative">
                   <Lock
@@ -257,9 +272,10 @@ export default function Login() {
 
               <button
                 type="submit"
-                className="w-full rounded-2xl bg-primary py-4 font-heading text-2xl font-semibold text-on-primary shadow-lg shadow-primary/20 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
+                disabled={submitting}
+                className="w-full rounded-2xl bg-primary py-4 font-heading text-2xl font-semibold text-on-primary shadow-lg shadow-primary/20 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Sign In
+                {submitting ? "Signing In..." : "Sign In"}
               </button>
             </form>
 

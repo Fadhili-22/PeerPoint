@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Calendar,
@@ -12,6 +12,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import CrisisHelpButton from "../components/CrisisHelpButton";
+import PortalSwitcher from "../components/PortalSwitcher";
 import { useAuth } from "../context/AuthContext";
 
 const navItems = [
@@ -42,10 +43,18 @@ function isNavActive(item, pathname) {
 }
 
 export default function StudentPortalLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, activePortal, setActivePortal } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // The rendered shell is the source of truth: keep the stored portal in sync
+  // with the route so a refresh on /student doesn't snap back to a stale choice.
+  useEffect(() => {
+    if (activePortal !== "student") {
+      setActivePortal("student");
+    }
+  }, [activePortal, setActivePortal]);
 
   const initials = user.fullName
     .split(" ")
@@ -101,6 +110,10 @@ export default function StudentPortalLayout() {
           </div>
 
           <div className="flex items-center gap-3">
+            <div className="hidden sm:block">
+              <PortalSwitcher currentPortal="student" />
+            </div>
+
             <div
               className="hidden items-center gap-3 rounded-2xl bg-primary/5 px-3 py-2 sm:flex"
               title={user.fullName}
@@ -167,6 +180,13 @@ export default function StudentPortalLayout() {
                   </NavLink>
                 );
               })}
+              <div className="px-1 py-1">
+                <PortalSwitcher
+                  currentPortal="student"
+                  variant="block"
+                  onNavigate={() => setMobileOpen(false)}
+                />
+              </div>
               <button
                 type="button"
                 disabled

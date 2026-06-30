@@ -15,13 +15,16 @@ from app.models import (
 )
 from app.schemas.enums import AvailabilityStatus
 from app.services.availability import get_bookable_slots_for_date
+from app.services.session_requests import count_completed_sessions_for_counsellor
 
 router = APIRouter(prefix="/counsellors", tags=["Counsellors"])
 
 
-def _to_directory_item(profile: CounsellorProfile) -> schemas.CounsellorDirectoryItem:
+def _to_directory_item(
+    profile: CounsellorProfile, *, sessions_count: int
+) -> schemas.CounsellorDirectoryItem:
     """Map a profile to the directory shape. External ``id`` is ``users.id``
-    (identity contract §4); ``user_id`` is kept and is intentionally equal to it."""
+    (identity contract §4); ``user_id`` is intentionally equal to it."""
     return schemas.CounsellorDirectoryItem(
         id=profile.user_id,
         user_id=profile.user_id,
@@ -36,7 +39,7 @@ def _to_directory_item(profile: CounsellorProfile) -> schemas.CounsellorDirector
         languages=profile.languages,
         photo_url=profile.photo_url,
         rating=float(profile.rating),
-        sessions_count=profile.sessions_count,
+        sessions_count=sessions_count,
         availability_status=AvailabilityStatus(profile.availability_status.value),
         is_online=profile.is_online,
         availability_note=profile.availability_note,
@@ -109,7 +112,15 @@ def list_counsellors(
 
     profiles = query.order_by(CounsellorProfile.id).all()
     return schemas.CounsellorListResponse(
-        counsellors=[_to_directory_item(profile) for profile in profiles]
+        counsellors=[
+            _to_directory_item(
+                profile,
+                sessions_count=count_completed_sessions_for_counsellor(
+                    db, profile.user_id
+                ),
+            )
+            for profile in profiles
+        ]
     )
 
 
@@ -127,7 +138,10 @@ def get_counsellor(
         if row.enabled:
             summary[str(row.day_of_week)] = len(row.slots)
 
-    base = _to_directory_item(profile)
+    base = _to_directory_item(
+        profile,
+        sessions_count=count_completed_sessions_for_counsellor(db, profile.user_id),
+    )
     return schemas.CounsellorProfileDetail(
         **base.model_dump(),
         joined_at=profile.joined_at,

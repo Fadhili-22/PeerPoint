@@ -94,18 +94,6 @@ class ResourceCategory(enum.Enum):
     relationships = "Relationships"
 
 
-class EngagementLevel(enum.Enum):
-    high = "High"
-    medium = "Medium"
-    low = "Low"
-
-
-class StudentProfileStatus(enum.Enum):
-    active = "active"
-    inactive = "inactive"
-    at_risk = "at-risk"
-
-
 class TrainingStatus(enum.Enum):
     training_complete = "Training Complete"
     in_review = "In Review"
@@ -139,7 +127,8 @@ class User(Base):
     # NEVER use this column for authorization checks — use active user_roles rows instead.
     role = Column(Enum(UserRole), nullable=False, default=UserRole.student)
     is_verified = Column(Boolean, server_default="FALSE", nullable=False)
-    student_id = Column(String, nullable=True)
+    email_verified = Column(Boolean, server_default="FALSE", nullable=False)
+    admission_number = Column(String, nullable=True)
     created_at = Column(
         TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")
     )
@@ -153,9 +142,6 @@ class User(Base):
 
     counsellor_profile = relationship(
         "CounsellorProfile", back_populates="user", uselist=False
-    )
-    student_profile = relationship(
-        "StudentProfile", back_populates="user", uselist=False
     )
     session_requests_as_student = relationship(
         "SessionRequest",
@@ -397,27 +383,6 @@ class ResourceSave(Base):
     resource = relationship("Resource", back_populates="resource_saves")
 
 
-class StudentProfile(Base):
-    __tablename__ = "student_profiles"
-
-    id = Column(Integer, primary_key=True, nullable=False)
-    user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
-    )
-    course = Column(String, nullable=True)
-    year = Column(String, nullable=True)
-    sessions_count = Column(Integer, nullable=False, server_default="0")
-    engagement = Column(Enum(EngagementLevel), nullable=True)
-    status = Column(
-        Enum(StudentProfileStatus),
-        nullable=False,
-        server_default=StudentProfileStatus.active.value,
-    )
-    summary = Column(Text, nullable=True)
-
-    user = relationship("User", back_populates="student_profile")
-
-
 class PlatformActivity(Base):
     __tablename__ = "platform_activity"
 
@@ -450,9 +415,12 @@ class AccountApprovalRequest(Base):
     user_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    type = Column(Enum(AccountRequestType), nullable=False)
+    type = Column(
+        Enum(AccountRequestType, values_callable=lambda obj: [e.value for e in obj]),
+        nullable=False,
+    )
     status = Column(
-        Enum(AccountRequestStatus),
+        Enum(AccountRequestStatus, values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
         server_default=AccountRequestStatus.pending_review.value,
     )

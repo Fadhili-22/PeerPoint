@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   BookOpen,
@@ -10,9 +10,12 @@ import {
   Send,
 } from "lucide-react";
 import { ResourceStatusBadge } from "../components/AdminResourceRowActions";
+import { ApiError } from "../api/client";
+import {
+  listMyResources,
+  submitResourceForReview,
+} from "../api/resources";
 import { formatResourceDisplayDate, isResourceSubmittable } from "../data/mockResources";
-import { useAuth } from "../context/AuthContext";
-import { useResources } from "../context/ResourcesContext";
 
 const submissionFilters = [
   { id: "all", label: "All" },
@@ -22,12 +25,11 @@ const submissionFilters = [
   { id: "rejected", label: "Rejected" },
 ];
 
-function SubmissionCard({ resource, onSubmitForReview }) {
+function SubmissionCard({ resource, onSubmitForReview, submittingId }) {
   const canEdit = resource.status === "draft" || resource.status === "rejected";
   const canSubmit = canEdit && isResourceSubmittable(resource);
-  // Published submissions are view-only for counsellors. Post-publish edit proposals
-  // are intentionally out of scope — admins curate live Resource Hub content.
   const isPublished = resource.status === "published";
+  const isSubmitting = submittingId === resource.id;
 
   return (
     <article className="rounded-2xl border border-primary/5 bg-surface p-5 shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
@@ -102,11 +104,12 @@ function SubmissionCard({ resource, onSubmitForReview }) {
           {canSubmit ? (
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => onSubmitForReview(resource.id)}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 font-heading text-sm font-semibold text-on-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 font-heading text-sm font-semibold text-on-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Send className="h-4 w-4" aria-hidden="true" />
-              Submit for Review
+              {isSubmitting ? "Submitting…" : "Submit for Review"}
             </button>
           ) : null}
 
@@ -128,14 +131,33 @@ function SubmissionCard({ resource, onSubmitForReview }) {
 }
 
 export default function CounsellorResources() {
-  const { user } = useAuth();
-  const { getResourcesBySubmitter, submitForReview } = useResources();
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
+  const [submittingId, setSubmittingId] = useState(null);
 
-  const submissions = useMemo(
-    () => getResourcesBySubmitter(user.id),
-    [getResourcesBySubmitter, user.id],
-  );
+  const loadSubmissions = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await listMyResources();
+      setSubmissions(data);
+    } catch (loadError) {
+      setSubmissions([]);
+      setError(
+        loadError instanceof ApiError
+          ? loadError.message
+          : "Unable to load your submissions.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSubmissions();
+  }, [loadSubmissions]);
 
   const counts = useMemo(() => {
     return submissions.reduce(
@@ -153,8 +175,21 @@ export default function CounsellorResources() {
     return submissions.filter((resource) => resource.status === activeFilter);
   }, [submissions, activeFilter]);
 
-  const handleSubmitForReview = (resourceId) => {
-    submitForReview(resourceId);
+  const handleSubmitForReview = async (resourceId) => {
+    setSubmittingId(resourceId);
+    setError("");
+    try {
+      await submitResourceForReview(resourceId);
+      await loadSubmissions();
+    } catch (submitError) {
+      setError(
+        submitError instanceof ApiError
+          ? submitError.message
+          : "Unable to submit resource for review.",
+      );
+    } finally {
+      setSubmittingId(null);
+    }
   };
 
   return (
@@ -177,6 +212,12 @@ export default function CounsellorResources() {
           Submit Resource
         </Link>
       </header>
+
+      {error ? (
+        <p className="mb-4 rounded-xl border border-danger/20 bg-danger/5 px-4 py-3 font-body text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
 
       <div
         className="mb-6 flex flex-wrap items-center gap-2"
@@ -213,13 +254,16 @@ export default function CounsellorResources() {
         })}
       </div>
 
-      {visibleSubmissions.length > 0 ? (
+      {loading ? (
+        <p className="font-body text-sm text-on-surface-muted">Loading submissions…</p>
+      ) : visibleSubmissions.length > 0 ? (
         <div className="space-y-4">
           {visibleSubmissions.map((resource) => (
             <SubmissionCard
               key={resource.id}
               resource={resource}
               onSubmitForReview={handleSubmitForReview}
+              submittingId={submittingId}
             />
           ))}
         </div>

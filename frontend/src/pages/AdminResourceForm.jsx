@@ -1,27 +1,119 @@
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import ResourceForm, { formFromResource } from "../components/ResourceForm";
-import { useResources } from "../context/ResourcesContext";
+import { ApiError } from "../api/client";
+import {
+  createAdminResource,
+  featureResource,
+  getAdminResource,
+  publishResource,
+  toApiPayload,
+  updateAdminResource,
+} from "../api/resources";
 
 export default function AdminResourceForm() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getResourceById, saveResource } = useResources();
   const isEditMode = Boolean(id);
-  const existingResource = isEditMode ? getResourceById(id) : null;
+  const [existingResource, setExistingResource] = useState(null);
+  const [loading, setLoading] = useState(isEditMode);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!isEditMode) return undefined;
+
+    let cancelled = false;
+
+    async function loadResource() {
+      setLoading(true);
+      setError("");
+      try {
+        const data = await getAdminResource(id);
+        if (!cancelled) {
+          setExistingResource(data);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setExistingResource(null);
+          if (!(loadError instanceof ApiError && loadError.status === 404)) {
+            setError(loadError.message || "Unable to load resource.");
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadResource();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, isEditMode]);
 
   const pageTitle = isEditMode ? "Edit Resource" : "New Resource";
-  const notFound = isEditMode && !existingResource;
+  const notFound = isEditMode && !loading && !existingResource;
 
-  const persist = (payload, publish) => {
-    saveResource({
-      id: existingResource?.id,
-      publish,
-      ...payload,
-      status: publish ? "published" : "draft",
+  const applyFeatured = async (resource, payload) => {
+    if (resource.status !== "published") return resource;
+
+    const featuredChanged =
+      payload.featured !== resource.featured ||
+      payload.featuredOrder !== resource.featuredOrder;
+
+    if (!featuredChanged) return resource;
+
+    await featureResource(resource.id, {
+      featured: payload.featured,
+      featuredOrder: payload.featured ? payload.featuredOrder : null,
     });
-    navigate("/admin/resources");
+
+    return getAdminResource(resource.id);
   };
+
+  const persist = async (payload, publish) => {
+    setSaving(true);
+    setError("");
+    try {
+      const apiPayload = toApiPayload(payload);
+      let resource;
+
+      if (isEditMode) {
+        resource = await updateAdminResource(id, apiPayload);
+        if (publish && resource.status !== "published") {
+          await publishResource(id);
+          resource = await getAdminResource(id);
+        }
+      } else {
+        resource = await createAdminResource(apiPayload, { publish });
+      }
+
+      if (resource.status === "published" && (payload.featured || existingResource?.featured)) {
+        resource = await applyFeatured(resource, payload);
+      }
+
+      navigate("/admin/resources");
+    } catch (saveError) {
+      setError(
+        saveError instanceof ApiError
+          ? saveError.message
+          : "Unable to save resource.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <p className="mx-auto max-w-2xl font-body text-sm text-on-surface-muted">
+        Loading resource…
+      </p>
+    );
+  }
 
   if (notFound) {
     return (
@@ -44,17 +136,24 @@ export default function AdminResourceForm() {
   }
 
   return (
-    <ResourceForm
-      mode="admin"
-      pageTitle={pageTitle}
-      backTo="/admin/resources"
-      backLabel="Back to Manage Resources"
-      editHint={
-        isEditMode ? `Editing · ${existingResource.id}` : "Create a new article"
-      }
-      initialForm={existingResource ? formFromResource(existingResource) : undefined}
-      onSaveDraft={(payload) => persist(payload, false)}
-      onPublish={(payload) => persist(payload, true)}
-    />
+    <>
+      {error ? (
+        <p className="mx-auto mb-4 max-w-3xl rounded-xl border border-danger/20 bg-danger/5 px-4 py-3 font-body text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
+      <ResourceForm
+        mode="admin"
+        pageTitle={pageTitle}
+        backTo="/admin/resources"
+        backLabel="Back to Manage Resources"
+        editHint={
+          isEditMode ? `Editing · ${existingResource.id}` : "Create a new article"
+        }
+        initialForm={existingResource ? formFromResource(existingResource) : undefined}
+        onSaveDraft={(payload) => persist(payload, false)}
+        onPublish={(payload) => persist(payload, true)}
+      />
+    </>
   );
 }

@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.dependencies import require_admin, require_role
+from app.dependencies import require_admin, require_admin_or_verified_student
 from app.models import User, UserRole
 from app import schemas
 from app.oauth2 import get_current_user
@@ -28,7 +28,7 @@ def list_all_users(
 @router.get("/counsellors", response_model=list[schemas.UserResponse])
 def list_counsellors(
     db: Session = Depends(get_db),
-    _: User = Depends(require_role(UserRole.student, UserRole.admin))
+    _: User = Depends(require_admin_or_verified_student),
 ):
     """Students and admins can browse available counsellors."""
     return (

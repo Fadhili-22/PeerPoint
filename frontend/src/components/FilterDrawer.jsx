@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import { counsellorLanguages, sessionTopics, studyYears } from "../data/mockCounsellors";
+import { counsellorLanguages, sessionTopics, studyYears } from "../constants/counsellorFilters";
 
 export default function FilterDrawer({
   open,

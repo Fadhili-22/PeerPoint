@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 from app.schemas.enums import UserRole
 
@@ -7,6 +7,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     full_name: str
+    admission_number: str = Field(..., min_length=1, max_length=32)
     role: UserRole = UserRole.student
 
 
@@ -14,8 +15,10 @@ class UserResponse(BaseModel):
     id: int
     email: EmailStr
     full_name: str
+    admission_number: str | None
     role: UserRole
     is_verified: bool
+    email_verified: bool
 
     class Config:
         from_attributes = True
@@ -45,8 +48,10 @@ class AuthUserResponse(BaseModel):
     id: int
     full_name: str
     email: EmailStr
+    admission_number: str | None
     roles: list[UserRole]
     is_verified: bool
+    email_verified: bool
 
     class Config:
         from_attributes = True
@@ -58,6 +63,11 @@ class LoginResponse(BaseModel):
     redirect_to: str
 
 
+class RegisterResponse(BaseModel):
+    user: UserResponse
+    message: str
+
+
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
@@ -65,3 +75,11 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr

@@ -1,57 +1,18 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
+import { listCounsellors } from "../api/counsellors";
 import CounsellorCard from "../components/CounsellorCard";
 import FilterChip from "../components/FilterChip";
 import FilterDrawer from "../components/FilterDrawer";
 import {
-  counsellors,
   counsellorLanguages,
   directoryFilterChips,
-  getAvailableCounsellorCount,
-} from "../data/mockCounsellors";
-
-function matchesSearch(counsellor, query) {
-  if (!query.trim()) return true;
-  const normalized = query.trim().toLowerCase();
-  return (
-    counsellor.fullName.toLowerCase().includes(normalized) ||
-    counsellor.shortName.toLowerCase().includes(normalized) ||
-    counsellor.bio.toLowerCase().includes(normalized) ||
-    counsellor.specialties.some((specialty) =>
-      specialty.toLowerCase().includes(normalized),
-    )
-  );
-}
-
-function matchesAvailability(counsellor, availability) {
-  if (availability === "all") return true;
-  if (availability === "available") {
-    return counsellor.availabilityStatus === "available";
-  }
-  if (availability === "today") {
-    return counsellor.availabilityStatus !== "offline";
-  }
-  return true;
-}
-
-function matchesSpecialties(counsellor, selectedSpecialties) {
-  if (selectedSpecialties.length === 0) return true;
-  return counsellor.specialties.some((specialty) =>
-    selectedSpecialties.includes(specialty),
-  );
-}
-
-function matchesLanguage(counsellor, language) {
-  if (language === "all") return true;
-  return counsellor.languages.includes(language);
-}
-
-function matchesYear(counsellor, year) {
-  if (year === "all") return true;
-  return counsellor.year === year;
-}
+} from "../constants/counsellorFilters";
 
 export default function CounsellorDirectory() {
+  const [counsellors, setCounsellors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [search, setSearch] = useState("");
   const [selectedChips, setSelectedChips] = useState([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -69,15 +30,41 @@ export default function CounsellorDirectory() {
       ? [...new Set([...chipSpecialties, ...selectedSpecialties])]
       : selectedSpecialties;
 
-  const filteredCounsellors = useMemo(() => {
-    return counsellors.filter(
-      (counsellor) =>
-        matchesSearch(counsellor, search) &&
-        matchesAvailability(counsellor, effectiveAvailability) &&
-        matchesSpecialties(counsellor, effectiveSpecialties) &&
-        matchesLanguage(counsellor, selectedLanguage) &&
-        matchesYear(counsellor, selectedYear),
-    );
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCounsellors() {
+      setLoading(true);
+      setLoadError("");
+      try {
+        const apiAvailability =
+          effectiveAvailability === "available" ? "available" : undefined;
+        const data = await listCounsellors({
+          search: search.trim() || undefined,
+          availability: apiAvailability,
+          specialties: effectiveSpecialties,
+          language: selectedLanguage !== "all" ? selectedLanguage : undefined,
+          year: selectedYear !== "all" ? selectedYear : undefined,
+        });
+        if (!cancelled) {
+          setCounsellors(data);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setLoadError(error.message || "Unable to load counsellors.");
+          setCounsellors([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadCounsellors();
+    return () => {
+      cancelled = true;
+    };
   }, [
     search,
     effectiveAvailability,
@@ -86,7 +73,18 @@ export default function CounsellorDirectory() {
     selectedYear,
   ]);
 
-  const availableCount = getAvailableCounsellorCount(counsellors);
+  const filteredCounsellors = useMemo(() => {
+    return counsellors.filter((counsellor) => {
+      if (effectiveAvailability === "today") {
+        return counsellor.availabilityStatus !== "offline";
+      }
+      return true;
+    });
+  }, [counsellors, effectiveAvailability]);
+
+  const availableCount = counsellors.filter(
+    (counsellor) => counsellor.availabilityStatus === "available",
+  ).length;
   const hasActiveFilters =
     chipAvailabilityActive ||
     chipSpecialties.length > 0 ||
@@ -236,7 +234,20 @@ export default function CounsellorDirectory() {
         )}
       </section>
 
-      {filteredCounsellors.length > 0 ? (
+      {loading ? (
+        <section className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="h-72 animate-pulse rounded-3xl border border-outline-muted/20 bg-surface-muted/40"
+            />
+          ))}
+        </section>
+      ) : loadError ? (
+        <section className="rounded-3xl border border-danger/20 bg-danger/5 px-6 py-12 text-center">
+          <p className="font-body text-sm text-danger">{loadError}</p>
+        </section>
+      ) : filteredCounsellors.length > 0 ? (
         <section
           className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"
           aria-label="Counsellor results"

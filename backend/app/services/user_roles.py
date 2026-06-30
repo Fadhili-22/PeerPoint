@@ -193,7 +193,9 @@ def grant_counsellor_role(
     # Idempotent on re-promote — leaves is_verified True if already set.
     user.is_verified = True
 
-    # Update non-authoritative primary context hint for UI defaults.
+    # Cosmetic only: the singular users.role column is NOT used for authorization
+    # (that's the user_roles table) nor by the frontend portal picker (Prompt 5,
+    # client-side activePortal). Kept as a legacy hint; safe to drop in future.
     user.role = UserRole.counsellor
     return assignment
 
@@ -221,10 +223,21 @@ def revoke_role(
     return assignment
 
 
-def compute_login_redirect(roles: list[str], is_verified: bool) -> str:
+def compute_login_redirect(
+    roles: list[str],
+    *,
+    is_verified: bool,
+    email_verified: bool,
+) -> str:
+    # Single best-guess landing path for single-role accounts. Multi-role users
+    # are routed client-side by the frontend portal picker (Prompt 5), which may
+    # override this with the chooser or a last-used portal — the backend stays
+    # role-array based and never tracks an "active portal".
     role_set = set(roles)
     if UserRole.admin.value in role_set:
         return "/admin"
     if UserRole.counsellor.value in role_set:
         return "/counsellor" if is_verified else "/pending-approval"
+    if UserRole.student.value in role_set:
+        return "/student" if email_verified else "/verify-email-pending"
     return "/student"

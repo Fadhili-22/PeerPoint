@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   BookOpen,
@@ -19,6 +19,18 @@ import AdminResourceRowActions, {
   ResourceStatusBadge,
 } from "../components/AdminResourceRowActions";
 import FilterChip from "../components/FilterChip";
+import { ApiError } from "../api/client";
+import {
+  archiveResource,
+  featureResource,
+  getAdminResourceStats,
+  listAdminResources,
+  listPendingReviewResources,
+  publishResource,
+  restoreResource,
+  reviewResource,
+  unpublishResource,
+} from "../api/resources";
 import { formatResourceDisplayDate } from "../data/mockResources";
 import { useResources } from "../context/ResourcesContext";
 
@@ -32,21 +44,26 @@ const statusFilters = [
 ];
 
 export default function AdminResources() {
-  const {
-    resources,
-    stats,
-    getPendingReviewResources,
-    reviewResource,
-    setResourceStatus,
-    setResourceFeatured,
-    archiveResource,
-    restoreResource,
-  } = useResources();
+  const { pushAdminResourceActivity } = useResources();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState(
     () => searchParams.get("filter") || "all",
   );
+  const [resources, setResources] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    published: 0,
+    drafts: 0,
+    pendingReview: 0,
+    featured: 0,
+    archived: 0,
+  });
+  const [pendingReviewResources, setPendingReviewResources] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
 
@@ -57,26 +74,55 @@ export default function AdminResources() {
     }
   }, [searchParams]);
 
-  const pendingReviewResources = getPendingReviewResources();
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const apiStatus =
+        statusFilter === "all"
+          ? undefined
+          : statusFilter === "featured"
+            ? "published"
+            : statusFilter;
+      const [statsData, pendingData, resourcesData] = await Promise.all([
+        getAdminResourceStats(),
+        listPendingReviewResources(),
+        listAdminResources({
+          status: apiStatus,
+          search: debouncedSearch.trim() || undefined,
+        }),
+      ]);
+      setStats(statsData);
+      setPendingReviewResources(pendingData);
+      setResources(resourcesData);
+    } catch (loadError) {
+      setError(
+        loadError instanceof ApiError
+          ? loadError.message
+          : "Unable to load resources.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter, debouncedSearch]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const filteredResources = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return resources.filter((resource) => {
-      const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "featured"
-          ? resource.featured && resource.status === "published"
-          : resource.status === statusFilter);
-      const matchesQuery =
-        !query ||
-        resource.title.toLowerCase().includes(query) ||
-        resource.description.toLowerCase().includes(query) ||
-        resource.category.toLowerCase().includes(query) ||
-        resource.author.toLowerCase().includes(query) ||
-        (resource.submittedBy?.fullName || "").toLowerCase().includes(query);
-      return matchesStatus && matchesQuery;
-    });
-  }, [resources, search, statusFilter]);
+    if (statusFilter !== "featured") return resources;
+    return resources.filter(
+      (resource) => resource.featured && resource.status === "published",
+    );
+  }, [resources, statusFilter]);
 
   const handleFilterChange = (filterId) => {
     setStatusFilter(filterId);
@@ -87,45 +133,91 @@ export default function AdminResources() {
     }
   };
 
+  const runAction = async (action) => {
+    setActionLoading(true);
+    setError("");
+    try {
+      await action();
+      await loadData();
+    } catch (actionError) {
+      setError(
+        actionError instanceof ApiError
+          ? actionError.message
+          : "Unable to complete action.",
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handlePublish = (resource) => {
-    setResourceStatus(resource.id, "published");
+    runAction(() => publishResource(resource.id));
   };
 
   const handleUnpublish = (resource) => {
-    setResourceStatus(resource.id, "draft");
+    runAction(() => unpublishResource(resource.id));
   };
 
   const handleToggleFeatured = (resource) => {
     if (resource.featured) {
-      setResourceFeatured(resource.id, false, null);
+      runAction(() =>
+        featureResource(resource.id, { featured: false, featuredOrder: null }),
+      );
       return;
     }
     const featuredCount = resources.filter(
       (item) => item.featured && item.status === "published",
     ).length;
-    setResourceFeatured(resource.id, true, featuredCount + 1);
+    runAction(() =>
+      featureResource(resource.id, {
+        featured: true,
+        featuredOrder: featuredCount + 1,
+      }),
+    );
   };
 
   const handleConfirmArchive = (resource) => {
-    archiveResource(resource.id);
-    setArchiveTarget(null);
+    runAction(async () => {
+      await archiveResource(resource.id);
+      setArchiveTarget(null);
+    });
   };
 
   const handleApprovePublish = (resourceId) => {
-    reviewResource({ resourceId, decision: "approve_publish" });
+    runAction(async () => {
+      await reviewResource(resourceId, { decision: "approve_publish" });
+      pushAdminResourceActivity(
+        "Resource Approved",
+        "Submission published to Resource Hub",
+        "primary",
+      );
+    });
   };
 
   const handleApproveDraft = (resourceId) => {
-    reviewResource({ resourceId, decision: "approve_draft" });
+    runAction(async () => {
+      await reviewResource(resourceId, { decision: "approve_draft" });
+      pushAdminResourceActivity(
+        "Resource Approved to Draft",
+        "Submission moved to admin draft for editing",
+        "primary",
+      );
+    });
   };
 
   const handleConfirmReject = (resource, reason) => {
-    reviewResource({
-      resourceId: resource.id,
-      decision: "reject",
-      rejectionReason: reason,
+    runAction(async () => {
+      await reviewResource(resource.id, {
+        decision: "reject",
+        rejectionReason: reason,
+      });
+      pushAdminResourceActivity(
+        "Resource Returned",
+        `"${resource.title}" sent back to counsellor`,
+        "warning",
+      );
+      setRejectTarget(null);
     });
-    setRejectTarget(null);
   };
 
   return (
@@ -153,6 +245,12 @@ export default function AdminResources() {
           { label: "Featured", value: stats.featured, icon: Star },
         ]}
       />
+
+      {error ? (
+        <p className="rounded-xl border border-danger/20 bg-danger/5 px-4 py-3 font-body text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
 
       <section aria-label="Resource key metrics">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -296,28 +394,31 @@ export default function AdminResources() {
                       </Link>
                       <button
                         type="button"
+                        disabled={actionLoading}
                         onClick={() => handleApprovePublish(resource.id)}
                         title={`Approve and publish ${resource.title}`}
                         aria-label={`Approve and publish ${resource.title}`}
-                        className="rounded-lg p-2 text-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary/10"
+                        className="rounded-lg p-2 text-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary/10 disabled:opacity-50"
                       >
                         <CheckCircle className="h-5 w-5" aria-hidden="true" />
                       </button>
                       <button
                         type="button"
+                        disabled={actionLoading}
                         onClick={() => handleApproveDraft(resource.id)}
                         title={`Approve ${resource.title} to draft for editing`}
                         aria-label={`Approve ${resource.title} to draft`}
-                        className="rounded-lg p-2 text-on-surface-muted transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-surface-muted hover:text-primary"
+                        className="rounded-lg p-2 text-on-surface-muted transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-surface-muted hover:text-primary disabled:opacity-50"
                       >
                         <FileText className="h-5 w-5" aria-hidden="true" />
                       </button>
                       <button
                         type="button"
+                        disabled={actionLoading}
                         onClick={() => setRejectTarget(resource)}
                         title={`Return ${resource.title} to counsellor`}
                         aria-label={`Return ${resource.title} to counsellor`}
-                        className="rounded-lg p-2 text-danger transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-danger/10"
+                        className="rounded-lg p-2 text-danger transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-danger/10 disabled:opacity-50"
                       >
                         <XCircle className="h-5 w-5" aria-hidden="true" />
                       </button>
@@ -327,7 +428,7 @@ export default function AdminResources() {
               ))}
             </tbody>
           </table>
-          {pendingReviewResources.length === 0 ? (
+          {!loading && pendingReviewResources.length === 0 ? (
             <div className="flex flex-col items-center gap-3 px-5 py-12 text-center">
               <p className="font-heading text-base font-semibold text-on-surface">
                 No submissions awaiting review
@@ -361,96 +462,104 @@ export default function AdminResources() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-surface-muted font-heading text-sm font-semibold text-on-surface-muted">
-                <th scope="col" className="px-5 py-3.5">
-                  Resource
-                </th>
-                <th scope="col" className="px-5 py-3.5">
-                  Category
-                </th>
-                <th scope="col" className="px-5 py-3.5">
-                  Status
-                </th>
-                <th scope="col" className="px-5 py-3.5">
-                  Updated
-                </th>
-                <th scope="col" className="px-5 py-3.5">
-                  Views
-                </th>
-                <th scope="col" className="px-5 py-3.5 text-right">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-muted/10">
-              {filteredResources.map((resource) => (
-                <tr
-                  key={resource.id}
-                  className="transition-colors hover:bg-surface-muted/40"
-                >
-                  <td className="px-5 py-4">
-                    <div className="flex items-start gap-3">
-                      <div className="hidden h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-surface-muted sm:block">
-                        <img
-                          src={resource.image}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-heading text-sm font-semibold text-on-surface">
-                            {resource.title}
-                          </p>
-                          {resource.featured && resource.status === "published" ? (
-                            <span className="rounded-full bg-accent-gold/10 px-2 py-0.5 font-heading text-[10px] font-bold uppercase text-accent-gold">
-                              Featured
-                              {resource.featuredOrder != null
-                                ? ` · #${resource.featuredOrder}`
-                                : ""}
-                            </span>
-                          ) : null}
-                        </div>
-                        <p className="font-body text-xs text-on-surface-muted">
-                          {resource.author}
-                          {resource.submittedBy
-                            ? ` · via ${resource.submittedBy.fullName}`
-                            : ""}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className="rounded-full bg-surface-muted px-2 py-1 font-heading text-[10px] font-bold uppercase text-on-surface-muted">
-                      {resource.category}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <ResourceStatusBadge status={resource.status} />
-                  </td>
-                  <td className="px-5 py-4 font-body text-sm text-on-surface-muted">
-                    {formatResourceDisplayDate(resource.updatedAt)}
-                  </td>
-                  <td className="px-5 py-4 font-body text-sm text-on-surface">
-                    {resource.views.toLocaleString("en-US")}
-                  </td>
-                  <td className="px-5 py-4">
-                    <AdminResourceRowActions
-                      resource={resource}
-                      onPublish={handlePublish}
-                      onUnpublish={handleUnpublish}
-                      onToggleFeatured={handleToggleFeatured}
-                      onArchive={setArchiveTarget}
-                      onRestore={(item) => restoreResource(item.id)}
-                    />
-                  </td>
+          {loading ? (
+            <p className="px-5 py-12 font-body text-sm text-on-surface-muted">
+              Loading resources…
+            </p>
+          ) : (
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-surface-muted font-heading text-sm font-semibold text-on-surface-muted">
+                  <th scope="col" className="px-5 py-3.5">
+                    Resource
+                  </th>
+                  <th scope="col" className="px-5 py-3.5">
+                    Category
+                  </th>
+                  <th scope="col" className="px-5 py-3.5">
+                    Status
+                  </th>
+                  <th scope="col" className="px-5 py-3.5">
+                    Updated
+                  </th>
+                  <th scope="col" className="px-5 py-3.5">
+                    Views
+                  </th>
+                  <th scope="col" className="px-5 py-3.5 text-right">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {filteredResources.length === 0 ? (
+              </thead>
+              <tbody className="divide-y divide-outline-muted/10">
+                {filteredResources.map((resource) => (
+                  <tr
+                    key={resource.id}
+                    className="transition-colors hover:bg-surface-muted/40"
+                  >
+                    <td className="px-5 py-4">
+                      <div className="flex items-start gap-3">
+                        <div className="hidden h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-surface-muted sm:block">
+                          <img
+                            src={resource.image}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-heading text-sm font-semibold text-on-surface">
+                              {resource.title}
+                            </p>
+                            {resource.featured && resource.status === "published" ? (
+                              <span className="rounded-full bg-accent-gold/10 px-2 py-0.5 font-heading text-[10px] font-bold uppercase text-accent-gold">
+                                Featured
+                                {resource.featuredOrder != null
+                                  ? ` · #${resource.featuredOrder}`
+                                  : ""}
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="font-body text-xs text-on-surface-muted">
+                            {resource.author}
+                            {resource.submittedBy
+                              ? ` · via ${resource.submittedBy.fullName}`
+                              : ""}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="rounded-full bg-surface-muted px-2 py-1 font-heading text-[10px] font-bold uppercase text-on-surface-muted">
+                        {resource.category}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <ResourceStatusBadge status={resource.status} />
+                    </td>
+                    <td className="px-5 py-4 font-body text-sm text-on-surface-muted">
+                      {formatResourceDisplayDate(resource.updatedAt)}
+                    </td>
+                    <td className="px-5 py-4 font-body text-sm text-on-surface">
+                      {resource.views.toLocaleString("en-US")}
+                    </td>
+                    <td className="px-5 py-4">
+                      <AdminResourceRowActions
+                        resource={resource}
+                        onPublish={handlePublish}
+                        onUnpublish={handleUnpublish}
+                        onToggleFeatured={handleToggleFeatured}
+                        onArchive={setArchiveTarget}
+                        onRestore={(item) =>
+                          runAction(() => restoreResource(item.id))
+                        }
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {!loading && filteredResources.length === 0 ? (
             <div className="flex flex-col items-center gap-3 px-5 py-16 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
                 <Eye className="h-6 w-6 text-on-surface-subtle" aria-hidden="true" />

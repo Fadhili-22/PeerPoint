@@ -1,12 +1,69 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, EyeOff, Pencil } from "lucide-react";
 import ResourceArticleView from "../components/ResourceArticleView";
-import { useResources } from "../context/ResourcesContext";
+import { ApiError } from "../api/client";
+import { getAdminResource } from "../api/resources";
 
 export default function AdminResourcePreview() {
   const { id } = useParams();
-  const { getResourceById } = useResources();
-  const resource = getResourceById(id);
+  const [resource, setResource] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadResource() {
+      setLoading(true);
+      setError("");
+      try {
+        const data = await getAdminResource(id);
+        if (!cancelled) {
+          setResource(data);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setResource(null);
+          if (!(loadError instanceof ApiError && loadError.status === 404)) {
+            setError(loadError.message || "Unable to load resource.");
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadResource();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <p className="mx-auto max-w-2xl font-body text-sm text-on-surface-muted">
+        Loading preview…
+      </p>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mx-auto flex max-w-2xl flex-col items-center rounded-3xl border border-primary/5 bg-surface p-10 text-center shadow-md">
+        <p className="mb-6 font-body text-sm text-danger">{error}</p>
+        <Link
+          to="/admin/resources"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-heading text-sm font-semibold text-on-primary"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back to Manage Resources
+        </Link>
+      </div>
+    );
+  }
 
   if (!resource) {
     return (

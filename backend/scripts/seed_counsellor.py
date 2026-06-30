@@ -73,11 +73,13 @@ def seed_counsellor(
                 full_name=full_name,
                 role=UserRole.counsellor,
                 is_verified=True,
+                email_verified=True,
             )
             db.add(user)
             db.flush()
         else:
             user.is_verified = True
+            user.email_verified = True
             if password:
                 user.password = utils.hash_password(password)
             if full_name:

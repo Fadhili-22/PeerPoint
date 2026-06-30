@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { counsellors } from "../../data/mockCounsellors";
+import { getFeaturedCounsellors } from "../../api/public";
 
 const AUTO_ADVANCE_MS = 6000;
 
@@ -112,15 +112,42 @@ function EmptyCounsellorCard() {
 }
 
 export default function LandingCounsellorCarousel() {
-  const activeCounsellors = useMemo(
-    () => counsellors.filter((c) => c.availabilityStatus === "available"),
-    [],
-  );
-
+  const [activeCounsellors, setActiveCounsellors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const carouselRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCounsellors() {
+      setLoading(true);
+      setError(null);
+      try {
+        const rows = await getFeaturedCounsellors({ status: "available", limit: 12 });
+        if (!cancelled) {
+          setActiveCounsellors(rows);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setActiveCounsellors([]);
+          setError(err.message ?? "Could not load counsellors.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadCounsellors();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const slideCount = activeCounsellors.length;
   const hasMultipleSlides = slideCount > 1;
@@ -180,8 +207,30 @@ export default function LandingCounsellorCarousel() {
     }
   };
 
+  if (loading) {
+    return (
+      <article className="rounded-[32px] border border-soft-teal bg-surface p-8 shadow-[0_20px_50px_rgba(0,100,112,0.08)]">
+        <p className="text-center font-body text-base text-on-surface-muted">
+          Loading available counsellors…
+        </p>
+      </article>
+    );
+  }
+
   if (slideCount === 0) {
-    return <EmptyCounsellorCard />;
+    return (
+      <>
+        {error ? (
+          <p
+            role="alert"
+            className="mb-4 text-center font-body text-sm text-on-surface-muted"
+          >
+            {error}
+          </p>
+        ) : null}
+        <EmptyCounsellorCard />
+      </>
+    );
   }
 
   const currentCounsellor = activeCounsellors[activeIndex];
@@ -268,8 +317,8 @@ export default function LandingCounsellorCarousel() {
 
       <p className="sr-only">
         {hasMultipleSlides
-          ? `Showing counsellor ${activeIndex + 1} of ${slideCount}: ${currentCounsellor.fullName}.`
-          : `Showing ${currentCounsellor.fullName}.`}
+          ? `Showing counsellor ${activeIndex + 1} of ${slideCount}: ${currentCounsellor.shortName}.`
+          : `Showing ${currentCounsellor.shortName}.`}
       </p>
     </div>
   );

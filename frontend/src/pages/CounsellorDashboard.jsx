@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle,
@@ -11,22 +11,30 @@ import {
   ClipboardList,
   Edit3,
   LineChart,
+  MapPin,
   Video,
   X,
 } from "lucide-react";
 import ComingSoonButton from "../components/ComingSoonButton";
 import ComingSoonText from "../components/ComingSoonText";
+import RejectSessionModal from "../components/RejectSessionModal";
 import { ResourceStatusBadge } from "../components/AdminResourceRowActions";
+import { ApiError } from "../api/client";
+import { listMyResources } from "../api/resources";
 import { useAuth } from "../context/AuthContext";
 import { useResources } from "../context/ResourcesContext";
+import {
+  acceptSessionRequest,
+  getCounsellorSessionRequests,
+  getCounsellorUpcomingSessions,
+  rejectSessionRequest,
+  updateCounsellorAvailabilityStatus,
+} from "../api/sessions";
 import {
   attentionAlert,
   availabilitySlots,
   counsellorKpis,
   recentActivity,
-  sessionRequests,
-  todaySchedule,
-  upcomingSessions,
 } from "../data/mockCounsellorDashboard";
 
 const kpiIcons = {
@@ -69,16 +77,71 @@ function StatCard({ kpi }) {
 
 export default function CounsellorDashboard() {
   const { user } = useAuth();
-  const { getResourcesBySubmitter, counsellorActivity } = useResources();
+  const { counsellorActivity } = useResources();
   const firstName = user.fullName.split(" ")[0];
   const [isAvailable, setIsAvailable] = useState(true);
-  const [requests, setRequests] = useState(sessionRequests);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [requests, setRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(true);
+  const [upcomingSessions, setUpcomingSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [submissions, setSubmissions] = useState([]);
+  const [submissionsLoading, setSubmissionsLoading] = useState(true);
+  const [actionError, setActionError] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+  const [rejectTarget, setRejectTarget] = useState(null);
+
   const pendingCount = requests.length;
 
-  const submissions = useMemo(
-    () => getResourcesBySubmitter(user.id),
-    [getResourcesBySubmitter, user.id],
-  );
+  const loadPendingRequests = useCallback(async () => {
+    setRequestsLoading(true);
+    try {
+      const data = await getCounsellorSessionRequests("pending");
+      setRequests(data.slice(0, 5));
+    } catch {
+      setRequests([]);
+    } finally {
+      setRequestsLoading(false);
+    }
+  }, []);
+
+  const loadUpcomingSessions = useCallback(async () => {
+    setSessionsLoading(true);
+    try {
+      const data = await getCounsellorUpcomingSessions();
+      setUpcomingSessions(data);
+    } catch {
+      setUpcomingSessions([]);
+    } finally {
+      setSessionsLoading(false);
+    }
+  }, []);
+
+  const loadSubmissions = useCallback(async () => {
+    setSubmissionsLoading(true);
+    try {
+      const data = await listMyResources();
+      setSubmissions(data);
+    } catch {
+      setSubmissions([]);
+    } finally {
+      setSubmissionsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPendingRequests();
+    loadUpcomingSessions();
+    loadSubmissions();
+  }, [loadPendingRequests, loadUpcomingSessions, loadSubmissions]);
+
+  const dashboardKpis = useMemo(() => {
+    return counsellorKpis.map((kpi) =>
+      kpi.id === "pending"
+        ? { ...kpi, value: String(pendingCount).padStart(2, "0"), highlight: pendingCount > 0 }
+        : kpi,
+    );
+  }, [pendingCount]);
 
   const submissionsNeedingAttention = useMemo(
     () =>
@@ -94,12 +157,50 @@ export default function CounsellorDashboard() {
     [counsellorActivity],
   );
 
-  const handleAccept = (id) => {
-    setRequests((prev) => prev.filter((request) => request.id !== id));
+  const handleAccept = async (id) => {
+    setActionLoading(true);
+    setActionError("");
+    try {
+      await acceptSessionRequest(id);
+      await loadPendingRequests();
+      await loadUpcomingSessions();
+    } catch (error) {
+      setActionError(error.message || "Unable to accept request.");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleReject = (id) => {
-    setRequests((prev) => prev.filter((request) => request.id !== id));
+  const handleReject = async (id, reason) => {
+    setActionLoading(true);
+    setActionError("");
+    try {
+      await rejectSessionRequest(id, reason);
+      setRejectTarget(null);
+      await loadPendingRequests();
+    } catch (error) {
+      setActionError(error.message || "Unable to reject request.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleAvailabilityToggle = async () => {
+    const nextValue = !isAvailable;
+    setAvailabilityLoading(true);
+    setActionError("");
+    try {
+      await updateCounsellorAvailabilityStatus(nextValue);
+      setIsAvailable(nextValue);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 403) {
+        setActionError("You are not authorized to update availability.");
+      } else {
+        setActionError(error.message || "Unable to update availability.");
+      }
+    } finally {
+      setAvailabilityLoading(false);
+    }
   };
 
   return (
@@ -129,8 +230,9 @@ export default function CounsellorDashboard() {
                 role="switch"
                 aria-checked={isAvailable}
                 aria-label="Toggle availability"
-                onClick={() => setIsAvailable((prev) => !prev)}
-                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                disabled={availabilityLoading}
+                onClick={handleAvailabilityToggle}
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 ${
                   isAvailable ? "bg-primary" : "bg-outline-muted"
                 }`}
               >
@@ -161,12 +263,18 @@ export default function CounsellorDashboard() {
         </aside>
       </section>
 
+      {actionError ? (
+        <p className="mb-4 rounded-xl border border-danger/20 bg-danger/5 px-4 py-3 font-body text-sm text-danger">
+          {actionError}
+        </p>
+      ) : null}
+
       {/* KPI Row */}
       <section
         aria-label="Counsellor key metrics"
         className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4"
       >
-        {counsellorKpis.map((kpi) => (
+        {dashboardKpis.map((kpi) => (
           <StatCard key={kpi.id} kpi={kpi} />
         ))}
       </section>
@@ -210,7 +318,20 @@ export default function CounsellorDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-muted/10">
-                  {requests.map((request) => (
+                  {requestsLoading ? (
+                    <tr>
+                      <td colSpan={5} className="px-5 py-8 text-center font-body text-sm text-on-surface-muted">
+                        Loading requests...
+                      </td>
+                    </tr>
+                  ) : requests.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-5 py-8 text-center font-body text-sm text-on-surface-muted">
+                        No pending requests right now.
+                      </td>
+                    </tr>
+                  ) : (
+                    requests.map((request) => (
                     <tr
                       key={request.id}
                       className="transition-colors hover:bg-surface-muted/40"
@@ -240,32 +361,34 @@ export default function CounsellorDashboard() {
                             : "text-on-surface-subtle"
                         }`}
                       >
-                        {request.age}
+                        {request.requested}
                       </td>
                       <td className="px-5 py-4 text-right">
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
                             onClick={() => handleAccept(request.id)}
+                            disabled={actionLoading}
                             title={`Accept request from ${request.name}`}
                             aria-label={`Accept request from ${request.name}`}
-                            className="rounded-lg p-2 text-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary/10"
+                            className="rounded-lg p-2 text-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary/10 disabled:opacity-50"
                           >
                             <Check className="h-5 w-5" aria-hidden="true" />
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleReject(request.id)}
+                            onClick={() => setRejectTarget(request)}
+                            disabled={actionLoading}
                             title={`Reject request from ${request.name}`}
                             aria-label={`Reject request from ${request.name}`}
-                            className="rounded-lg p-2 text-on-surface-subtle transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-danger/10 hover:text-danger"
+                            className="rounded-lg p-2 text-on-surface-subtle transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-danger/10 hover:text-danger disabled:opacity-50"
                           >
                             <X className="h-5 w-5" aria-hidden="true" />
                           </button>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  )))}
                 </tbody>
               </table>
             </div>
@@ -284,7 +407,11 @@ export default function CounsellorDashboard() {
                 View All
               </Link>
             </div>
-            {submissionsNeedingAttention.length > 0 ? (
+            {submissionsLoading ? (
+              <p className="px-5 py-8 text-center font-body text-sm text-on-surface-muted">
+                Loading submissions…
+              </p>
+            ) : submissionsNeedingAttention.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
@@ -364,7 +491,19 @@ export default function CounsellorDashboard() {
               Upcoming Sessions
             </h2>
             <div className="space-y-3">
-              {upcomingSessions.map((session) => (
+              {sessionsLoading ? (
+                <p className="font-body text-sm text-on-surface-muted">
+                  Loading upcoming sessions...
+                </p>
+              ) : upcomingSessions.length === 0 ? (
+                <p className="font-body text-sm text-on-surface-muted">
+                  No upcoming sessions scheduled.
+                </p>
+              ) : (
+                upcomingSessions.map((session) => {
+                  const FormatIcon =
+                    session.format === "in-person" ? MapPin : Video;
+                  return (
                 <article
                   key={session.id}
                   className="flex flex-col justify-between gap-4 rounded-xl border border-outline-muted/20 p-4 transition-all duration-200 hover:border-primary/30 hover:shadow-sm md:flex-row md:items-center"
@@ -388,7 +527,7 @@ export default function CounsellorDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between gap-4 md:justify-end">
-                    <Video
+                    <FormatIcon
                       className="h-5 w-5 text-primary/60"
                       aria-hidden="true"
                     />
@@ -397,47 +536,57 @@ export default function CounsellorDashboard() {
                     </ComingSoonButton>
                   </div>
                 </article>
-              ))}
+                  );
+                })
+              )}
             </div>
           </section>
         </div>
 
         {/* Sidebar column */}
         <aside className="space-y-6 lg:col-span-4">
-          {/* Today's Schedule */}
+          {/* Today's Schedule — mock preview retained */}
           <section className="rounded-2xl border border-primary/5 bg-surface p-5 shadow-md">
             <h2 className="mb-4 font-heading text-base font-semibold text-on-surface">
               Today's Schedule
             </h2>
-            <div className="relative space-y-5 before:absolute before:bottom-2 before:left-[7px] before:top-2 before:w-0.5 before:bg-outline-muted/30">
-              {todaySchedule.map((item) => (
-                <div key={item.id} className="relative pl-8">
-                  <span
-                    className={`absolute left-0 top-1.5 h-4 w-4 rounded-full border-4 border-surface ring-1 ring-outline-muted/30 ${
-                      item.active ? "bg-primary" : "bg-outline-muted"
-                    }`}
-                    aria-hidden="true"
-                  />
-                  <p
-                    className={`font-heading text-[11px] font-bold uppercase ${
-                      item.active ? "text-primary" : "text-on-surface-subtle"
-                    }`}
-                  >
-                    {item.time}
-                  </p>
-                  <p
-                    className={`font-heading text-sm font-semibold ${
-                      item.active ? "text-on-surface" : "text-on-surface-muted"
-                    }`}
-                  >
-                    {item.title}
-                  </p>
-                  <p className="font-body text-xs text-on-surface-subtle">
-                    {item.detail}
-                  </p>
-                </div>
-              ))}
-            </div>
+            {sessionsLoading ? (
+              <p className="font-body text-sm text-on-surface-muted">Loading...</p>
+            ) : upcomingSessions.length === 0 ? (
+              <p className="font-body text-sm text-on-surface-muted">
+                Nothing scheduled for today.
+              </p>
+            ) : (
+              <div className="relative space-y-5 before:absolute before:bottom-2 before:left-[7px] before:top-2 before:w-0.5 before:bg-outline-muted/30">
+                {upcomingSessions.slice(0, 3).map((item, index) => (
+                  <div key={item.id} className="relative pl-8">
+                    <span
+                      className={`absolute left-0 top-1.5 h-4 w-4 rounded-full border-4 border-surface ring-1 ring-outline-muted/30 ${
+                        index === 0 ? "bg-primary" : "bg-outline-muted"
+                      }`}
+                      aria-hidden="true"
+                    />
+                    <p
+                      className={`font-heading text-[11px] font-bold uppercase ${
+                        index === 0 ? "text-primary" : "text-on-surface-subtle"
+                      }`}
+                    >
+                      {item.time}
+                    </p>
+                    <p
+                      className={`font-heading text-sm font-semibold ${
+                        index === 0 ? "text-on-surface" : "text-on-surface-muted"
+                      }`}
+                    >
+                      {item.title}
+                    </p>
+                    <p className="font-body text-xs text-on-surface-subtle">
+                      {item.studentId}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* Availability */}
@@ -522,6 +671,17 @@ export default function CounsellorDashboard() {
           </ComingSoonText>
         </div>
       </footer>
+
+      <RejectSessionModal
+        request={rejectTarget}
+        onClose={() => setRejectTarget(null)}
+        onConfirm={(reason) => {
+          if (rejectTarget) {
+            handleReject(rejectTarget.id, reason);
+          }
+        }}
+        submitting={actionLoading}
+      />
     </div>
   );
 }

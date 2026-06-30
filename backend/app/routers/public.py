@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app import schemas
@@ -7,6 +8,10 @@ from app.models import (
     AvailabilityStatus as AvailabilityStatusModel,
     CounsellorProfile,
     CounsellorProfileStatus as CounsellorProfileStatusModel,
+    Resource,
+    ResourceStatus,
+    SessionRequest,
+    SessionRequestStatus as SessionRequestStatusModel,
 )
 from app.schemas.enums import AvailabilityStatus
 
@@ -53,6 +58,42 @@ def get_featured_counsellors(
 
 
 @router.get("/stats", response_model=schemas.PublicStatsResponse)
-def get_public_stats():
-    # TODO: implement
-    raise NotImplementedError
+def get_public_stats(db: Session = Depends(get_db)):
+    counsellor_count = (
+        db.query(CounsellorProfile)
+        .filter(CounsellorProfile.status == CounsellorProfileStatusModel.active)
+        .count()
+    )
+
+    students_supported = (
+        db.query(func.count(func.distinct(SessionRequest.student_id)))
+        .filter(
+            SessionRequest.status.in_(
+                [
+                    SessionRequestStatusModel.accepted,
+                    SessionRequestStatusModel.completed,
+                ]
+            )
+        )
+        .scalar()
+        or 0
+    )
+
+    sessions_completed = (
+        db.query(SessionRequest)
+        .filter(SessionRequest.status == SessionRequestStatusModel.completed)
+        .count()
+    )
+
+    resources_published = (
+        db.query(Resource)
+        .filter(Resource.status == ResourceStatus.published)
+        .count()
+    )
+
+    return schemas.PublicStatsResponse(
+        counsellor_count=counsellor_count,
+        students_supported=students_supported,
+        sessions_completed=sessions_completed,
+        resources_published=resources_published,
+    )

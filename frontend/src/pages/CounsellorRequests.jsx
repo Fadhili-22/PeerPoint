@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Calendar,
   Check,
+  CheckCircle2,
   Clock,
   Eye,
   Inbox,
@@ -9,34 +10,49 @@ import {
   Video,
   X,
 } from "lucide-react";
+import { ApiError } from "../api/client";
+import RejectSessionModal from "../components/RejectSessionModal";
 import {
-  counsellorRequests,
-  requestFilters,
-  statusLabels,
-  statusStyles,
-} from "../data/mockCounsellorRequests";
+  acceptSessionRequest,
+  completeSessionRequest,
+  formatSessionStatus,
+  getCounsellorSessionRequestDetail,
+  getCounsellorSessionRequests,
+  rejectSessionRequest,
+} from "../api/sessions";
+
+const requestFilters = [
+  { id: "all", label: "All" },
+  { id: "pending", label: "Pending" },
+  { id: "accepted", label: "Accepted" },
+  { id: "rejected", label: "Rejected" },
+  { id: "completed", label: "Completed" },
+];
 
 const modeIcons = {
   online: Video,
   "in-person": MapPin,
 };
 
-const modeLabels = {
-  online: "Online session",
-  "in-person": "In-person session",
-};
-
 function StatusBadge({ status }) {
+  const meta = formatSessionStatus(status, "counsellor");
   return (
     <span
-      className={`inline-flex items-center rounded-full px-3 py-1 font-heading text-xs font-bold ${statusStyles[status]}`}
+      className={`inline-flex items-center rounded-full px-3 py-1 font-heading text-xs font-bold ${meta.style}`}
     >
-      {statusLabels[status]}
+      {meta.label}
     </span>
   );
 }
 
-function RequestCard({ request, onAccept, onReject, onViewDetails }) {
+function RequestCard({
+  request,
+  onAccept,
+  onReject,
+  onComplete,
+  onViewDetails,
+  actionLoading,
+}) {
   const ModeIcon = modeIcons[request.mode];
 
   return (
@@ -52,6 +68,11 @@ function RequestCard({ request, onAccept, onReject, onViewDetails }) {
                 {request.name}
               </h3>
               <StatusBadge status={request.status} />
+              {request.overdue ? (
+                <span className="rounded-full bg-danger/10 px-2 py-0.5 font-body text-xs font-medium text-danger">
+                  Overdue
+                </span>
+              ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-body text-sm text-on-surface-muted">
               <span className="rounded-full bg-soft-teal px-3 py-0.5 font-heading text-xs font-bold text-primary">
@@ -63,7 +84,7 @@ function RequestCard({ request, onAccept, onReject, onViewDetails }) {
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <ModeIcon className="h-4 w-4 text-on-surface-subtle" aria-hidden="true" />
-                {modeLabels[request.mode]}
+                {request.modeLabel}
               </span>
               <span
                 className={`inline-flex items-center gap-1.5 ${
@@ -77,7 +98,7 @@ function RequestCard({ request, onAccept, onReject, onViewDetails }) {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 lg:justify-end">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
           <button
             type="button"
             onClick={() => onViewDetails(request)}
@@ -91,24 +112,38 @@ function RequestCard({ request, onAccept, onReject, onViewDetails }) {
             <>
               <button
                 type="button"
-                onClick={() => onReject(request.id)}
+                onClick={() => onReject(request)}
+                disabled={actionLoading}
                 title={`Reject request from ${request.name}`}
                 aria-label={`Reject request from ${request.name}`}
-                className="rounded-xl border border-outline-muted/30 p-2 text-on-surface-subtle transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:border-danger/30 hover:bg-danger/10 hover:text-danger focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2"
+                className="rounded-xl border border-outline-muted/30 p-2 text-on-surface-subtle transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:border-danger/30 hover:bg-danger/10 hover:text-danger focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2 disabled:opacity-50"
               >
                 <X className="h-5 w-5" aria-hidden="true" />
               </button>
               <button
                 type="button"
                 onClick={() => onAccept(request.id)}
+                disabled={actionLoading}
                 title={`Accept request from ${request.name}`}
                 aria-label={`Accept request from ${request.name}`}
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 font-heading text-sm font-semibold text-on-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 font-heading text-sm font-semibold text-on-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50"
               >
                 <Check className="h-4 w-4" aria-hidden="true" />
                 Accept
               </button>
             </>
+          )}
+
+          {request.status === "accepted" && (
+            <button
+              type="button"
+              onClick={() => onComplete(request.id)}
+              disabled={actionLoading}
+              className="inline-flex items-center gap-2 rounded-xl border border-success/30 bg-success/10 px-4 py-2 font-heading text-sm font-semibold text-success transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 disabled:opacity-50"
+            >
+              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+              Mark Complete
+            </button>
           )}
         </div>
       </div>
@@ -116,9 +151,19 @@ function RequestCard({ request, onAccept, onReject, onViewDetails }) {
   );
 }
 
-function RequestDetailsModal({ request, onClose, onAccept, onReject }) {
+function RequestDetailsModal({
+  request,
+  detail,
+  loading,
+  onClose,
+  onAccept,
+  onReject,
+  onComplete,
+  actionLoading,
+}) {
   if (!request) return null;
   const ModeIcon = modeIcons[request.mode];
+  const display = detail ?? request;
 
   return (
     <div
@@ -135,31 +180,44 @@ function RequestDetailsModal({ request, onClose, onAccept, onReject }) {
         <div className="mb-5 flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-soft-teal font-heading text-base font-bold text-primary">
-              {request.initials}
+              {display.initials}
             </div>
             <div>
               <h2 className="font-heading text-lg font-semibold text-on-surface">
-                {request.name}
+                {display.name}
               </h2>
-              <StatusBadge status={request.status} />
+              <StatusBadge status={display.status} />
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close details"
-            className="rounded-lg p-2 text-on-surface-subtle transition-colors hover:bg-surface-muted hover:text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            className="rounded-lg p-2 text-on-surface-subtle transition-colors hover:bg-surface-muted hover:text-on-surface"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
+
+        {loading ? (
+          <p className="mb-4 font-body text-sm text-on-surface-muted">
+            Loading details...
+          </p>
+        ) : null}
+
+        {display.studentEmail ? (
+          <p className="mb-4 rounded-xl bg-soft-teal/50 px-4 py-3 font-body text-sm text-on-surface">
+            Student email:{" "}
+            <span className="font-semibold">{display.studentEmail}</span>
+          </p>
+        ) : null}
 
         <dl className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <dt className="mb-1 font-heading text-[11px] font-bold uppercase tracking-widest text-on-surface-subtle">
               Topic
             </dt>
-            <dd className="font-body text-sm text-on-surface">{request.topic}</dd>
+            <dd className="font-body text-sm text-on-surface">{display.topic}</dd>
           </div>
           <div>
             <dt className="mb-1 font-heading text-[11px] font-bold uppercase tracking-widest text-on-surface-subtle">
@@ -167,7 +225,7 @@ function RequestDetailsModal({ request, onClose, onAccept, onReject }) {
             </dt>
             <dd className="inline-flex items-center gap-1.5 font-body text-sm text-on-surface">
               <Calendar className="h-4 w-4 text-on-surface-subtle" aria-hidden="true" />
-              {request.preferredDate}
+              {display.preferredDate}
             </dd>
           </div>
           <div>
@@ -176,7 +234,7 @@ function RequestDetailsModal({ request, onClose, onAccept, onReject }) {
             </dt>
             <dd className="inline-flex items-center gap-1.5 font-body text-sm text-on-surface">
               <ModeIcon className="h-4 w-4 text-on-surface-subtle" aria-hidden="true" />
-              {modeLabels[request.mode]}
+              {display.modeLabel}
             </dd>
           </div>
           <div>
@@ -185,7 +243,7 @@ function RequestDetailsModal({ request, onClose, onAccept, onReject }) {
             </dt>
             <dd className="inline-flex items-center gap-1.5 font-body text-sm text-on-surface">
               <Clock className="h-4 w-4 text-on-surface-subtle" aria-hidden="true" />
-              {request.duration}
+              {display.duration}
             </dd>
           </div>
         </dl>
@@ -195,7 +253,7 @@ function RequestDetailsModal({ request, onClose, onAccept, onReject }) {
             Message
           </dt>
           <p className="rounded-xl bg-surface-muted/60 p-4 font-body text-sm leading-relaxed text-on-surface-muted">
-            {request.message}
+            {display.message}
           </p>
         </div>
 
@@ -203,25 +261,40 @@ function RequestDetailsModal({ request, onClose, onAccept, onReject }) {
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <button
               type="button"
-              onClick={() => {
-                onReject(request.id);
-                onClose();
-              }}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-muted/30 px-4 py-2.5 font-heading text-sm font-semibold text-on-surface-muted transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:border-danger/30 hover:bg-danger/10 hover:text-danger focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2"
+              onClick={() => onReject(request)}
+              disabled={actionLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-muted/30 px-4 py-2.5 font-heading text-sm font-semibold text-on-surface-muted transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:border-danger/30 hover:bg-danger/10 hover:text-danger disabled:opacity-50"
             >
               <X className="h-4 w-4" aria-hidden="true" />
               Reject
             </button>
             <button
               type="button"
-              onClick={() => {
-                onAccept(request.id);
-                onClose();
-              }}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-heading text-sm font-semibold text-on-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              onClick={() => onAccept(request.id)}
+              disabled={actionLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-heading text-sm font-semibold text-on-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 disabled:opacity-50"
             >
               <Check className="h-4 w-4" aria-hidden="true" />
               Accept Request
+            </button>
+          </div>
+        ) : request.status === "accepted" ? (
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-outline-muted/30 px-4 py-2.5 font-heading text-sm font-semibold text-on-surface-muted"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              onClick={() => onComplete(request.id)}
+              disabled={actionLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-success px-5 py-2.5 font-heading text-sm font-semibold text-on-primary disabled:opacity-50"
+            >
+              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+              Mark Complete
             </button>
           </div>
         ) : (
@@ -229,7 +302,7 @@ function RequestDetailsModal({ request, onClose, onAccept, onReject }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-primary px-5 py-2.5 font-heading text-sm font-semibold text-on-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              className="rounded-xl bg-primary px-5 py-2.5 font-heading text-sm font-semibold text-on-primary"
             >
               Close
             </button>
@@ -241,9 +314,71 @@ function RequestDetailsModal({ request, onClose, onAccept, onReject }) {
 }
 
 export default function CounsellorRequests() {
-  const [requests, setRequests] = useState(counsellorRequests);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [requestDetail, setRequestDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [rejectTarget, setRejectTarget] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const loadRequests = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await getCounsellorSessionRequests();
+      setRequests(data);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        setError("You are not authorized to view session requests.");
+      } else {
+        setError(err.message || "Unable to load requests. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRequests();
+  }, [loadRequests]);
+
+  useEffect(() => {
+    if (!selectedRequest) {
+      setRequestDetail(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadDetail() {
+      setDetailLoading(true);
+      try {
+        const detail = await getCounsellorSessionRequestDetail(selectedRequest.id);
+        if (!cancelled) {
+          setRequestDetail(detail);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          if (err instanceof ApiError && err.status === 404) {
+            setError("Request not found.");
+            setSelectedRequest(null);
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setDetailLoading(false);
+        }
+      }
+    }
+
+    loadDetail();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedRequest]);
 
   const counts = useMemo(() => {
     return requests.reduce(
@@ -261,16 +396,51 @@ export default function CounsellorRequests() {
     return requests.filter((request) => request.status === activeFilter);
   }, [requests, activeFilter]);
 
-  const updateStatus = (id, status) => {
-    setRequests((prev) =>
-      prev.map((request) =>
-        request.id === id ? { ...request, status, overdue: false } : request,
-      ),
-    );
+  const handleAccept = async (id) => {
+    setActionLoading(true);
+    try {
+      await acceptSessionRequest(id);
+      await loadRequests();
+      if (selectedRequest?.id === id) {
+        const detail = await getCounsellorSessionRequestDetail(id);
+        setRequestDetail(detail);
+      }
+    } catch (err) {
+      setError(err.message || "Unable to accept request.");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleAccept = (id) => updateStatus(id, "accepted");
-  const handleReject = (id) => updateStatus(id, "rejected");
+  const handleReject = async (id, reason) => {
+    setActionLoading(true);
+    try {
+      await rejectSessionRequest(id, reason);
+      setRejectTarget(null);
+      setSelectedRequest(null);
+      await loadRequests();
+    } catch (err) {
+      setError(err.message || "Unable to reject request.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleComplete = async (id) => {
+    setActionLoading(true);
+    try {
+      await completeSessionRequest(id);
+      await loadRequests();
+      if (selectedRequest?.id === id) {
+        const detail = await getCounsellorSessionRequestDetail(id);
+        setRequestDetail(detail);
+      }
+    } catch (err) {
+      setError(err.message || "Unable to mark request complete.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col">
@@ -282,6 +452,12 @@ export default function CounsellorRequests() {
           Review, accept, and manage incoming peer counselling requests.
         </p>
       </header>
+
+      {error ? (
+        <p className="mb-4 rounded-xl border border-danger/20 bg-danger/5 px-4 py-3 font-body text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
 
       <div
         className="mb-6 flex flex-wrap items-center gap-2"
@@ -318,15 +494,26 @@ export default function CounsellorRequests() {
         })}
       </div>
 
-      {visibleRequests.length > 0 ? (
+      {loading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="h-28 animate-pulse rounded-2xl border border-primary/5 bg-surface-muted/40"
+            />
+          ))}
+        </div>
+      ) : visibleRequests.length > 0 ? (
         <div className="space-y-4">
           {visibleRequests.map((request) => (
             <RequestCard
               key={request.id}
               request={request}
               onAccept={handleAccept}
-              onReject={handleReject}
+              onReject={setRejectTarget}
+              onComplete={handleComplete}
               onViewDetails={setSelectedRequest}
+              actionLoading={actionLoading}
             />
           ))}
         </div>
@@ -347,9 +534,24 @@ export default function CounsellorRequests() {
 
       <RequestDetailsModal
         request={selectedRequest}
+        detail={requestDetail}
+        loading={detailLoading}
         onClose={() => setSelectedRequest(null)}
         onAccept={handleAccept}
-        onReject={handleReject}
+        onReject={setRejectTarget}
+        onComplete={handleComplete}
+        actionLoading={actionLoading}
+      />
+
+      <RejectSessionModal
+        request={rejectTarget}
+        onClose={() => setRejectTarget(null)}
+        onConfirm={(reason) => {
+          if (rejectTarget) {
+            handleReject(rejectTarget.id, reason);
+          }
+        }}
+        submitting={actionLoading}
       />
     </div>
   );

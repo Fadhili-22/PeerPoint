@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
   Eye,
   Headset,
+  Loader2,
   Star,
   UserCheck,
   UserPlus,
@@ -12,17 +13,20 @@ import {
 import AdminPageHeader from "../components/AdminPageHeader";
 import AdminKpiCard from "../components/AdminKpiCard";
 import FilterChip from "../components/FilterChip";
+import { ApiError } from "../api/client";
 import {
-  counsellorStats,
-  counsellors,
-  promotionCandidates,
-} from "../data/mockAdminCounsellors";
+  listAdminCounsellors,
+  listPromotionCandidates,
+  promoteCounsellor,
+} from "../api/admin";
 
 const statusFilters = [
   { id: "all", label: "All" },
   { id: "active", label: "Active" },
   { id: "inactive", label: "Inactive" },
 ];
+
+const TRAINING_COMPLETE = "Training Complete";
 
 function StatusBadge({ status }) {
   const isActive = status === "active";
@@ -43,6 +47,21 @@ function StatusBadge({ status }) {
 
 function CounsellorProfileModal({ counsellor, onClose }) {
   if (!counsellor) return null;
+
+  const rows = [
+    { label: "Year", value: counsellor.year ? `Year ${counsellor.year}` : "—" },
+    { label: "Programme", value: counsellor.program || "—" },
+    {
+      label: "Specialties",
+      value:
+        counsellor.specialties.length > 0
+          ? counsellor.specialties.join(", ")
+          : "—",
+    },
+    { label: "Sessions", value: counsellor.sessions },
+    { label: "Rating", value: Number(counsellor.rating).toFixed(1) },
+    { label: "Last active", value: counsellor.lastActive },
+  ];
 
   return (
     <div
@@ -80,33 +99,19 @@ function CounsellorProfileModal({ counsellor, onClose }) {
           </button>
         </div>
         <dl className="space-y-3 font-body text-sm">
-          <div className="flex justify-between gap-4">
-            <dt className="text-on-surface-muted">Specialties</dt>
-            <dd className="text-right font-medium text-on-surface">
-              {counsellor.specialties.join(", ")}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-on-surface-muted">Sessions</dt>
-            <dd className="font-medium text-on-surface">{counsellor.sessions}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-on-surface-muted">Rating</dt>
-            <dd className="font-medium text-on-surface">{counsellor.rating}</dd>
-          </div>
+          {rows.map((row) => (
+            <div key={row.label} className="flex justify-between gap-4">
+              <dt className="text-on-surface-muted">{row.label}</dt>
+              <dd className="text-right font-medium text-on-surface">
+                {row.value}
+              </dd>
+            </div>
+          ))}
           <div className="flex justify-between gap-4">
             <dt className="text-on-surface-muted">Status</dt>
             <dd>
               <StatusBadge status={counsellor.status} />
             </dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-on-surface-muted">Joined</dt>
-            <dd className="font-medium text-on-surface">{counsellor.joined}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-on-surface-muted">Last active</dt>
-            <dd className="font-medium text-on-surface">{counsellor.lastActive}</dd>
           </div>
         </dl>
         <button
@@ -124,28 +129,57 @@ function CounsellorProfileModal({ counsellor, onClose }) {
 export default function AdminCounsellors() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [candidates, setCandidates] = useState(promotionCandidates);
-  const [counsellorList, setCounsellorList] = useState(counsellors);
+  const [candidates, setCandidates] = useState([]);
+  const [counsellorList, setCounsellorList] = useState([]);
   const [selectedCounsellor, setSelectedCounsellor] = useState(null);
 
-  const handlePromote = (candidate) => {
-    setCandidates((prev) => prev.filter((item) => item.id !== candidate.id));
-    setCounsellorList((prev) => [
-      ...prev,
-      {
-        id: candidate.id,
-        name: candidate.name,
-        email: candidate.email,
-        initials: candidate.initials,
-        specialties: ["Peer Support"],
-        sessions: 0,
-        rating: "—",
-        status: "active",
-        availability: "Online Now",
-        joined: "Just promoted",
-        lastActive: "Just now",
-      },
-    ]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [promotingId, setPromotingId] = useState(null);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const [candidateData, counsellorData] = await Promise.all([
+        listPromotionCandidates(),
+        listAdminCounsellors(),
+      ]);
+      setCandidates(candidateData);
+      setCounsellorList(counsellorData);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        setError("You are not authorized to manage counsellors.");
+      } else {
+        setError(err.message || "Unable to load counsellors. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handlePromote = async (candidate) => {
+    setPromotingId(candidate.userId);
+    setError("");
+    setFeedback("");
+    try {
+      const result = await promoteCounsellor(candidate.userId);
+      setFeedback(result?.message || `${candidate.name} promoted to counsellor.`);
+      await loadData();
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message || "Unable to promote this candidate.");
+      } else {
+        setError("Unable to promote this candidate. Please try again.");
+      }
+    } finally {
+      setPromotingId(null);
+    }
   };
 
   const filteredCounsellors = useMemo(() => {
@@ -164,6 +198,24 @@ export default function AdminCounsellors() {
     });
   }, [search, statusFilter, counsellorList]);
 
+  const stats = useMemo(() => {
+    const total = counsellorList.length;
+    const active = counsellorList.filter((c) => c.status === "active").length;
+    const rated = counsellorList.filter((c) => Number(c.rating) > 0);
+    const avgRating =
+      rated.length > 0
+        ? (
+            rated.reduce((sum, c) => sum + Number(c.rating), 0) / rated.length
+          ).toFixed(1)
+        : "—";
+    return {
+      total,
+      active,
+      pendingPromotions: candidates.length,
+      avgRating,
+    };
+  }, [counsellorList, candidates]);
+
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
       <AdminPageHeader
@@ -174,18 +226,35 @@ export default function AdminCounsellors() {
         searchValue={search}
         onSearchChange={setSearch}
         stats={[
-          { label: "Counsellors", value: counsellorStats.total, icon: Headset },
-          { label: "Active", value: counsellorStats.active, icon: UserCheck },
-          { label: "Avg Rating", value: counsellorStats.avgRating, icon: Star },
+          { label: "Counsellors", value: stats.total, icon: Headset },
+          { label: "Active", value: stats.active, icon: UserCheck },
+          { label: "Avg Rating", value: stats.avgRating, icon: Star },
         ]}
       />
+
+      {error ? (
+        <div
+          role="alert"
+          className="rounded-2xl border border-danger/20 bg-danger/5 px-5 py-3 font-body text-sm font-medium text-danger"
+        >
+          {error}
+        </div>
+      ) : null}
+      {feedback ? (
+        <div
+          role="status"
+          className="rounded-2xl border border-success/20 bg-success/5 px-5 py-3 font-body text-sm font-medium text-success"
+        >
+          {feedback}
+        </div>
+      ) : null}
 
       <section aria-label="Counsellor key metrics">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <AdminKpiCard
             icon={Headset}
             label="Total Counsellors"
-            value={counsellorStats.total}
+            value={stats.total}
             trend="+4%"
             sublabel="vs last month"
             iconBg="bg-soft-teal"
@@ -194,7 +263,7 @@ export default function AdminCounsellors() {
           <AdminKpiCard
             icon={UserCheck}
             label="Active Counsellors"
-            value={counsellorStats.active}
+            value={stats.active}
             sublabel="Online recently"
             iconBg="bg-primary/10"
             iconColor="text-primary"
@@ -202,7 +271,7 @@ export default function AdminCounsellors() {
           <AdminKpiCard
             icon={UserPlus}
             label="Pending Promotions"
-            value={counsellorStats.pendingPromotions}
+            value={stats.pendingPromotions}
             urgent
             iconBg="bg-warning/10"
             iconColor="text-accent-gold"
@@ -210,7 +279,7 @@ export default function AdminCounsellors() {
           <AdminKpiCard
             icon={Star}
             label="Average Rating"
-            value={counsellorStats.avgRating}
+            value={stats.avgRating}
             sublabel="Across all sessions"
             iconBg="bg-primary-accent/20"
             iconColor="text-primary-light"
@@ -258,7 +327,8 @@ export default function AdminCounsellors() {
             <tbody className="divide-y divide-outline-muted/10">
               {candidates.map((candidate) => {
                 const trainingComplete =
-                  candidate.trainingStatus === "Training Complete";
+                  candidate.trainingStatus === TRAINING_COMPLETE;
+                const isPromoting = promotingId === candidate.userId;
                 return (
                   <tr
                     key={candidate.id}
@@ -303,16 +373,23 @@ export default function AdminCounsellors() {
                       <button
                         type="button"
                         onClick={() => handlePromote(candidate)}
-                        disabled={candidate.trainingStatus !== "Training Complete"}
+                        disabled={!trainingComplete || isPromoting}
                         title={
-                          candidate.trainingStatus !== "Training Complete"
-                            ? "Coming soon"
+                          !trainingComplete
+                            ? "Training must be complete before promotion"
                             : `Promote ${candidate.name} to counsellor`
                         }
                         className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 font-heading text-xs font-semibold text-on-primary shadow-sm transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 disabled:hover:translate-y-0"
                       >
-                        <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                        Promote
+                        {isPromoting ? (
+                          <Loader2
+                            className="h-4 w-4 animate-spin"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                        )}
+                        {isPromoting ? "Promoting..." : "Promote"}
                       </button>
                     </td>
                   </tr>
@@ -320,6 +397,25 @@ export default function AdminCounsellors() {
               })}
             </tbody>
           </table>
+          {!loading && candidates.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 px-5 py-12 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-muted">
+                <UserPlus className="h-5 w-5 text-on-surface-subtle" aria-hidden="true" />
+              </div>
+              <p className="font-heading text-base font-semibold text-on-surface">
+                No promotion candidates
+              </p>
+              <p className="max-w-sm font-body text-sm text-on-surface-muted">
+                There are no trained students awaiting promotion right now.
+              </p>
+            </div>
+          ) : null}
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 px-5 py-12 font-body text-sm text-on-surface-muted">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Loading candidates...
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -389,14 +485,20 @@ export default function AdminCounsellors() {
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex flex-wrap gap-1.5">
-                      {counsellor.specialties.map((specialty) => (
-                        <span
-                          key={specialty}
-                          className="rounded-full bg-surface-muted px-2 py-1 font-heading text-[10px] font-bold uppercase text-on-surface-muted"
-                        >
-                          {specialty}
+                      {counsellor.specialties.length > 0 ? (
+                        counsellor.specialties.map((specialty) => (
+                          <span
+                            key={specialty}
+                            className="rounded-full bg-surface-muted px-2 py-1 font-heading text-[10px] font-bold uppercase text-on-surface-muted"
+                          >
+                            {specialty}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="font-body text-xs text-on-surface-subtle">
+                          —
                         </span>
-                      ))}
+                      )}
                     </div>
                   </td>
                   <td className="px-5 py-4 font-body text-sm text-on-surface">
@@ -408,7 +510,7 @@ export default function AdminCounsellors() {
                         className="h-3.5 w-3.5 fill-accent-gold text-accent-gold"
                         aria-hidden="true"
                       />
-                      {counsellor.rating}
+                      {Number(counsellor.rating).toFixed(1)}
                     </span>
                   </td>
                   <td className="px-5 py-4">
@@ -430,16 +532,25 @@ export default function AdminCounsellors() {
               ))}
             </tbody>
           </table>
-          {filteredCounsellors.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 px-5 py-16 font-body text-sm text-on-surface-muted">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Loading counsellors...
+            </div>
+          ) : filteredCounsellors.length === 0 ? (
             <div className="flex flex-col items-center gap-3 px-5 py-16 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
                 <Users className="h-6 w-6 text-on-surface-subtle" aria-hidden="true" />
               </div>
               <p className="font-heading text-base font-semibold text-on-surface">
-                No counsellors match your filters
+                {counsellorList.length === 0
+                  ? "No counsellors yet"
+                  : "No counsellors match your filters"}
               </p>
               <p className="max-w-sm font-body text-sm text-on-surface-muted">
-                Try adjusting your search or choosing a different status filter.
+                {counsellorList.length === 0
+                  ? "Promote a trained student to build your counselling team."
+                  : "Try adjusting your search or choosing a different status filter."}
               </p>
             </div>
           ) : null}

@@ -8,7 +8,7 @@ import argparse
 
 from app import utils
 from app.database import SessionLocal
-from app.models import StudentProfile, User, UserRole
+from app.models import User, UserRole
 from app.services.user_roles import grant_role
 
 
@@ -23,11 +23,13 @@ def seed_student(email: str, password: str, full_name: str) -> None:
                 full_name=full_name,
                 role=UserRole.student,
                 is_verified=True,
+                email_verified=True,
             )
             db.add(user)
             db.flush()
         else:
             user.is_verified = True
+            user.email_verified = True
             if password:
                 user.password = utils.hash_password(password)
 
@@ -37,14 +39,6 @@ def seed_student(email: str, password: str, full_name: str) -> None:
             role=UserRole.student,
             granted_by=None,
         )
-
-        profile = (
-            db.query(StudentProfile)
-            .filter(StudentProfile.user_id == user.id)
-            .first()
-        )
-        if profile is None:
-            db.add(StudentProfile(user_id=user.id))
 
         user.role = UserRole.student
         db.commit()

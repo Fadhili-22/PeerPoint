@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -10,13 +10,10 @@ import {
   Users,
   Video,
 } from "lucide-react";
-import {
-  getCounsellorById,
-  getSlotsForDate,
-  getTodayKey,
-  isDateUnavailable,
-  sessionTopics,
-} from "../data/mockCounsellors";
+import { ApiError } from "../api/client";
+import { getCounsellor, getCounsellorAvailability } from "../api/counsellors";
+import { createSessionRequest, getCounsellorSlots } from "../api/sessions";
+import { sessionTopics } from "../constants/counsellorFilters";
 
 const formatOptions = [
   { id: "in-person", label: "In Person", icon: Users },
@@ -25,6 +22,14 @@ const formatOptions = [
 ];
 
 const NOTES_MAX_LENGTH = 500;
+
+function getTodayKey() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 function StepBadge({ number }) {
   return (
@@ -95,10 +100,12 @@ function BookingSuccess({ counsellor, onViewRequests }) {
 export default function SessionBookingPage() {
   const { counsellorId } = useParams();
   const navigate = useNavigate();
-  const counsellor = useMemo(
-    () => getCounsellorById(counsellorId),
-    [counsellorId]
-  );
+  const numericId = Number(counsellorId);
+
+  const [counsellor, setCounsellor] = useState(null);
+  const [unavailableDates, setUnavailableDates] = useState([]);
+  const [loadingCounsellor, setLoadingCounsellor] = useState(true);
+  const [counsellorError, setCounsellorError] = useState("");
 
   const [topic, setTopic] = useState("");
   const [otherTopic, setOtherTopic] = useState("");
@@ -108,7 +115,121 @@ export default function SessionBookingPage() {
   const [notes, setNotes] = useState("");
   const [anonymousUntilAccepted, setAnonymousUntilAccepted] = useState(false);
   const [dateError, setDateError] = useState("");
+  const [timeError, setTimeError] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotsError, setSlotsError] = useState("");
+
+  useEffect(() => {
+    if (!Number.isInteger(numericId) || numericId <= 0) {
+      setLoadingCounsellor(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadCounsellor() {
+      setLoadingCounsellor(true);
+      setCounsellorError("");
+      try {
+        const [profile, availability] = await Promise.all([
+          getCounsellor(numericId),
+          getCounsellorAvailability(numericId),
+        ]);
+        if (!cancelled) {
+          setCounsellor(profile);
+          setUnavailableDates(availability.unavailable_dates ?? []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          if (error instanceof ApiError && error.status === 404) {
+            setCounsellor(null);
+          } else {
+            setCounsellorError(
+              error.message || "Unable to load counsellor. Please try again.",
+            );
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingCounsellor(false);
+        }
+      }
+    }
+
+    loadCounsellor();
+    return () => {
+      cancelled = true;
+    };
+  }, [numericId]);
+
+  useEffect(() => {
+    if (!selectedDate || dateError || !Number.isInteger(numericId)) {
+      setAvailableSlots([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadSlots() {
+      setLoadingSlots(true);
+      setSlotsError("");
+      try {
+        const slots = await getCounsellorSlots(numericId, selectedDate);
+        if (!cancelled) {
+          setAvailableSlots(slots);
+          setSelectedTime((current) =>
+            current && slots.includes(current) ? current : "",
+          );
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setAvailableSlots([]);
+          setSlotsError(
+            error.message || "Unable to load time slots. Please try again.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingSlots(false);
+        }
+      }
+    }
+
+    loadSlots();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDate, dateError, numericId]);
+
+  if (loadingCounsellor) {
+    return (
+      <div className="mx-auto flex w-full max-w-2xl flex-col items-center py-16">
+        <p className="font-body text-sm text-on-surface-muted">
+          Loading counsellor...
+        </p>
+      </div>
+    );
+  }
+
+  if (counsellorError) {
+    return (
+      <div className="mx-auto flex w-full max-w-2xl flex-col items-center rounded-2xl border border-soft-teal bg-surface p-8 text-center shadow-sm">
+        <p className="mb-4 font-body text-sm text-danger">{counsellorError}</p>
+        <Link
+          to="/student/directory"
+          className="font-heading text-sm font-semibold text-primary"
+        >
+          Return to Directory
+        </Link>
+      </div>
+    );
+  }
 
   if (!counsellor) {
     return <CounsellorNotFound />;
@@ -123,7 +244,6 @@ export default function SessionBookingPage() {
     );
   }
 
-  const availableSlots = getSlotsForDate(counsellor, selectedDate);
   const otherTopicRequired = topic === "Other";
   const otherTopicValid = !otherTopicRequired || otherTopic.trim().length > 0;
   const isFormValid =
@@ -138,13 +258,20 @@ export default function SessionBookingPage() {
     const nextDate = event.target.value;
     setSelectedDate(nextDate);
     setSelectedTime("");
+    setTimeError("");
+    setFieldErrors((prev) => ({ ...prev, preferred_date: undefined }));
 
     if (!nextDate) {
       setDateError("");
       return;
     }
 
-    if (isDateUnavailable(counsellor, nextDate)) {
+    if (nextDate < getTodayKey()) {
+      setDateError("Please choose a date from today onward.");
+      return;
+    }
+
+    if (unavailableDates.includes(nextDate)) {
       setDateError("This date is unavailable. Please choose another day.");
       return;
     }
@@ -152,10 +279,47 @@ export default function SessionBookingPage() {
     setDateError("");
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!isFormValid) return;
-    setSubmitted(true);
+    if (!isFormValid || submitting) return;
+
+    setSubmitting(true);
+    setSubmitError("");
+    setFieldErrors({});
+
+    try {
+      await createSessionRequest({
+        counsellorId: numericId,
+        topic,
+        otherTopic: otherTopicRequired ? otherTopic.trim() : null,
+        preferredDate: selectedDate,
+        preferredTime: selectedTime,
+        format: sessionFormat,
+        notes: notes.trim() || null,
+        anonymousUntilAccepted,
+      });
+      setSubmitted(true);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.status === 422) {
+          setFieldErrors(error.fieldErrors);
+          if (error.fieldErrors.preferred_date) {
+            setDateError(error.fieldErrors.preferred_date);
+          }
+          if (error.fieldErrors.preferred_time) {
+            setTimeError(error.fieldErrors.preferred_time);
+          }
+        } else if (error.status === 403) {
+          setSubmitError("You are not authorized to book sessions.");
+        } else {
+          setSubmitError(error.message);
+        }
+      } else {
+        setSubmitError("Unable to send request. Please try again.");
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const chipSelectedClasses =
@@ -235,6 +399,15 @@ export default function SessionBookingPage() {
         </div>
       </div>
 
+      {submitError ? (
+        <p
+          className="mb-4 rounded-xl border border-danger/20 bg-danger/10 px-4 py-3 font-body text-sm text-danger"
+          role="alert"
+        >
+          {submitError}
+        </p>
+      ) : null}
+
       <form className="space-y-10" onSubmit={handleSubmit} noValidate>
         <section aria-labelledby="step-1-heading">
           <div className="mb-4 flex items-center gap-2">
@@ -285,6 +458,9 @@ export default function SessionBookingPage() {
               );
             })}
           </div>
+          {fieldErrors.topic ? (
+            <p className="mt-2 font-body text-sm text-danger">{fieldErrors.topic}</p>
+          ) : null}
 
           {otherTopicRequired && (
             <div className="mt-4">
@@ -304,6 +480,11 @@ export default function SessionBookingPage() {
                 placeholder="Briefly describe what you'd like to talk about..."
                 className="w-full resize-none rounded-2xl border border-outline-muted bg-surface px-4 py-3 font-body text-sm text-on-surface transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
+              {fieldErrors.other_topic ? (
+                <p className="mt-2 font-body text-sm text-danger">
+                  {fieldErrors.other_topic}
+                </p>
+              ) : null}
             </div>
           )}
         </section>
@@ -368,6 +549,12 @@ export default function SessionBookingPage() {
                 ? "Choose a valid available date to see open time slots."
                 : "Select an available date first to see open time slots."}
             </p>
+          ) : loadingSlots ? (
+            <p className="font-body text-sm text-on-surface-muted">
+              Loading available slots...
+            </p>
+          ) : slotsError ? (
+            <p className="font-body text-sm text-danger">{slotsError}</p>
           ) : availableSlots.length === 0 ? (
             <p className="font-body text-sm text-on-surface-muted">
               No time slots are available on this date. Please choose another
@@ -403,7 +590,10 @@ export default function SessionBookingPage() {
                         name="session-time"
                         value={slot}
                         checked={isSelected}
-                        onChange={() => setSelectedTime(slot)}
+                        onChange={() => {
+                          setSelectedTime(slot);
+                          setTimeError("");
+                        }}
                         className="sr-only"
                       />
                       <span className="inline-flex items-center justify-center gap-1.5">
@@ -419,6 +609,9 @@ export default function SessionBookingPage() {
                   );
                 })}
               </div>
+              {timeError ? (
+                <p className="mt-2 font-body text-sm text-danger">{timeError}</p>
+              ) : null}
             </>
           )}
         </section>
@@ -475,6 +668,9 @@ export default function SessionBookingPage() {
               );
             })}
           </div>
+          {fieldErrors.format ? (
+            <p className="mt-2 font-body text-sm text-danger">{fieldErrors.format}</p>
+          ) : null}
         </section>
 
         <section aria-labelledby="notes-heading">
@@ -498,13 +694,13 @@ export default function SessionBookingPage() {
           <p className="mt-1 text-right font-body text-xs text-on-surface-subtle">
             {notes.length}/{NOTES_MAX_LENGTH}
           </p>
+          {fieldErrors.notes ? (
+            <p className="mt-2 font-body text-sm text-danger">{fieldErrors.notes}</p>
+          ) : null}
         </section>
 
         <section aria-labelledby="privacy-pref-heading">
-          <h2
-            id="privacy-pref-heading"
-            className="sr-only"
-          >
+          <h2 id="privacy-pref-heading" className="sr-only">
             Privacy preference
           </h2>
           <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-soft-teal bg-surface-muted/40 p-4 transition-colors hover:bg-surface-muted/70">
@@ -533,11 +729,11 @@ export default function SessionBookingPage() {
           )}
           <button
             type="submit"
-            disabled={!isFormValid}
+            disabled={!isFormValid || submitting}
             aria-describedby={!isFormValid ? "submit-helper" : undefined}
             className="w-full rounded-2xl bg-primary py-4 font-heading text-base font-semibold text-on-primary shadow-md transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 disabled:hover:translate-y-0 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           >
-            Send Request
+            {submitting ? "Sending Request..." : "Send Request"}
           </button>
           <p className="text-center font-body text-xs text-on-surface-subtle">
             By sending this request, you agree to our community guidelines.{" "}

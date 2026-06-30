@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import FeaturedResourceCard from "../components/FeaturedResourceCard";
 import ComingSoonText from "../components/ComingSoonText";
@@ -6,49 +6,84 @@ import NewsletterSignup from "../components/NewsletterSignup";
 import ResourceCard from "../components/ResourceCard";
 import SupportNetworkCard from "../components/SupportNetworkCard";
 import { campusSupportOptions, resourceCategories } from "../data/mockResources";
-import { useResources } from "../context/ResourcesContext";
-
-function matchesCategory(resource, activeCategory) {
-  if (activeCategory === "All Resources") return true;
-  return resource.category === activeCategory;
-}
-
-function matchesSearch(resource, query) {
-  if (!query.trim()) return true;
-  const normalized = query.trim().toLowerCase();
-  return (
-    resource.title.toLowerCase().includes(normalized) ||
-    resource.description.toLowerCase().includes(normalized) ||
-    resource.category.toLowerCase().includes(normalized)
-  );
-}
+import { ApiError } from "../api/client";
+import { getFeaturedResources, listResources } from "../api/resources";
 
 export default function ResourceHub() {
-  const { getPublishedResources, getFeaturedPublishedResources } = useResources();
   const [activeCategory, setActiveCategory] = useState("All Resources");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [publishedResources, setPublishedResources] = useState([]);
+  const [heroFeaturedResources, setHeroFeaturedResources] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const publishedResources = getPublishedResources();
-  const heroFeaturedResources = getFeaturedPublishedResources(2);
-  const heroFeaturedIds = new Set(heroFeaturedResources.map((resource) => resource.id));
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
 
-  const filteredResources = useMemo(() => {
-    return publishedResources.filter(
-      (resource) =>
-        matchesCategory(resource, activeCategory) &&
-        matchesSearch(resource, searchQuery),
-    );
-  }, [publishedResources, activeCategory, searchQuery]);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadResources() {
+      setLoading(true);
+      setError("");
+      try {
+        const categoryFilter =
+          activeCategory === "All Resources" ? undefined : activeCategory;
+        const searchFilter = debouncedSearch.trim() || undefined;
+        const showHero =
+          activeCategory === "All Resources" && !searchFilter;
+
+        const [listData, featuredData] = await Promise.all([
+          listResources({ category: categoryFilter, search: searchFilter }),
+          showHero ? getFeaturedResources(2) : Promise.resolve([]),
+        ]);
+
+        if (!cancelled) {
+          setPublishedResources(listData);
+          setHeroFeaturedResources(featuredData);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          if (loadError instanceof ApiError && loadError.status === 403) {
+            setError("You are not authorized to view resources.");
+          } else {
+            setError(
+              loadError.message || "Unable to load resources. Please try again.",
+            );
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadResources();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCategory, debouncedSearch]);
+
+  const heroFeaturedIds = useMemo(
+    () => new Set(heroFeaturedResources.map((resource) => resource.id)),
+    [heroFeaturedResources],
+  );
 
   const showFeatured =
     activeCategory === "All Resources" &&
-    !searchQuery.trim() &&
+    !debouncedSearch.trim() &&
     heroFeaturedResources.length > 0;
 
   const gridResources = useMemo(() => {
-    if (!showFeatured) return filteredResources;
-    return filteredResources.filter((resource) => !heroFeaturedIds.has(resource.id));
-  }, [filteredResources, showFeatured, heroFeaturedIds]);
+    if (!showFeatured) return publishedResources;
+    return publishedResources.filter((resource) => !heroFeaturedIds.has(resource.id));
+  }, [publishedResources, showFeatured, heroFeaturedIds]);
 
   return (
     <div className="relative flex flex-col">
@@ -102,47 +137,66 @@ export default function ResourceHub() {
         })}
       </div>
 
-      {showFeatured ? (
-        <section className="mb-12 space-y-8">
-          {heroFeaturedResources.map((resource) => (
-            <FeaturedResourceCard key={resource.id} resource={resource} />
-          ))}
-        </section>
+      {error ? (
+        <p className="mb-8 rounded-xl border border-danger/20 bg-danger/5 px-4 py-3 font-body text-sm text-danger">
+          {error}
+        </p>
       ) : null}
 
-      <section className="mb-16">
-        {filteredResources.length > 0 ? (
-          gridResources.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {gridResources.map((resource) => (
-                <ResourceCard key={resource.id} resource={resource} />
+      {loading ? (
+        <div className="mb-16 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="h-80 animate-pulse rounded-3xl bg-surface-muted/40"
+            />
+          ))}
+        </div>
+      ) : (
+        <>
+          {showFeatured ? (
+            <section className="mb-12 space-y-8">
+              {heroFeaturedResources.map((resource) => (
+                <FeaturedResourceCard key={resource.id} resource={resource} />
               ))}
-            </div>
-          ) : null
-        ) : (
-          <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-outline-muted/40 bg-surface px-6 py-16 text-center">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
-              <Search className="h-6 w-6 text-on-surface-subtle" aria-hidden="true" />
-            </div>
-            <p className="font-heading text-xl font-bold text-on-surface">
-              No resources match
-            </p>
-            <p className="mt-2 max-w-md font-body text-sm text-on-surface-muted">
-              Try a different search term or browse another category.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery("");
-                setActiveCategory("All Resources");
-              }}
-              className="mt-6 rounded-xl bg-primary px-5 py-2.5 font-heading text-sm font-semibold text-on-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-            >
-              Clear search
-            </button>
-          </div>
-        )}
-      </section>
+            </section>
+          ) : null}
+
+          <section className="mb-16">
+            {publishedResources.length > 0 ? (
+              gridResources.length > 0 ? (
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                  {gridResources.map((resource) => (
+                    <ResourceCard key={resource.id} resource={resource} />
+                  ))}
+                </div>
+              ) : null
+            ) : (
+              <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-outline-muted/40 bg-surface px-6 py-16 text-center">
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
+                  <Search className="h-6 w-6 text-on-surface-subtle" aria-hidden="true" />
+                </div>
+                <p className="font-heading text-xl font-bold text-on-surface">
+                  No resources match
+                </p>
+                <p className="mt-2 max-w-md font-body text-sm text-on-surface-muted">
+                  Try a different search term or browse another category.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setActiveCategory("All Resources");
+                  }}
+                  className="mt-6 rounded-xl bg-primary px-5 py-2.5 font-heading text-sm font-semibold text-on-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                >
+                  Clear search
+                </button>
+              </div>
+            )}
+          </section>
+        </>
+      )}
 
       <section className="mb-16">
         <h2 className="mb-8 font-heading text-2xl font-semibold text-on-surface md:text-[32px] md:leading-10">

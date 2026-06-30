@@ -21,17 +21,24 @@ import ComingSoonButton from "../components/ComingSoonButton";
 import ComingSoonText from "../components/ComingSoonText";
 import { useAuth } from "../context/AuthContext";
 import { useResources } from "../context/ResourcesContext";
+import { listPendingReviewResources, reviewResource as reviewResourceApi } from "../api/resources";
+import {
+  getAdminDashboard,
+  mapAdminDashboard,
+  listAccountRequests,
+  approveAccountRequest,
+  rejectAccountRequest,
+  listAdminNotifications,
+  getAdminAnalytics,
+  mapSessionTrendWeeks,
+  mapStatusDistribution,
+  mapCounsellorPerformance,
+  mapTopResources,
+} from "../api/admin";
 import { formatResourceDisplayDate } from "../data/mockResources";
 import {
   attentionItems,
-  counsellorPerformance,
-  newAccountRequests,
-  platformActivity,
   platformHealth,
-  platformKpis,
-  sessionAnalytics,
-  statusDistribution,
-  topResources,
 } from "../data/mockAdminDashboard";
 
 const kpiIcons = {
@@ -41,6 +48,12 @@ const kpiIcons = {
   clock: Clock,
   book: BookOpen,
 };
+
+const defaultHeadlineStats = [
+  { id: "students", label: "Students", value: "…", icon: Users },
+  { id: "counsellors", label: "Counsellors", value: "…", icon: Headset },
+  { id: "sessions", label: "Sessions", value: "…", icon: Calendar },
+];
 
 const attentionVariants = {
   danger: "bg-danger/10",
@@ -59,27 +72,6 @@ const activityDotVariants = {
   warning: "bg-accent-gold",
   info: "bg-soft-teal",
 };
-
-const headlineStats = [
-  {
-    id: "students",
-    label: "Students",
-    value: "2,840",
-    icon: Users,
-  },
-  {
-    id: "counsellors",
-    label: "Counsellors",
-    value: "48",
-    icon: Headset,
-  },
-  {
-    id: "sessions",
-    label: "Sessions",
-    value: "512",
-    icon: Calendar,
-  },
-];
 
 function formatDateTime(date) {
   return date
@@ -129,7 +121,7 @@ function PulseBar({ label, value, tone = "primary" }) {
 }
 
 function HeadlineStat({ stat }) {
-  const Icon = stat.icon;
+  const Icon = stat.icon ?? Users;
 
   return (
     <article className="flex min-w-[108px] flex-col items-center rounded-2xl border border-primary/5 bg-surface-muted/60 px-4 py-3 text-center shadow-sm transition-transform duration-300 hover:scale-[1.02] hover:-translate-y-0.5">
@@ -491,17 +483,32 @@ function StatusDonutChart({ total, segments }) {
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const {
-    resources,
-    getPendingReviewResources,
-    reviewResource,
-    adminResourceActivity,
-  } = useResources();
+  const { adminResourceActivity, pushAdminResourceActivity } = useResources();
   const firstName = user.fullName.split(" ")[0];
   const [activeTab, setActiveTab] = useState("accounts");
   const [search, setSearch] = useState("");
-  const [accountRequests, setAccountRequests] = useState(newAccountRequests);
+  const [accountRequests, setAccountRequests] = useState([]);
+  const [accountRequestsLoading, setAccountRequestsLoading] = useState(true);
+  const [accountRequestsError, setAccountRequestsError] = useState(null);
+  const [accountActionLoading, setAccountActionLoading] = useState(false);
+  const [platformNotifications, setPlatformNotifications] = useState([]);
   const [completedQueueIds, setCompletedQueueIds] = useState([]);
+  const [pendingResourceSubmissions, setPendingResourceSubmissions] = useState([]);
+  const [resourcesQueueLoading, setResourcesQueueLoading] = useState(true);
+  const [reviewActionLoading, setReviewActionLoading] = useState(false);
+  const [headlineStats, setHeadlineStats] = useState(defaultHeadlineStats);
+  const [platformKpis, setPlatformKpis] = useState([]);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [analyticsError, setAnalyticsError] = useState(null);
+  const [sessionTrendWeeks, setSessionTrendWeeks] = useState([]);
+  const [statusDistribution, setStatusDistribution] = useState({
+    total: 0,
+    segments: [],
+  });
+  const [counsellorPerformance, setCounsellorPerformance] = useState([]);
+  const [topResources, setTopResources] = useState([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [counsellorAvailabilityFilter, setCounsellorAvailabilityFilter] =
     useState("all");
@@ -511,6 +518,123 @@ export default function AdminDashboard() {
     formatDateTime(new Date()),
   );
   const notificationsRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDashboard() {
+      setDashboardLoading(true);
+      setDashboardError(null);
+      try {
+        const api = await getAdminDashboard();
+        if (cancelled) return;
+        const mapped = mapAdminDashboard(api);
+        setHeadlineStats(
+          mapped.headlineStats.map((stat) => ({
+            ...stat,
+            icon:
+              stat.id === "students"
+                ? Users
+                : stat.id === "counsellors"
+                  ? Headset
+                  : Calendar,
+          })),
+        );
+        setPlatformKpis(mapped.platformKpis);
+      } catch (err) {
+        if (!cancelled) {
+          setDashboardError(err.message ?? "Failed to load dashboard metrics.");
+          setPlatformKpis([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setDashboardLoading(false);
+        }
+      }
+    }
+
+    loadDashboard();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAnalytics() {
+      setAnalyticsLoading(true);
+      setAnalyticsError(null);
+      try {
+        const api = await getAdminAnalytics();
+        if (cancelled) return;
+        setSessionTrendWeeks(mapSessionTrendWeeks(api));
+        setStatusDistribution(mapStatusDistribution(api));
+        setCounsellorPerformance(mapCounsellorPerformance(api.counsellor_performance));
+        setTopResources(mapTopResources(api.top_resources));
+      } catch (err) {
+        if (!cancelled) {
+          setAnalyticsError(err.message ?? "Failed to load analytics.");
+          setSessionTrendWeeks([]);
+          setStatusDistribution({ total: 0, segments: [] });
+          setCounsellorPerformance([]);
+          setTopResources([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setAnalyticsLoading(false);
+        }
+      }
+    }
+
+    loadAnalytics();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAccountRequests() {
+      setAccountRequestsLoading(true);
+      setAccountRequestsError(null);
+      try {
+        const requests = await listAccountRequests();
+        if (!cancelled) setAccountRequests(requests);
+      } catch (err) {
+        if (!cancelled) {
+          setAccountRequestsError(err.message ?? "Failed to load account requests.");
+          setAccountRequests([]);
+        }
+      } finally {
+        if (!cancelled) setAccountRequestsLoading(false);
+      }
+    }
+
+    loadAccountRequests();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadNotifications() {
+      try {
+        const items = await listAdminNotifications({ limit: 20 });
+        if (!cancelled) setPlatformNotifications(items);
+      } catch {
+        if (!cancelled) setPlatformNotifications([]);
+      }
+    }
+
+    loadNotifications();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -535,28 +659,52 @@ export default function AdminDashboard() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [notificationsOpen]);
 
-  const pendingResourceSubmissions = useMemo(() => {
-    return getPendingReviewResources().map((resource) => {
-      const submitterName = resource.submittedBy?.fullName || resource.author;
-      return {
-        id: resource.id,
-        name: submitterName,
-        email: resource.submittedBy?.email || "",
-        initials: submitterName
-          .split(" ")
-          .map((part) => part[0])
-          .join("")
-          .slice(0, 2)
-          .toUpperCase(),
-        resourceTitle: resource.title,
-        role: "Resource Submission",
-        date:
-          formatResourceDisplayDate(resource.submittedAt) ||
-          formatResourceDisplayDate(resource.updatedAt),
-        status: "Pending Review",
-      };
-    });
-  }, [resources, getPendingReviewResources]);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPendingResources() {
+      setResourcesQueueLoading(true);
+      try {
+        const pending = await listPendingReviewResources();
+        if (cancelled) return;
+        setPendingResourceSubmissions(
+          pending.map((resource) => {
+            const submitterName = resource.submittedBy?.fullName || resource.author;
+            return {
+              id: resource.id,
+              name: submitterName,
+              email: resource.submittedBy?.email || "",
+              initials: submitterName
+                .split(" ")
+                .map((part) => part[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase(),
+              resourceTitle: resource.title,
+              role: "Resource Submission",
+              date:
+                formatResourceDisplayDate(resource.submittedAt) ||
+                formatResourceDisplayDate(resource.updatedAt),
+              status: "Pending Review",
+            };
+          }),
+        );
+      } catch {
+        if (!cancelled) {
+          setPendingResourceSubmissions([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setResourcesQueueLoading(false);
+        }
+      }
+    }
+
+    loadPendingResources();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const activeRequests =
     activeTab === "accounts" ? accountRequests : pendingResourceSubmissions;
@@ -600,41 +748,93 @@ export default function AdminDashboard() {
   }, [search]);
 
   const analyticsWeeks = useMemo(() => {
-    if (analyticsPeriod === "8weeks") return sessionAnalytics.weeks;
-    return sessionAnalytics.weeks.map((week) => ({
+    if (analyticsPeriod === "8weeks") return sessionTrendWeeks;
+    return sessionTrendWeeks.map((week) => ({
       ...week,
       value: Math.round(week.value * 1.35),
       height: Math.min(100, Math.round(week.height * 1.15)),
     }));
-  }, [analyticsPeriod]);
+  }, [analyticsPeriod, sessionTrendWeeks]);
 
   const activityItems = showAllActivity
-    ? [...adminResourceActivity, ...platformActivity]
-    : [...adminResourceActivity, ...platformActivity].slice(0, 4);
+    ? [...adminResourceActivity, ...platformNotifications]
+    : [...adminResourceActivity, ...platformNotifications].slice(0, 4);
 
-  const notificationItems = [...adminResourceActivity, ...platformActivity].slice(
+  const notificationItems = [...adminResourceActivity, ...platformNotifications].slice(
     0,
     3,
   );
 
-  const handleApprove = (id) => {
-    if (activeTab === "accounts") {
-      setAccountRequests((prev) => prev.filter((request) => request.id !== id));
-      setCompletedQueueIds((prev) => [...prev, `${activeTab}-${id}`]);
-      return;
-    }
-
-    reviewResource({ resourceId: id, decision: "approve_publish" });
-    setCompletedQueueIds((prev) => [...prev, `${activeTab}-${id}`]);
+  const refetchAccountRequests = async () => {
+    const requests = await listAccountRequests();
+    setAccountRequests(requests);
   };
 
-  const handleReject = (id) => {
+  const refetchNotifications = async () => {
+    const items = await listAdminNotifications({ limit: 20 });
+    setPlatformNotifications(items);
+  };
+
+  const handleApprove = async (id) => {
     if (activeTab === "accounts") {
-      setAccountRequests((prev) => prev.filter((request) => request.id !== id));
+      setAccountActionLoading(true);
+      try {
+        await approveAccountRequest(id);
+        setCompletedQueueIds((prev) => [...prev, `${activeTab}-${id}`]);
+        await Promise.all([refetchAccountRequests(), refetchNotifications()]);
+      } catch (err) {
+        setAccountRequestsError(err.message ?? "Failed to approve request.");
+      } finally {
+        setAccountActionLoading(false);
+      }
       return;
     }
 
-    reviewResource({ resourceId: id, decision: "reject" });
+    setReviewActionLoading(true);
+    try {
+      await reviewResourceApi(id, { decision: "approve_publish" });
+      pushAdminResourceActivity(
+        "Resource Approved",
+        "Submission published to Resource Hub",
+        "primary",
+      );
+      setPendingResourceSubmissions((prev) =>
+        prev.filter((request) => request.id !== id),
+      );
+      setCompletedQueueIds((prev) => [...prev, `${activeTab}-${id}`]);
+    } finally {
+      setReviewActionLoading(false);
+    }
+  };
+
+  const handleReject = async (id) => {
+    if (activeTab === "accounts") {
+      setAccountActionLoading(true);
+      try {
+        await rejectAccountRequest(id);
+        await refetchAccountRequests();
+      } catch (err) {
+        setAccountRequestsError(err.message ?? "Failed to reject request.");
+      } finally {
+        setAccountActionLoading(false);
+      }
+      return;
+    }
+
+    setReviewActionLoading(true);
+    try {
+      await reviewResourceApi(id, { decision: "reject" });
+      pushAdminResourceActivity(
+        "Resource Returned",
+        "Submission sent back to counsellor",
+        "warning",
+      );
+      setPendingResourceSubmissions((prev) =>
+        prev.filter((request) => request.id !== id),
+      );
+    } finally {
+      setReviewActionLoading(false);
+    }
   };
 
   const coveragePercent = Math.round(
@@ -644,7 +844,7 @@ export default function AdminDashboard() {
     (segment) => segment.label === "Completed",
   )?.percent ?? 60;
   const totalPendingApprovals = Number(
-    platformKpis.find((kpi) => kpi.id === "pending")?.value ?? 11,
+    platformKpis.find((kpi) => kpi.id === "pending")?.value?.replace(/,/g, "") ?? 0,
   );
   const openApprovals = accountRequests.length + pendingResourceSubmissions.length;
   const queueClearedPercent = Math.round(
@@ -670,6 +870,14 @@ export default function AdminDashboard() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
+      {dashboardError || analyticsError ? (
+        <div
+          role="alert"
+          className="rounded-2xl border border-danger/20 bg-danger/5 px-4 py-3 font-body text-sm text-danger"
+        >
+          {dashboardError ?? analyticsError}
+        </div>
+      ) : null}
       <section
         aria-label="Admin search and notifications"
         className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
@@ -784,9 +992,13 @@ export default function AdminDashboard() {
 
       <section aria-label="Platform key metrics">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {primaryKpis.map((kpi) => (
-            <KpiCard key={kpi.id} kpi={kpi} />
-          ))}
+          {dashboardLoading ? (
+            <p className="col-span-full font-body text-sm text-on-surface-muted">
+              Loading platform metrics…
+            </p>
+          ) : (
+            primaryKpis.map((kpi) => <KpiCard key={kpi.id} kpi={kpi} />)
+          )}
         </div>
       </section>
 
@@ -847,12 +1059,27 @@ export default function AdminDashboard() {
               activeTab === "accounts" ? "tab-accounts" : "tab-resources"
             }
           >
-            <RequestTable
-              requests={filteredRequests}
-              showResourceTitle={activeTab === "resources"}
-              onApprove={handleApprove}
-              onReject={handleReject}
-            />
+            {activeTab === "accounts" && accountRequestsLoading ? (
+              <p className="px-5 py-8 font-body text-sm text-on-surface-muted">
+                Loading account requests…
+              </p>
+            ) : null}
+            {activeTab === "accounts" && accountRequestsError ? (
+              <div
+                role="alert"
+                className="mx-5 my-4 rounded-xl border border-danger/20 bg-danger/5 px-4 py-3 font-body text-sm text-danger"
+              >
+                {accountRequestsError}
+              </div>
+            ) : null}
+            {!accountRequestsLoading || activeTab !== "accounts" ? (
+              <RequestTable
+                requests={filteredRequests}
+                showResourceTitle={activeTab === "resources"}
+                onApprove={handleApprove}
+                onReject={handleReject}
+              />
+            ) : null}
           </div>
         </section>
 
@@ -918,10 +1145,14 @@ export default function AdminDashboard() {
             <h2 className="mb-4 self-start font-heading text-lg font-semibold text-on-surface">
               Status Distribution
             </h2>
-            <StatusDonutChart
-              total={statusDistribution.total}
-              segments={statusDistribution.segments}
-            />
+            {analyticsLoading ? (
+              <p className="font-body text-sm text-on-surface-muted">Loading…</p>
+            ) : (
+              <StatusDonutChart
+                total={statusDistribution.total}
+                segments={statusDistribution.segments}
+              />
+            )}
           </article>
         </section>
 
@@ -1040,7 +1271,17 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-muted/10">
-                {filteredCounsellorPerformance.map((counsellor) => (
+                {analyticsLoading ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-5 py-8 text-center font-body text-sm text-on-surface-muted"
+                    >
+                      Loading counsellor performance…
+                    </td>
+                  </tr>
+                ) : (
+                  filteredCounsellorPerformance.map((counsellor) => (
                   <tr
                     key={counsellor.id}
                     className="transition-colors hover:bg-surface-muted/40"
@@ -1057,7 +1298,9 @@ export default function AdminDashboard() {
                           className={`rounded-full px-2 py-0.5 font-body text-xs font-bold ${
                             counsellor.responseVariant === "success"
                               ? "bg-success/10 text-success"
-                              : "bg-accent-gold/10 text-accent-gold"
+                              : counsellor.responseVariant === "danger"
+                                ? "bg-danger/10 text-danger"
+                                : "bg-accent-gold/10 text-accent-gold"
                           }`}
                         >
                           {counsellor.responseRate}%
@@ -1092,7 +1335,8 @@ export default function AdminDashboard() {
                       {counsellor.lastActive}
                     </td>
                   </tr>
-                ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>

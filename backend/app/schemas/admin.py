@@ -6,8 +6,6 @@ from app.schemas.enums import (
     AccountRequestStatus,
     AccountRequestType,
     ActivityVariant,
-    EngagementLevel,
-    StudentProfileStatus,
     UserRole,
 )
 
@@ -56,12 +54,9 @@ class AdminStudentItem(BaseModel):
     user_id: int
     full_name: str
     email: EmailStr
-    course: str | None
-    year: str | None
     sessions: int
-    engagement: EngagementLevel | None
-    status: StudentProfileStatus
     last_active_at: datetime | None
+    created_at: datetime
 
 
 class AdminStudentListResponse(BaseModel):
@@ -69,7 +64,6 @@ class AdminStudentListResponse(BaseModel):
 
 
 class AdminStudentDetail(AdminStudentItem):
-    summary: str | None
     recent_activity: list[str]
 
 
@@ -91,7 +85,70 @@ class PlatformActivityListResponse(BaseModel):
 class AdminReportSummary(BaseModel):
     label: str
     value: int | float | str
+    percent: int | None = None
+    tone: str | None = None
 
 
 class AdminReportsResponse(BaseModel):
     reports: list[AdminReportSummary]
+
+
+class SessionTrendWeek(BaseModel):
+    label: str
+    value: int
+    height: int
+
+
+class SessionTrendResponse(BaseModel):
+    weeks: list[SessionTrendWeek]
+
+
+class StatusSegment(BaseModel):
+    label: str
+    percent: int
+    color: str
+
+
+class StatusDistributionResponse(BaseModel):
+    total: int
+    segments: list[StatusSegment]
+
+
+class CounsellorPerformanceItem(BaseModel):
+    id: int
+    name: str
+    sessions_handled: int
+    response_rate: int
+    response_label: str
+    response_variant: str
+    availability: str
+    availability_variant: str
+    last_active: str | None
+
+
+class TopResourceItem(BaseModel):
+    id: str
+    title: str
+    category: str
+    views: int
+    saves: int
+
+
+class TopCategoryItem(BaseModel):
+    label: str
+    sessions: int
+    percent: int
+
+
+class AdminAnalyticsResponse(BaseModel):
+    session_trend: SessionTrendResponse
+    status_distribution: StatusDistributionResponse
+    counsellor_performance: list[CounsellorPerformanceItem]
+    top_resources: list[TopResourceItem]
+    top_categories: list[TopCategoryItem]
+    monthly_active_users: int | None
+    sessions_completed_this_month: int
+    avg_satisfaction: float | None = None
+    avg_response_hours: float | None = None
+    growth_metrics: list[AdminReportSummary]
+    usage_breakdown: list[AdminReportSummary]

@@ -6,7 +6,12 @@ import ProtectedRoute from "./ProtectedRoute";
 import Landing from "../pages/Landing";
 import Login from "../pages/Login";
 import Signup from "../pages/Signup";
+import ForgotPassword from "../pages/ForgotPassword";
+import ResetPassword from "../pages/ResetPassword";
+import VerifyEmail from "../pages/VerifyEmail";
+import VerifyEmailPending from "../pages/VerifyEmailPending";
 import PendingApproval from "../pages/PendingApproval";
+import ChoosePortal from "../pages/ChoosePortal";
 import StudentDashboard from "../pages/StudentDashboard";
 import CounsellorDirectory from "../pages/CounsellorDirectory";
 import CounsellorProfile from "../pages/CounsellorProfile";
@@ -36,8 +41,21 @@ export default function AppRouter() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
         <Route path="/pending-approval" element={<PendingApproval />} />
       </Route>
+
+      <Route
+        path="/choose-portal"
+        element={
+          <ProtectedRoute>
+            <ChoosePortal />
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         element={

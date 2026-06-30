@@ -71,18 +71,6 @@ class ResourceCategory(str, Enum):
     relationships = "Relationships"
 
 
-class EngagementLevel(str, Enum):
-    high = "High"
-    medium = "Medium"
-    low = "Low"
-
-
-class StudentProfileStatus(str, Enum):
-    active = "active"
-    inactive = "inactive"
-    at_risk = "at-risk"
-
-
 class TrainingStatus(str, Enum):
     training_complete = "Training Complete"
     in_review = "In Review"

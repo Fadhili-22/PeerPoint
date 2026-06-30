@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
 from app import schemas
+from app.database import get_db
 from app.dependencies import require_admin
 from app.models import User
 from app.schemas.enums import ResourceStatus
+from app.services import resource_cms as resource_cms_service
 
 router = APIRouter(prefix="/admin/resources", tags=["Admin Resources"])
 
@@ -13,93 +16,168 @@ def list_admin_resources(
     status: ResourceStatus | None = None,
     search: str | None = None,
     _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
 ):
-    # TODO: implement
-    raise NotImplementedError
+    items = resource_cms_service.list_admin_resources(
+        db,
+        status_filter=status,
+        search=search,
+    )
+    return schemas.ResourceListResponse(resources=items)
 
 
 @router.get("/stats", response_model=schemas.ResourceStatsResponse)
-def get_resource_stats(_: User = Depends(require_admin)):
-    # TODO: implement
-    raise NotImplementedError
+def get_resource_stats(
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return resource_cms_service.get_resource_stats(db)
 
 
 @router.get("/pending-review", response_model=schemas.ResourceListResponse)
-def list_pending_review_resources(_: User = Depends(require_admin)):
-    # TODO: implement
-    raise NotImplementedError
+def list_pending_review_resources(
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    items = resource_cms_service.list_pending_review_resources(db)
+    return schemas.ResourceListResponse(resources=items)
+
+
+@router.get("/{resource_id}", response_model=schemas.ResourceResponse)
+def get_admin_resource(
+    resource_id: str,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return resource_cms_service.get_admin_resource(db, resource_id)
 
 
 @router.post("", response_model=schemas.ResourceResponse, status_code=201)
 def create_admin_resource(
     payload: schemas.ResourceCreate,
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
 ):
-    # TODO: implement
-    raise NotImplementedError
+    resource = resource_cms_service.create_admin_resource(
+        db, current_user, payload
+    )
+    db.commit()
+    return resource
 
 
 @router.put("/{resource_id}", response_model=schemas.ResourceResponse)
 def update_admin_resource(
     resource_id: str,
     payload: schemas.ResourceUpdate,
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
 ):
-    # TODO: implement
-    raise NotImplementedError
+    resource = resource_cms_service.update_admin_resource(
+        db, resource_id, current_user, payload
+    )
+    db.commit()
+    return resource
 
 
 @router.post("/{resource_id}/publish", response_model=schemas.ResourceActionResponse)
 def publish_resource(
     resource_id: str,
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
 ):
-    # TODO: implement
-    raise NotImplementedError
+    resource = resource_cms_service.publish_admin_resource(
+        db, resource_id, current_user.id
+    )
+    db.commit()
+    return schemas.ResourceActionResponse(
+        id=resource.id,
+        status=ResourceStatus(resource.status.value),
+        message="Resource published",
+    )
 
 
 @router.post("/{resource_id}/unpublish", response_model=schemas.ResourceActionResponse)
 def unpublish_resource(
     resource_id: str,
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
 ):
-    # TODO: implement
-    raise NotImplementedError
+    resource = resource_cms_service.unpublish_admin_resource(
+        db, resource_id, current_user.id
+    )
+    db.commit()
+    return schemas.ResourceActionResponse(
+        id=resource.id,
+        status=ResourceStatus(resource.status.value),
+        message="Resource unpublished",
+    )
 
 
 @router.post("/{resource_id}/feature", response_model=schemas.ResourceActionResponse)
 def feature_resource(
     resource_id: str,
     payload: schemas.ResourceFeatureRequest,
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
 ):
-    # TODO: implement
-    raise NotImplementedError
+    resource = resource_cms_service.feature_admin_resource(
+        db, resource_id, current_user.id, payload
+    )
+    db.commit()
+    return schemas.ResourceActionResponse(
+        id=resource.id,
+        status=ResourceStatus(resource.status.value),
+        message="Featured status updated",
+    )
 
 
 @router.post("/{resource_id}/archive", response_model=schemas.ResourceActionResponse)
 def archive_resource(
     resource_id: str,
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
 ):
-    # TODO: implement
-    raise NotImplementedError
+    resource = resource_cms_service.archive_admin_resource(
+        db, resource_id, current_user.id
+    )
+    db.commit()
+    return schemas.ResourceActionResponse(
+        id=resource.id,
+        status=ResourceStatus(resource.status.value),
+        message="Resource archived",
+    )
 
 
 @router.post("/{resource_id}/restore", response_model=schemas.ResourceActionResponse)
 def restore_resource(
     resource_id: str,
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
 ):
-    # TODO: implement
-    raise NotImplementedError
+    resource = resource_cms_service.restore_admin_resource(
+        db, resource_id, current_user.id
+    )
+    db.commit()
+    return schemas.ResourceActionResponse(
+        id=resource.id,
+        status=ResourceStatus(resource.status.value),
+        message="Resource restored to draft",
+    )
 
 
 @router.post("/{resource_id}/review", response_model=schemas.ResourceActionResponse)
 def review_resource(
     resource_id: str,
     payload: schemas.ResourceReviewRequest,
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
 ):
-    # TODO: implement
-    raise NotImplementedError
+    resource = resource_cms_service.review_admin_resource(
+        db, resource_id, current_user, payload
+    )
+    db.commit()
+    return schemas.ResourceActionResponse(
+        id=resource.id,
+        status=ResourceStatus(resource.status.value),
+        message="Review decision applied",
+    )

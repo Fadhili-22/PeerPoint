@@ -6,6 +6,7 @@ from app.database import get_db
 from app.dependencies import require_active_counsellor
 from app.models import CounsellorProfile, User
 from app.schemas.enums import AvailabilityStatus, CounsellorProfileStatus
+from app.services.session_requests import count_completed_sessions_for_counsellor
 
 router = APIRouter(prefix="/counsellor/me", tags=["Counsellor Profile"])
 
@@ -41,7 +42,9 @@ def _load_own_profile(db: Session, user: User) -> CounsellorProfile:
     return profile
 
 
-def _serialize(profile: CounsellorProfile, user: User) -> schemas.CounsellorOwnProfile:
+def _serialize(
+    profile: CounsellorProfile, user: User, *, sessions_count: int
+) -> schemas.CounsellorOwnProfile:
     return schemas.CounsellorOwnProfile(
         id=user.id,
         user_id=user.id,
@@ -56,7 +59,7 @@ def _serialize(profile: CounsellorProfile, user: User) -> schemas.CounsellorOwnP
         languages=profile.languages,
         photo_url=profile.photo_url,
         rating=float(profile.rating),
-        sessions_count=profile.sessions_count,
+        sessions_count=sessions_count,
         joined_at=profile.joined_at,
         availability_status=AvailabilityStatus(profile.availability_status.value),
         is_online=profile.is_online,
@@ -74,7 +77,11 @@ def get_my_profile(
     db: Session = Depends(get_db),
 ):
     profile = _load_own_profile(db, current_user)
-    return _serialize(profile, current_user)
+    return _serialize(
+        profile,
+        current_user,
+        sessions_count=count_completed_sessions_for_counsellor(db, current_user.id),
+    )
 
 
 @router.put("/profile", response_model=schemas.CounsellorOwnProfile)
@@ -94,4 +101,8 @@ def update_my_profile(
 
     db.commit()
     db.refresh(profile)
-    return _serialize(profile, current_user)
+    return _serialize(
+        profile,
+        current_user,
+        sessions_count=count_completed_sessions_for_counsellor(db, current_user.id),
+    )

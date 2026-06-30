@@ -26,12 +26,14 @@ def seed_admin(email: str, password: str, full_name: str) -> None:
                 full_name=full_name,
                 role=UserRole.admin,
                 is_verified=True,
+                email_verified=True,
             )
             db.add(user)
             db.flush()
         else:
             user.role = UserRole.admin
             user.is_verified = True
+            user.email_verified = True
 
         grant_role(
             db,

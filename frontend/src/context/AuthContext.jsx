@@ -1,10 +1,17 @@
-import { createContext, useContext, useMemo, useState } from "react";
-import { mockUsers } from "../data/mockUsers";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  computeAvailablePortals,
+  fetchCurrentUser,
+  loginRequest,
+  PORTAL_HOME_PATHS,
+  registerRequest,
+} from "../api/auth";
+import { getAccessToken, setAccessToken, setUnauthorizedHandler } from "../api/client";
 
 const AuthContext = createContext(null);
 
 const STORAGE_KEY = "peerpoint_user";
-const REGISTERED_USERS_KEY = "peerpoint_registered_users";
+const PORTAL_STORAGE_KEY = "peerpoint_active_portal";
 const STRATHMORE_EMAIL_ERROR =
   "Please use your Strathmore University email address.";
 
@@ -21,146 +28,175 @@ function loadStoredUser() {
   }
 }
 
-function loadCustomUsers() {
-  try {
-    const stored = localStorage.getItem(REGISTERED_USERS_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
+function persistUser(nextUser) {
+  if (nextUser) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
+  } else {
+    localStorage.removeItem(STORAGE_KEY);
   }
 }
 
-function persistCustomUsers(customUsers) {
-  localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(customUsers));
+function loadStoredPortal() {
+  try {
+    return localStorage.getItem(PORTAL_STORAGE_KEY) || null;
+  } catch {
+    return null;
+  }
 }
 
-function getAllRegisteredUsers(customUsers) {
-  const mockEmails = new Set(mockUsers.map((entry) => entry.email.toLowerCase()));
-  const extras = customUsers.filter(
-    (entry) => !mockEmails.has(entry.email.toLowerCase())
-  );
-
-  return [...mockUsers, ...extras];
-}
-
-function toPublicUser(account) {
-  return {
-    id: account.id,
-    fullName: account.fullName,
-    email: account.email,
-    role: account.role,
-    isVerified: account.isVerified,
-  };
+function persistPortal(portal) {
+  if (portal) {
+    localStorage.setItem(PORTAL_STORAGE_KEY, portal);
+  } else {
+    localStorage.removeItem(PORTAL_STORAGE_KEY);
+  }
 }
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => loadStoredUser());
-  const [customUsers, setCustomUsers] = useState(() => loadCustomUsers());
+  const [activePortal, setActivePortalState] = useState(() => loadStoredPortal());
+  const [initializing, setInitializing] = useState(() => Boolean(getAccessToken()));
 
-  const persistUser = (nextUser) => {
-    if (nextUser) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-    setUser(nextUser);
+  const availablePortals = useMemo(() => computeAvailablePortals(user), [user]);
+
+  const setActivePortal = (portal) => {
+    setActivePortalState(portal);
+    persistPortal(portal);
   };
 
-  const login = (email, password) => {
-    const normalizedEmail = email.trim();
-    const normalizedPassword = password.trim();
-
-    if (!isStrathmoreEmail(normalizedEmail)) {
-      return {
-        success: false,
-        field: "email",
-        error: STRATHMORE_EMAIL_ERROR,
-      };
-    }
-
-    const account = getAllRegisteredUsers(customUsers).find(
-      (entry) =>
-        entry.email.toLowerCase() === normalizedEmail.toLowerCase() &&
-        entry.password === normalizedPassword
-    );
-
-    if (!account) {
-      return { success: false, error: "Invalid email or password." };
-    }
-
-    const publicUser = toPublicUser(account);
-    persistUser(publicUser);
-
-    let redirectTo = "/";
-    if (account.role === "student") {
-      redirectTo = "/student";
-    } else if (account.role === "counsellor") {
-      redirectTo = account.isVerified ? "/counsellor" : "/pending-approval";
-    } else if (account.role === "admin") {
-      redirectTo = "/admin";
-    }
-
-    return { success: true, redirectTo };
+  // Set the active portal and hand back its home path so callers can navigate.
+  const switchPortal = (portal) => {
+    setActivePortal(portal);
+    return PORTAL_HOME_PATHS[portal] ?? "/";
   };
 
-  const signup = ({ fullName, email, password, role }) => {
-    const normalizedEmail = email.trim();
-    const normalizedPassword = password.trim();
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      setAccessToken(null);
+      setUser(null);
+      persistUser(null);
+      setActivePortalState(null);
+      persistPortal(null);
+    });
+  }, []);
 
-    if (!isStrathmoreEmail(normalizedEmail)) {
-      return {
-        success: false,
-        field: "email",
-        error: STRATHMORE_EMAIL_ERROR,
-      };
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) {
+      setInitializing(false);
+      return;
     }
 
-    const allUsers = getAllRegisteredUsers(customUsers);
-    const exists = allUsers.some(
-      (entry) => entry.email.toLowerCase() === normalizedEmail.toLowerCase()
-    );
+    let cancelled = false;
 
-    if (exists) {
-      return {
-        success: false,
-        field: "email",
-        error: "An account with this email already exists.",
-      };
-    }
+    fetchCurrentUser()
+      .then((nextUser) => {
+        if (!cancelled) {
+          setUser(nextUser);
+          persistUser(nextUser);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAccessToken(null);
+          setUser(null);
+          persistUser(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setInitializing(false);
+        }
+      });
 
-    const nextId =
-      allUsers.reduce((max, entry) => Math.max(max, entry.id), 0) + 1;
-
-    const newAccount = {
-      id: nextId,
-      fullName,
-      email: normalizedEmail,
-      password: normalizedPassword,
-      role,
-      isVerified: role !== "counsellor",
+    return () => {
+      cancelled = true;
     };
+  }, []);
 
-    const nextCustomUsers = [...customUsers, newAccount];
-    setCustomUsers(nextCustomUsers);
-    persistCustomUsers(nextCustomUsers);
+  const login = async (email, password) => {
+    const normalizedEmail = email.trim();
+    const normalizedPassword = password.trim();
 
-    const publicUser = toPublicUser(newAccount);
-    persistUser(publicUser);
-
-    let redirectTo = "/";
-    if (role === "student") {
-      redirectTo = "/student";
-    } else if (role === "counsellor") {
-      redirectTo = newAccount.isVerified ? "/counsellor" : "/pending-approval";
-    } else if (role === "admin") {
-      redirectTo = "/admin";
+    if (!isStrathmoreEmail(normalizedEmail)) {
+      return {
+        success: false,
+        field: "email",
+        error: STRATHMORE_EMAIL_ERROR,
+      };
     }
 
-    return { success: true, redirectTo };
+    try {
+      const { user: nextUser, redirectTo } = await loginRequest(
+        normalizedEmail,
+        normalizedPassword,
+      );
+      setUser(nextUser);
+      persistUser(nextUser);
+      return { success: true, redirectTo, user: nextUser };
+    } catch (error) {
+      if (error.status === 403 || error.status === 401) {
+        return { success: false, error: "Invalid email or password." };
+      }
+      return {
+        success: false,
+        error: error.message || "Unable to sign in. Please try again.",
+      };
+    }
+  };
+
+  const signup = async ({ fullName, email, password, admissionNumber }) => {
+    const normalizedEmail = email.trim();
+    const normalizedPassword = password.trim();
+    const normalizedAdmissionNumber = admissionNumber.trim();
+
+    if (!isStrathmoreEmail(normalizedEmail)) {
+      return {
+        success: false,
+        field: "email",
+        error: STRATHMORE_EMAIL_ERROR,
+      };
+    }
+
+    try {
+      const { email: registeredEmail } = await registerRequest({
+        fullName: fullName.trim(),
+        email: normalizedEmail,
+        password: normalizedPassword,
+        admissionNumber: normalizedAdmissionNumber,
+      });
+      return { success: true, email: registeredEmail };
+    } catch (error) {
+      if (error.status === 409) {
+        return {
+          success: false,
+          field: "email",
+          error: "An account with this email already exists.",
+        };
+      }
+      if (error.status === 400) {
+        return {
+          success: false,
+          field: "email",
+          error:
+            typeof error.detail === "string"
+              ? error.detail
+              : STRATHMORE_EMAIL_ERROR,
+        };
+      }
+      return {
+        success: false,
+        error: error.message || "Unable to create account. Please try again.",
+      };
+    }
   };
 
   const logout = () => {
+    setAccessToken(null);
+    setUser(null);
     persistUser(null);
+    setActivePortalState(null);
+    persistPortal(null);
   };
 
   const value = useMemo(
@@ -169,9 +205,14 @@ export function AuthProvider({ children }) {
       login,
       signup,
       logout,
+      initializing,
       isAuthenticated: Boolean(user),
+      activePortal,
+      availablePortals,
+      setActivePortal,
+      switchPortal,
     }),
-    [user, customUsers]
+    [user, initializing, activePortal, availablePortals],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

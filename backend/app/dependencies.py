@@ -78,4 +78,29 @@ def require_student(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Students only",
         )
+    if not current_user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email not verified",
+        )
     return current_user
+
+
+def require_admin_or_verified_student(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Admins bypass email verification; students must have email_verified."""
+    if user_has_active_role(db, current_user.id, UserRole.admin):
+        return current_user
+    if user_has_active_role(db, current_user.id, UserRole.student):
+        if not current_user.email_verified:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Email not verified",
+            )
+        return current_user
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Access denied. Required role(s): ['student', 'admin']",
+    )

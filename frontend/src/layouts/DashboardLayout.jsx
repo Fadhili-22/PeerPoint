@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart3,
@@ -14,6 +14,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import PortalSwitcher from "../components/PortalSwitcher";
 import { useAuth } from "../context/AuthContext";
 
 const navByRole = {
@@ -38,6 +39,14 @@ const roleLabels = {
   counsellor: "Peer Counsellor",
   admin: "Administrator",
 };
+
+function resolveDashboardRole(pathname, user) {
+  if (pathname.startsWith("/admin")) return "admin";
+  if (pathname.startsWith("/counsellor")) return "counsellor";
+  if (user.roles?.includes("admin")) return "admin";
+  if (user.roles?.includes("counsellor")) return "counsellor";
+  return user.role;
+}
 
 function SidebarNav({ navItems, activeIndex, onNavigate, className = "" }) {
   return (
@@ -67,9 +76,16 @@ function SidebarNav({ navItems, activeIndex, onNavigate, className = "" }) {
   );
 }
 
-function SidebarFooter({ user, initials, onLogout }) {
+function SidebarFooter({ user, initials, onLogout, dashboardRole, onNavigate }) {
   return (
     <div className="space-y-2 border-t border-primary/10 px-3 py-3">
+      <PortalSwitcher
+        currentPortal={dashboardRole}
+        variant="block"
+        menuDirection="up"
+        onNavigate={onNavigate}
+      />
+
       <button
         type="button"
         disabled
@@ -102,7 +118,7 @@ function SidebarFooter({ user, initials, onLogout }) {
             {user.fullName}
           </p>
           <p className="truncate text-xs text-on-surface/60">
-            {roleLabels[user.role]}
+            {roleLabels[dashboardRole] ?? roleLabels[user.role]}
           </p>
         </div>
       </div>
@@ -111,11 +127,20 @@ function SidebarFooter({ user, initials, onLogout }) {
 }
 
 export default function DashboardLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, activePortal, setActivePortal } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const navItems = navByRole[user.role] || [];
+  const dashboardRole = resolveDashboardRole(location.pathname, user);
+
+  // Route wins over stored portal: keep activePortal aligned with the shell the
+  // user is actually viewing so a refresh on /counsellor or /admin stays put.
+  useEffect(() => {
+    if (dashboardRole && activePortal !== dashboardRole) {
+      setActivePortal(dashboardRole);
+    }
+  }, [dashboardRole, activePortal, setActivePortal]);
+  const navItems = navByRole[dashboardRole] || [];
   const activeIndex = navItems.reduce(
     (best, item, index) => {
       const isMatch =
@@ -180,7 +205,7 @@ export default function DashboardLayout() {
                 <MessageCircle className="h-5 w-5 text-primary" />
                 PeerPoint
               </div>
-              {user.role === "admin" && (
+              {dashboardRole === "admin" && (
                 <span className="mt-2 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-primary">
                   Admin Panel
                 </span>
@@ -195,6 +220,8 @@ export default function DashboardLayout() {
               user={user}
               initials={initials}
               onLogout={handleLogout}
+              dashboardRole={dashboardRole}
+              onNavigate={closeMobile}
             />
           </aside>
         </div>
@@ -206,7 +233,7 @@ export default function DashboardLayout() {
             <MessageCircle className="h-5 w-5 text-primary" />
             PeerPoint
           </div>
-          {user.role === "admin" && (
+          {dashboardRole === "admin" && (
             <span className="mt-2 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-primary">
               Admin Panel
             </span>
@@ -219,6 +246,7 @@ export default function DashboardLayout() {
           user={user}
           initials={initials}
           onLogout={handleLogout}
+          dashboardRole={dashboardRole}
         />
       </aside>
 

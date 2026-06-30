@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Bell, Search } from "lucide-react";
-import { platformActivity } from "../data/mockAdminDashboard";
+import { useResources } from "../context/ResourcesContext";
+import { listAdminNotifications } from "../api/admin";
 
 export default function AdminPageHeader({
   eyebrow,
@@ -12,8 +13,28 @@ export default function AdminPageHeader({
   actions,
   stats,
 }) {
+  const { adminResourceActivity } = useResources();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [platformNotifications, setPlatformNotifications] = useState([]);
   const notificationsRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadNotifications() {
+      try {
+        const items = await listAdminNotifications({ limit: 20 });
+        if (!cancelled) setPlatformNotifications(items);
+      } catch {
+        if (!cancelled) setPlatformNotifications([]);
+      }
+    }
+
+    loadNotifications();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!notificationsOpen) return undefined;
@@ -30,6 +51,11 @@ export default function AdminPageHeader({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [notificationsOpen]);
+
+  const notificationItems = [...adminResourceActivity, ...platformNotifications].slice(
+    0,
+    3,
+  );
 
   return (
     <>
@@ -75,19 +101,25 @@ export default function AdminPageHeader({
                   </p>
                 </div>
                 <ul className="max-h-72 divide-y divide-outline-muted/10 overflow-y-auto">
-                  {platformActivity.slice(0, 3).map((item) => (
-                    <li key={item.id} className="px-4 py-3">
-                      <p className="font-heading text-sm font-semibold text-on-surface">
-                        {item.title}
-                      </p>
-                      <p className="mt-0.5 font-body text-xs text-on-surface-muted">
-                        {item.description}
-                      </p>
-                      <span className="mt-1 block font-heading text-[10px] font-bold uppercase text-outline">
-                        {item.time}
-                      </span>
+                  {notificationItems.length === 0 ? (
+                    <li className="px-4 py-6 text-center font-body text-sm text-on-surface-muted">
+                      No notifications yet
                     </li>
-                  ))}
+                  ) : (
+                    notificationItems.map((item) => (
+                      <li key={item.id} className="px-4 py-3">
+                        <p className="font-heading text-sm font-semibold text-on-surface">
+                          {item.title}
+                        </p>
+                        <p className="mt-0.5 font-body text-xs text-on-surface-muted">
+                          {item.description}
+                        </p>
+                        <span className="mt-1 block font-heading text-[10px] font-bold uppercase text-outline">
+                          {item.time}
+                        </span>
+                      </li>
+                    ))
+                  )}
                 </ul>
               </div>
             ) : null}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -9,11 +9,10 @@ import {
   X,
 } from "lucide-react";
 import ComingSoonText from "../components/ComingSoonText";
+import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
-import {
-  recommendedResources,
-  upcomingSessions,
-} from "../data/mockStudentDashboard";
+import { getRecommendedResources } from "../api/resources";
+import { formatSessionStatus, getMySessions } from "../api/sessions";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -21,16 +20,6 @@ function getGreeting() {
   if (hour < 17) return "Good afternoon";
   return "Good evening";
 }
-
-const sessionStatusStyles = {
-  confirmed: "bg-success/10 text-success",
-  pending: "bg-accent-gold/20 text-accent-gold",
-};
-
-const sessionStatusLabels = {
-  confirmed: "Confirmed",
-  pending: "Pending",
-};
 
 function QuickActionCard({
   variant,
@@ -128,7 +117,9 @@ function SessionDetailsModal({ session, onClose }) {
           </div>
           <div className="flex justify-between gap-4">
             <dt className="text-on-surface-muted">Format</dt>
-            <dd className="font-medium text-on-surface">{session.format}</dd>
+            <dd className="font-medium text-on-surface">
+              {session.formatLabel ?? session.format}
+            </dd>
           </div>
         </dl>
         <button
@@ -147,6 +138,72 @@ export default function StudentDashboard() {
   const { user } = useAuth();
   const firstName = user.fullName.split(" ")[0];
   const [selectedSession, setSelectedSession] = useState(null);
+  const [upcomingSessions, setUpcomingSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [sessionsError, setSessionsError] = useState("");
+  const [recommendedResources, setRecommendedResources] = useState([]);
+  const [recommendedLoading, setRecommendedLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSessions() {
+      setSessionsLoading(true);
+      setSessionsError("");
+      try {
+        const data = await getMySessions();
+        if (!cancelled) {
+          setUpcomingSessions(data.slice(0, 3));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          if (error instanceof ApiError && error.status === 403) {
+            setSessionsError("You are not authorized to view sessions.");
+          } else {
+            setSessionsError(
+              error.message || "Unable to load sessions. Please try again.",
+            );
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setSessionsLoading(false);
+        }
+      }
+    }
+
+    loadSessions();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRecommended() {
+      setRecommendedLoading(true);
+      try {
+        const data = await getRecommendedResources();
+        if (!cancelled) {
+          setRecommendedResources(data);
+        }
+      } catch {
+        if (!cancelled) {
+          setRecommendedResources([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setRecommendedLoading(false);
+        }
+      }
+    }
+
+    loadRecommended();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col">
@@ -200,42 +257,63 @@ export default function StudentDashboard() {
             </Link>
           </div>
           <div className="space-y-3">
-            {upcomingSessions.map((session) => (
-              <article
-                key={session.id}
-                className="flex items-center justify-between rounded-xl border border-soft-teal bg-surface p-3 shadow-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-muted font-heading text-xs font-bold text-primary">
-                    {session.initials}
-                  </div>
-                  <div>
-                    <h4 className="font-heading text-sm font-semibold text-on-surface">
-                      {session.counsellorName}
-                    </h4>
-                    <p className="font-body text-xs font-medium text-on-surface-muted">
-                      {session.datetime}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-1.5">
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 font-body text-xs font-medium ${
-                      sessionStatusStyles[session.status]
-                    }`}
+            {sessionsLoading ? (
+              [1, 2].map((item) => (
+                <div
+                  key={item}
+                  className="h-16 animate-pulse rounded-xl border border-soft-teal bg-surface-muted/40"
+                />
+              ))
+            ) : sessionsError ? (
+              <p className="rounded-xl border border-danger/20 bg-danger/5 px-4 py-3 font-body text-sm text-danger">
+                {sessionsError}
+              </p>
+            ) : upcomingSessions.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-outline-muted/30 px-4 py-6 text-center font-body text-sm text-on-surface-muted">
+                No upcoming sessions yet.{" "}
+                <Link to="/student/directory" className="font-semibold text-primary">
+                  Find a counsellor
+                </Link>
+              </p>
+            ) : (
+              upcomingSessions.map((session) => {
+                const statusMeta = formatSessionStatus(session.status);
+                return (
+                  <article
+                    key={session.id}
+                    className="flex items-center justify-between rounded-xl border border-soft-teal bg-surface p-3 shadow-sm"
                   >
-                    {sessionStatusLabels[session.status]}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSession(session)}
-                    className="font-heading text-xs font-semibold text-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:text-primary-dark"
-                  >
-                    View Details
-                  </button>
-                </div>
-              </article>
-            ))}
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-muted font-heading text-xs font-bold text-primary">
+                        {session.initials}
+                      </div>
+                      <div>
+                        <h4 className="font-heading text-sm font-semibold text-on-surface">
+                          {session.counsellorName}
+                        </h4>
+                        <p className="font-body text-xs font-medium text-on-surface-muted">
+                          {session.datetime}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 font-body text-xs font-medium ${statusMeta.style}`}
+                      >
+                        {statusMeta.label}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSession(session)}
+                        className="font-heading text-xs font-semibold text-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:text-primary-dark"
+                      >
+                        View Details
+                      </button>
+                    </div>
+                  </article>
+                );
+              })
+            )}
           </div>
         </section>
 
@@ -251,40 +329,57 @@ export default function StudentDashboard() {
               Explore All
             </Link>
           </div>
-          <div className="scrollbar-hide flex snap-x gap-3 overflow-x-auto pb-1">
-            {recommendedResources.map((resource) => (
-              <article
-                key={resource.id}
-                className="min-w-[240px] snap-start overflow-hidden rounded-2xl border border-soft-teal bg-surface shadow-sm"
-              >
-                <img
-                  src={resource.imageUrl}
-                  alt={resource.imageAlt}
-                  className="h-28 w-full object-cover"
-                />
-                <div className="p-3">
-                  <div className="mb-1.5 flex gap-2">
-                    <span className="rounded-full bg-soft-teal px-2 py-0.5 font-heading text-[10px] font-bold uppercase tracking-wider text-primary">
-                      {resource.category}
-                    </span>
+          {recommendedLoading ? (
+            <div className="flex snap-x gap-3 overflow-x-auto pb-1">
+              {[1, 2].map((item) => (
+                <div
+                  key={item}
+                  className="min-w-[240px] snap-start overflow-hidden rounded-2xl border border-soft-teal bg-surface-muted/40"
+                >
+                  <div className="h-28 animate-pulse bg-surface-muted/60" />
+                  <div className="space-y-2 p-3">
+                    <div className="h-4 w-20 animate-pulse rounded bg-surface-muted/60" />
+                    <div className="h-4 w-full animate-pulse rounded bg-surface-muted/60" />
                   </div>
-                  <h4 className="mb-1.5 font-heading text-sm font-semibold text-on-surface">
-                    {resource.title}
-                  </h4>
-                  <Link
-                    to={`/student/resources/${resource.id}`}
-                    className="group inline-flex items-center gap-1 font-heading text-sm font-semibold text-primary transition-colors hover:text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                  >
-                    Read More
-                    <ChevronRight
-                      className="h-4 w-4 transition-transform group-hover:translate-x-1"
-                      aria-hidden="true"
-                    />
-                  </Link>
                 </div>
-              </article>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : recommendedResources.length > 0 ? (
+            <div className="scrollbar-hide flex snap-x gap-3 overflow-x-auto pb-1">
+              {recommendedResources.map((resource) => (
+                <article
+                  key={resource.id}
+                  className="min-w-[240px] snap-start overflow-hidden rounded-2xl border border-soft-teal bg-surface shadow-sm"
+                >
+                  <img
+                    src={resource.image}
+                    alt={resource.imageAlt}
+                    className="h-28 w-full object-cover"
+                  />
+                  <div className="p-3">
+                    <div className="mb-1.5 flex gap-2">
+                      <span className="rounded-full bg-soft-teal px-2 py-0.5 font-heading text-[10px] font-bold uppercase tracking-wider text-primary">
+                        {resource.category}
+                      </span>
+                    </div>
+                    <h4 className="mb-1.5 font-heading text-sm font-semibold text-on-surface">
+                      {resource.title}
+                    </h4>
+                    <Link
+                      to={`/student/resources/${resource.id}`}
+                      className="group inline-flex items-center gap-1 font-heading text-sm font-semibold text-primary transition-colors hover:text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    >
+                      Read More
+                      <ChevronRight
+                        className="h-4 w-4 transition-transform group-hover:translate-x-1"
+                        aria-hidden="true"
+                      />
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : null}
         </section>
       </div>
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Calendar,
   CalendarClock,
@@ -10,7 +10,10 @@ import {
 import AdminPageHeader from "../components/AdminPageHeader";
 import AdminKpiCard from "../components/AdminKpiCard";
 import FilterChip from "../components/FilterChip";
-import { sessions, sessionStats } from "../data/mockAdminSessions";
+import {
+  computeAdminSessionStats,
+  listAdminSessions,
+} from "../api/admin";
 
 const statusFilters = [
   { id: "all", label: "All" },
@@ -100,7 +103,7 @@ function SessionDetailsModal({ session, onClose }) {
             <dd
               className={`font-semibold ${outcomeStyles[session.outcome] ?? "text-on-surface"}`}
             >
-              {session.outcome}
+              {session.outcome ?? "Pending"}
             </dd>
           </div>
         </dl>
@@ -120,6 +123,27 @@ export default function AdminSessions() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedSession, setSelectedSession] = useState(null);
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const loadSessions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const rows = await listAdminSessions();
+      setSessions(rows);
+    } catch (err) {
+      setSessions([]);
+      setError(err.message ?? "Failed to load sessions.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSessions();
+  }, [loadSessions]);
 
   const filteredSessions = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -134,7 +158,12 @@ export default function AdminSessions() {
         session.type.toLowerCase().includes(query);
       return matchesStatus && matchesQuery;
     });
-  }, [search, statusFilter]);
+  }, [sessions, search, statusFilter]);
+
+  const sessionStats = useMemo(
+    () => computeAdminSessionStats(sessions),
+    [sessions],
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
@@ -152,29 +181,37 @@ export default function AdminSessions() {
         ]}
       />
 
+      {error ? (
+        <div
+          role="alert"
+          className="rounded-2xl border border-danger/20 bg-danger/5 px-4 py-3 font-body text-sm text-danger"
+        >
+          {error}
+        </div>
+      ) : null}
+
       <section aria-label="Session key metrics">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <AdminKpiCard
             icon={Calendar}
             label="Total Sessions"
-            value={sessionStats.total}
-            trend="+18%"
-            sublabel="this month"
+            value={loading ? "…" : sessionStats.total}
+            sublabel="in log"
             iconBg="bg-primary/10"
             iconColor="text-primary"
           />
           <AdminKpiCard
             icon={CheckCircle}
             label="Completed"
-            value={sessionStats.completed}
-            sublabel="Marked resolved"
+            value={loading ? "…" : sessionStats.completed}
+            sublabel="Marked complete"
             iconBg="bg-soft-teal"
             iconColor="text-primary"
           />
           <AdminKpiCard
             icon={CalendarClock}
             label="Upcoming"
-            value={sessionStats.upcoming}
+            value={loading ? "…" : sessionStats.upcoming}
             sublabel="Scheduled ahead"
             iconBg="bg-primary-accent/20"
             iconColor="text-primary-light"
@@ -182,8 +219,8 @@ export default function AdminSessions() {
           <AdminKpiCard
             icon={XCircle}
             label="Cancelled"
-            value={sessionStats.cancelled}
-            sublabel="Incl. no-shows"
+            value={loading ? "…" : sessionStats.cancelled}
+            sublabel="Rejected requests"
             iconBg="bg-danger/10"
             iconColor="text-danger"
           />
@@ -210,93 +247,101 @@ export default function AdminSessions() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-surface-muted font-heading text-sm font-semibold text-on-surface-muted">
-                <th scope="col" className="px-5 py-3.5">
-                  Session
-                </th>
-                <th scope="col" className="px-5 py-3.5">
-                  Student
-                </th>
-                <th scope="col" className="px-5 py-3.5">
-                  Counsellor
-                </th>
-                <th scope="col" className="px-5 py-3.5">
-                  Date
-                </th>
-                <th scope="col" className="px-5 py-3.5">
-                  Status
-                </th>
-                <th scope="col" className="px-5 py-3.5">
-                  Outcome
-                </th>
-                <th scope="col" className="px-5 py-3.5 text-right">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-muted/10">
-              {filteredSessions.map((session) => (
-                <tr
-                  key={session.id}
-                  className="transition-colors hover:bg-surface-muted/40"
-                >
-                  <td className="px-5 py-4">
-                    <p className="font-heading text-sm font-semibold text-on-surface">
-                      {session.id}
-                    </p>
-                    <span className="rounded-full bg-surface-muted px-2 py-0.5 font-heading text-[10px] font-bold uppercase text-on-surface-muted">
-                      {session.type}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-soft-teal font-heading text-xs font-bold text-primary">
-                        {session.studentInitials}
-                      </div>
-                      <span className="font-body text-sm text-on-surface">
-                        {session.student}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 font-body text-sm text-on-surface">
-                    {session.counsellor}
-                  </td>
-                  <td className="px-5 py-4 font-body text-xs text-on-surface-muted">
-                    {session.date}
-                  </td>
-                  <td className="px-5 py-4">
-                    <span
-                      className={`rounded-full px-2.5 py-1 font-body text-xs font-bold ${statusStyles[session.status]}`}
-                    >
-                      {statusLabels[session.status]}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <span
-                      className={`font-body text-sm font-semibold ${outcomeStyles[session.outcome] ?? "text-on-surface"}`}
-                    >
-                      {session.outcome}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-right">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedSession(session)}
-                      title={`View session ${session.id}`}
-                      aria-label={`View session ${session.id}`}
-                      className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 font-heading text-xs font-semibold text-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary/5"
-                    >
-                      <Eye className="h-4 w-4" aria-hidden="true" />
-                      Details
-                    </button>
-                  </td>
+          {loading ? (
+            <div className="flex flex-col items-center gap-3 px-5 py-16 text-center">
+              <p className="font-body text-sm text-on-surface-muted">
+                Loading sessions…
+              </p>
+            </div>
+          ) : (
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-surface-muted font-heading text-sm font-semibold text-on-surface-muted">
+                  <th scope="col" className="px-5 py-3.5">
+                    Session
+                  </th>
+                  <th scope="col" className="px-5 py-3.5">
+                    Student
+                  </th>
+                  <th scope="col" className="px-5 py-3.5">
+                    Counsellor
+                  </th>
+                  <th scope="col" className="px-5 py-3.5">
+                    Date
+                  </th>
+                  <th scope="col" className="px-5 py-3.5">
+                    Status
+                  </th>
+                  <th scope="col" className="px-5 py-3.5">
+                    Outcome
+                  </th>
+                  <th scope="col" className="px-5 py-3.5 text-right">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {filteredSessions.length === 0 ? (
+              </thead>
+              <tbody className="divide-y divide-outline-muted/10">
+                {filteredSessions.map((session) => (
+                  <tr
+                    key={session.id}
+                    className="transition-colors hover:bg-surface-muted/40"
+                  >
+                    <td className="px-5 py-4">
+                      <p className="font-heading text-sm font-semibold text-on-surface">
+                        {session.id}
+                      </p>
+                      <span className="rounded-full bg-surface-muted px-2 py-0.5 font-heading text-[10px] font-bold uppercase text-on-surface-muted">
+                        {session.type}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-soft-teal font-heading text-xs font-bold text-primary">
+                          {session.studentInitials}
+                        </div>
+                        <span className="font-body text-sm text-on-surface">
+                          {session.student}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 font-body text-sm text-on-surface">
+                      {session.counsellor}
+                    </td>
+                    <td className="px-5 py-4 font-body text-xs text-on-surface-muted">
+                      {session.date}
+                    </td>
+                    <td className="px-5 py-4">
+                      <span
+                        className={`rounded-full px-2.5 py-1 font-body text-xs font-bold ${statusStyles[session.status]}`}
+                      >
+                        {statusLabels[session.status]}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span
+                        className={`font-body text-sm font-semibold ${outcomeStyles[session.outcome] ?? "text-on-surface"}`}
+                      >
+                        {session.outcome ?? "Pending"}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSession(session)}
+                        title={`View session ${session.id}`}
+                        aria-label={`View session ${session.id}`}
+                        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 font-heading text-xs font-semibold text-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary/5"
+                      >
+                        <Eye className="h-4 w-4" aria-hidden="true" />
+                        Details
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {!loading && filteredSessions.length === 0 ? (
             <div className="flex flex-col items-center gap-3 px-5 py-16 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
                 <Calendar

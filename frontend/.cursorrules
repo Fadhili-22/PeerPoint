@@ -52,7 +52,9 @@ Calm, trustworthy, soft, student-friendly, modern. Generous spacing, rounded cor
 - Inputs: animated focus state with a visible focus ring
 - No static, lifeless interfaces
 
-## Auth (mock only — no API calls anywhere in this phase)
+## Auth (real API for login/signup; mock data elsewhere)
+
+Login and signup call the FastAPI backend (`VITE_API_URL`). Bearer tokens are stored in `localStorage` as `access_token`; the user object is stored as `peerpoint_user`.
 
 User shape:
 
@@ -61,10 +63,44 @@ User shape:
   id,
   fullName,
   email,
-  role: "student" | "counsellor" | "admin",
+  role: "student" | "counsellor" | "admin",  // cosmetic fallback label only — DO NOT route on it
+  roles: ["student", ...],                   // all active roles from API (source of truth for access)
   isVerified
 }
 ```
+
+Protected routes accept any role listed in `user.roles` (dual student+counsellor accounts can access both portals).
+
+### Multi-role portal picker (Prompt 5)
+
+Dual/triple-role users **pick which portal shell they wear** and can switch anytime.
+This is **client-side only** — it never changes what the API authorizes (always the
+full `user.roles[]`), and is **not** the DB `users.role` column.
+
+- `AuthContext` exposes `activePortal`, `availablePortals` (student always; counsellor
+  only when `isVerified`; admin always), `setActivePortal`, and `switchPortal`.
+- The active portal is persisted as `peerpoint_active_portal` (last-used wins on return).
+- After login/signup, `resolvePostAuthRedirect` sends multi-portal users to
+  `/choose-portal` (unless a valid portal is already stored), single-portal users
+  straight to their home, and zero-portal users to the backend `redirect_to`.
+- `PortalSwitcher` in both layouts lets users hop between shells; each shell syncs
+  `activePortal` to its route (route wins over stale storage).
+- Route on `activePortal` / `user.roles`, **never** on `resolvePrimaryRole` priority
+  (which would wrongly pick "student" while browsing `/counsellor`).
+
+**Wired to API (Prompts 3–9):** auth, counsellor directory, counsellor profile, session booking, student/counsellor session flows, dashboard availability toggle, counsellor availability editor, admin counsellor management (`/admin/counsellors`), **student resource reads** (`/student/resources`, detail, dashboard recommended strip), **admin/counsellor resource CMS** (`/admin/resources/*`, `/counsellor/resources/*` — `src/api/resources.js`), **admin session log + dashboard KPIs**, and **landing carousel + public stats** (`src/api/public.js`). `ResourcesContext` is activity-feed stubs only; CMS data is API-backed.
+
+Strathmore email validation remains on the frontend. Admin dashboard `platformHealth` / satisfaction ring remain mock (no DB). Analytics charts, counsellor performance, reports, and `last_active_at` on login are API-driven (Prompt 11). Account-requests queue, admin students directory, and platform notifications are API-driven (Prompt 10).
+
+### Test Logins
+
+Use backend-seeded accounts (see `backend/scripts/seed_*.py`), e.g.:
+
+```text
+student@strathmore.edu / counsellor@strathmore.edu — password from seed script
+```
+
+Legacy mock-only test accounts in `mockUsers.js` are no longer used for login when the API is reachable.
 
 ### Account Lifecycle
 
@@ -74,7 +110,7 @@ There is no public counsellor signup flow.
 
 There is no public admin signup flow.
 
-A counsellor account is created when an administrator promotes an existing student account to the `counsellor` role.
+A counsellor account is created when an administrator promotes an existing student account to the `counsellor` role. Promotion also sets `isVerified: true` on the backend — newly promoted counsellors go straight to `/counsellor`. `/pending-approval` is only for legacy unverified counsellor rows, not the normal post-promotion path.
 
 An admin account can only exist as a predefined system account in this frontend demo.
 
