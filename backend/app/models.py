@@ -5,7 +5,6 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Integer,
-    Numeric,
     String,
     Text,
     UniqueConstraint,
@@ -28,12 +27,6 @@ class UserRole(enum.Enum):
     student = "student"
     counsellor = "counsellor"
     admin = "admin"
-
-
-class AvailabilityStatus(enum.Enum):
-    available = "available"
-    busy = "busy"
-    offline = "offline"
 
 
 class CounsellorProfileStatus(enum.Enum):
@@ -208,20 +201,10 @@ class CounsellorProfile(Base):
     specialties = Column(ARRAY(String), nullable=False, server_default="{}")
     languages = Column(ARRAY(String), nullable=False, server_default="{}")
     photo_url = Column(String, nullable=True)
-    # Decimal rating (e.g. 4.9) — frontend renders one decimal place. Numeric(2,1)
-    # holds 0.0–9.9 which comfortably covers the 0.0–5.0 rating domain.
-    rating = Column(Numeric(2, 1), nullable=False, server_default="0")
     sessions_count = Column(Integer, nullable=False, server_default="0")
     joined_at = Column(
         TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")
     )
-    availability_status = Column(
-        Enum(AvailabilityStatus),
-        nullable=False,
-        server_default=AvailabilityStatus.offline.value,
-    )
-    is_online = Column(Boolean, nullable=False, server_default="FALSE")
-    busy_until = Column(String, nullable=True)
     availability_note = Column(String, nullable=False, server_default="")
     response_time = Column(String, nullable=False, server_default="")
     unavailable_dates = Column(ARRAY(String), nullable=False, server_default="{}")
@@ -326,7 +309,7 @@ class Resource(Base):
     id = Column(String, primary_key=True, nullable=False)
     slug = Column(String, nullable=False, unique=True)
     title = Column(String, nullable=False)
-    category = Column(Enum(ResourceCategory), nullable=False)
+    category = Column(Enum(ResourceCategory, values_callable=_enum_values), nullable=False)
     description = Column(Text, nullable=False)
     read_time = Column(String, nullable=False)
     author = Column(String, nullable=False)
@@ -335,7 +318,7 @@ class Resource(Base):
     image_alt = Column(String, nullable=False)
     body = Column(ARRAY(String), nullable=False, server_default="{}")
     status = Column(
-        Enum(ResourceStatus),
+        Enum(ResourceStatus, values_callable=_enum_values),
         nullable=False,
         server_default=ResourceStatus.draft.value,
     )

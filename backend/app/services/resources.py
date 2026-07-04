@@ -112,7 +112,7 @@ def list_featured_resources(
 
 
 def list_recommended_resources(db: Session) -> list[schemas.ResourceResponse]:
-    limit = 2
+    limit = 4
     featured = list_featured_resources(db, limit=limit)
     if len(featured) >= limit:
         return featured

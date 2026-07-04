@@ -1,11 +1,13 @@
 import { X } from "lucide-react";
-import { counsellorLanguages, sessionTopics, studyYears } from "../constants/counsellorFilters";
+import {
+  counsellorLanguages,
+  counsellorSpecialties,
+  studyYears,
+} from "../constants/counsellorFilters";
 
 export default function FilterDrawer({
   open,
   onClose,
-  availability,
-  onAvailabilityChange,
   selectedSpecialties,
   onToggleSpecialty,
   selectedLanguage,
@@ -50,37 +52,6 @@ export default function FilterDrawer({
         </div>
 
         <div className="flex-1 space-y-8 overflow-y-auto px-6 py-6">
-          <section>
-            <h3 className="mb-3 font-heading text-xs font-bold uppercase tracking-wide text-on-surface-subtle">
-              Availability
-            </h3>
-            <div className="space-y-2">
-              {[
-                { value: "all", label: "All counsellors" },
-                { value: "available", label: "Available now" },
-                { value: "today", label: "Available today" },
-              ].map((option) => (
-                <label
-                  key={option.value}
-                  className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-surface-muted/60 ${
-                    availability === option.value ? "bg-soft-teal/80" : ""
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="drawer-availability"
-                    checked={availability === option.value}
-                    onChange={() => onAvailabilityChange(option.value)}
-                    className="h-4 w-4 border-outline-muted text-primary focus:ring-primary"
-                  />
-                  <span className="font-body text-sm text-on-surface">
-                    {option.label}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </section>
-
           <section>
             <h3 className="mb-3 font-heading text-xs font-bold uppercase tracking-wide text-on-surface-subtle">
               Year of study
@@ -138,18 +109,18 @@ export default function FilterDrawer({
               Specialties
             </h3>
             <div className="space-y-1">
-              {sessionTopics.filter((topic) => topic !== "Other").map((topic) => (
+              {counsellorSpecialties.map((specialty) => (
                 <label
-                  key={topic}
+                  key={specialty}
                   className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-surface-muted/60"
                 >
                   <input
                     type="checkbox"
-                    checked={selectedSpecialties.includes(topic)}
-                    onChange={() => onToggleSpecialty(topic)}
+                    checked={selectedSpecialties.includes(specialty)}
+                    onChange={() => onToggleSpecialty(specialty)}
                     className="h-4 w-4 rounded border-outline-muted text-primary focus:ring-primary"
                   />
-                  <span className="font-body text-sm text-on-surface">{topic}</span>
+                  <span className="font-body text-sm text-on-surface">{specialty}</span>
                 </label>
               ))}
             </div>

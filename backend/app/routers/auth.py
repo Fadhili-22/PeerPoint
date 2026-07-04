@@ -168,9 +168,11 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(_: models.User = Depends(oauth2.get_current_user)):
-    # TODO: implement
-    raise NotImplementedError
+def logout(
+    current_user: models.User = Depends(oauth2.get_current_user),
+    db: Session = Depends(get_db),
+):
+    _touch_last_active(db, current_user)
 
 
 @router.get("/me", response_model=schemas.AuthUserResponse)

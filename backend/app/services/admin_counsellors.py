@@ -75,9 +75,7 @@ def _map_admin_counsellor(
         program=profile.program,
         specialties=list(profile.specialties or []),
         sessions_count=count_completed_sessions_for_counsellor(db, user.id),
-        rating=float(profile.rating),
         status=profile.status,
-        availability_status=profile.availability_status,
         last_active_at=profile.last_active_at,
     )
 
@@ -114,7 +112,7 @@ def _map_promotion_candidate(
 
 
 def validate_promotion_candidate(db: Session, user_id: int) -> PromotionCandidate:
-    """Training gate (audit §6.6), enforced server-side before granting the role.
+    """Training gate for the legacy promotion-candidates queue.
 
     Raises 422 when the user is not a candidate or has not completed training.
     """
@@ -134,3 +132,27 @@ def validate_promotion_candidate(db: Session, user_id: int) -> PromotionCandidat
             detail="Training must be complete before promotion",
         )
     return candidate
+
+
+def validate_promotion_target(db: Session, user_id: int) -> User:
+    """Ensure the admin-selected user exists and holds an active student role."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    if not (
+        db.query(UserRoleAssignment.user_id)
+        .filter(
+            UserRoleAssignment.user_id == user_id,
+            UserRoleAssignment.role == UserRole.student,
+            UserRoleAssignment.is_active.is_(True),
+        )
+        .first()
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="User must have an active student role to be promoted",
+        )
+    return user

@@ -1,32 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  ArrowUpRight,
-  Eye,
-  Headset,
-  Loader2,
-  Star,
-  UserCheck,
-  UserPlus,
-  Users,
-  X,
-} from "lucide-react";
+import { Eye, Headset, Loader2, Users, X } from "lucide-react";
 import AdminPageHeader from "../components/AdminPageHeader";
-import AdminKpiCard from "../components/AdminKpiCard";
-import FilterChip from "../components/FilterChip";
 import { ApiError } from "../api/client";
-import {
-  listAdminCounsellors,
-  listPromotionCandidates,
-  promoteCounsellor,
-} from "../api/admin";
-
-const statusFilters = [
-  { id: "all", label: "All" },
-  { id: "active", label: "Active" },
-  { id: "inactive", label: "Inactive" },
-];
-
-const TRAINING_COMPLETE = "Training Complete";
+import { listAdminCounsellors } from "../api/admin";
 
 function StatusBadge({ status }) {
   const isActive = status === "active";
@@ -59,8 +35,6 @@ function CounsellorProfileModal({ counsellor, onClose }) {
           : "—",
     },
     { label: "Sessions", value: counsellor.sessions },
-    { label: "Rating", value: Number(counsellor.rating).toFixed(1) },
-    { label: "Last active", value: counsellor.lastActive },
   ];
 
   return (
@@ -128,25 +102,16 @@ function CounsellorProfileModal({ counsellor, onClose }) {
 
 export default function AdminCounsellors() {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [candidates, setCandidates] = useState([]);
   const [counsellorList, setCounsellorList] = useState([]);
   const [selectedCounsellor, setSelectedCounsellor] = useState(null);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [feedback, setFeedback] = useState("");
-  const [promotingId, setPromotingId] = useState(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const [candidateData, counsellorData] = await Promise.all([
-        listPromotionCandidates(),
-        listAdminCounsellors(),
-      ]);
-      setCandidates(candidateData);
+      const counsellorData = await listAdminCounsellors();
       setCounsellorList(counsellorData);
     } catch (err) {
       if (err instanceof ApiError && err.status === 403) {
@@ -163,72 +128,30 @@ export default function AdminCounsellors() {
     loadData();
   }, [loadData]);
 
-  const handlePromote = async (candidate) => {
-    setPromotingId(candidate.userId);
-    setError("");
-    setFeedback("");
-    try {
-      const result = await promoteCounsellor(candidate.userId);
-      setFeedback(result?.message || `${candidate.name} promoted to counsellor.`);
-      await loadData();
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message || "Unable to promote this candidate.");
-      } else {
-        setError("Unable to promote this candidate. Please try again.");
-      }
-    } finally {
-      setPromotingId(null);
-    }
-  };
-
   const filteredCounsellors = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return counsellorList.filter((counsellor) => {
-      const matchesStatus =
-        statusFilter === "all" || counsellor.status === statusFilter;
-      const matchesQuery =
-        !query ||
+    if (!query) return counsellorList;
+    return counsellorList.filter(
+      (counsellor) =>
         counsellor.name.toLowerCase().includes(query) ||
         counsellor.email.toLowerCase().includes(query) ||
         counsellor.specialties.some((specialty) =>
           specialty.toLowerCase().includes(query),
-        );
-      return matchesStatus && matchesQuery;
-    });
-  }, [search, statusFilter, counsellorList]);
-
-  const stats = useMemo(() => {
-    const total = counsellorList.length;
-    const active = counsellorList.filter((c) => c.status === "active").length;
-    const rated = counsellorList.filter((c) => Number(c.rating) > 0);
-    const avgRating =
-      rated.length > 0
-        ? (
-            rated.reduce((sum, c) => sum + Number(c.rating), 0) / rated.length
-          ).toFixed(1)
-        : "—";
-    return {
-      total,
-      active,
-      pendingPromotions: candidates.length,
-      avgRating,
-    };
-  }, [counsellorList, candidates]);
+        ),
+    );
+  }, [search, counsellorList]);
 
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
       <AdminPageHeader
         eyebrow="Counsellor management"
         title="Manage Counsellors"
-        description="Promote trained students into peer counsellors and oversee the active counselling team."
+        description="View and oversee the active peer counselling team."
         searchPlaceholder="Search counsellors by name, email, or specialty..."
         searchValue={search}
         onSearchChange={setSearch}
         stats={[
-          { label: "Counsellors", value: stats.total, icon: Headset },
-          { label: "Active", value: stats.active, icon: UserCheck },
-          { label: "Avg Rating", value: stats.avgRating, icon: Star },
+          { label: "Counsellors", value: counsellorList.length, icon: Headset },
         ]}
       />
 
@@ -240,304 +163,106 @@ export default function AdminCounsellors() {
           {error}
         </div>
       ) : null}
-      {feedback ? (
-        <div
-          role="status"
-          className="rounded-2xl border border-success/20 bg-success/5 px-5 py-3 font-body text-sm font-medium text-success"
-        >
-          {feedback}
-        </div>
-      ) : null}
-
-      <section aria-label="Counsellor key metrics">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <AdminKpiCard
-            icon={Headset}
-            label="Total Counsellors"
-            value={stats.total}
-            trend="+4%"
-            sublabel="vs last month"
-            iconBg="bg-soft-teal"
-            iconColor="text-primary"
-          />
-          <AdminKpiCard
-            icon={UserCheck}
-            label="Active Counsellors"
-            value={stats.active}
-            sublabel="Online recently"
-            iconBg="bg-primary/10"
-            iconColor="text-primary"
-          />
-          <AdminKpiCard
-            icon={UserPlus}
-            label="Pending Promotions"
-            value={stats.pendingPromotions}
-            urgent
-            iconBg="bg-warning/10"
-            iconColor="text-accent-gold"
-          />
-          <AdminKpiCard
-            icon={Star}
-            label="Average Rating"
-            value={stats.avgRating}
-            sublabel="Across all sessions"
-            iconBg="bg-primary-accent/20"
-            iconColor="text-primary-light"
-          />
-        </div>
-      </section>
-
-      <section
-        aria-label="Promote students to counsellors"
-        className="overflow-hidden rounded-[28px] border border-primary/5 bg-surface shadow-md"
-      >
-        <div className="flex flex-col gap-1 border-b border-outline-muted/10 p-5">
-          <div className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5 text-primary" aria-hidden="true" />
-            <h2 className="font-heading text-lg font-semibold text-on-surface">
-              Promotion Candidates
-            </h2>
-          </div>
-          <p className="font-body text-sm text-on-surface-muted">
-            Students who have completed peer counselling training and are
-            awaiting promotion.
-          </p>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-surface-muted font-heading text-sm font-semibold text-on-surface-muted">
-                <th scope="col" className="px-5 py-3.5">
-                  Student
-                </th>
-                <th scope="col" className="px-5 py-3.5">
-                  Programme
-                </th>
-                <th scope="col" className="px-5 py-3.5">
-                  Training
-                </th>
-                <th scope="col" className="px-5 py-3.5">
-                  Sessions Attended
-                </th>
-                <th scope="col" className="px-5 py-3.5 text-right">
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-muted/10">
-              {candidates.map((candidate) => {
-                const trainingComplete =
-                  candidate.trainingStatus === TRAINING_COMPLETE;
-                const isPromoting = promotingId === candidate.userId;
-                return (
-                  <tr
-                    key={candidate.id}
-                    className="transition-colors hover:bg-surface-muted/40"
-                  >
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-soft-teal font-heading text-xs font-bold text-primary">
-                          {candidate.initials}
-                        </div>
-                        <div>
-                          <p className="font-heading text-sm font-semibold text-on-surface">
-                            {candidate.name}
-                          </p>
-                          <p className="font-body text-xs text-on-surface-muted">
-                            {candidate.email}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 font-body text-sm text-on-surface">
-                      <p>{candidate.course}</p>
-                      <p className="font-body text-xs text-on-surface-muted">
-                        {candidate.year}
-                      </p>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span
-                        className={`rounded-full px-2.5 py-1 font-body text-xs font-bold ${
-                          trainingComplete
-                            ? "bg-success/10 text-success"
-                            : "bg-accent-gold/10 text-accent-gold"
-                        }`}
-                      >
-                        {candidate.trainingStatus}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 font-body text-sm text-on-surface">
-                      {candidate.sessionsAttended} sessions
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => handlePromote(candidate)}
-                        disabled={!trainingComplete || isPromoting}
-                        title={
-                          !trainingComplete
-                            ? "Training must be complete before promotion"
-                            : `Promote ${candidate.name} to counsellor`
-                        }
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 font-heading text-xs font-semibold text-on-primary shadow-sm transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 disabled:hover:translate-y-0"
-                      >
-                        {isPromoting ? (
-                          <Loader2
-                            className="h-4 w-4 animate-spin"
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                        )}
-                        {isPromoting ? "Promoting..." : "Promote"}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {!loading && candidates.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 px-5 py-12 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-muted">
-                <UserPlus className="h-5 w-5 text-on-surface-subtle" aria-hidden="true" />
-              </div>
-              <p className="font-heading text-base font-semibold text-on-surface">
-                No promotion candidates
-              </p>
-              <p className="max-w-sm font-body text-sm text-on-surface-muted">
-                There are no trained students awaiting promotion right now.
-              </p>
-            </div>
-          ) : null}
-          {loading ? (
-            <div className="flex items-center justify-center gap-2 px-5 py-12 font-body text-sm text-on-surface-muted">
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              Loading candidates...
-            </div>
-          ) : null}
-        </div>
-      </section>
 
       <section
         aria-label="Counsellor directory"
         className="overflow-hidden rounded-[28px] border border-primary/5 bg-surface shadow-md"
       >
-        <div className="flex flex-col gap-4 border-b border-outline-muted/10 p-5 md:flex-row md:items-center md:justify-between">
+        <div className="border-b border-outline-muted/10 p-5">
           <h2 className="font-heading text-lg font-semibold text-on-surface">
             All Counsellors
           </h2>
-          <div className="flex flex-wrap gap-2">
-            {statusFilters.map((filter) => (
-              <FilterChip
-                key={filter.id}
-                label={filter.label}
-                active={statusFilter === filter.id}
-                onClick={() => setStatusFilter(filter.id)}
-              />
-            ))}
-          </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-surface-muted font-heading text-sm font-semibold text-on-surface-muted">
-                <th scope="col" className="px-5 py-3.5">
-                  Counsellor
-                </th>
-                <th scope="col" className="px-5 py-3.5">
-                  Specialties
-                </th>
-                <th scope="col" className="px-5 py-3.5">
-                  Sessions
-                </th>
-                <th scope="col" className="px-5 py-3.5">
-                  Rating
-                </th>
-                <th scope="col" className="px-5 py-3.5">
-                  Status
-                </th>
-                <th scope="col" className="px-5 py-3.5 text-right">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-muted/10">
-              {filteredCounsellors.map((counsellor) => (
-                <tr
-                  key={counsellor.id}
-                  className="transition-colors hover:bg-surface-muted/40"
-                >
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-soft-teal font-heading text-xs font-bold text-primary">
-                        {counsellor.initials}
-                      </div>
-                      <div>
-                        <p className="font-heading text-sm font-semibold text-on-surface">
-                          {counsellor.name}
-                        </p>
-                        <p className="font-body text-xs text-on-surface-muted">
-                          {counsellor.email}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex flex-wrap gap-1.5">
-                      {counsellor.specialties.length > 0 ? (
-                        counsellor.specialties.map((specialty) => (
-                          <span
-                            key={specialty}
-                            className="rounded-full bg-surface-muted px-2 py-1 font-heading text-[10px] font-bold uppercase text-on-surface-muted"
-                          >
-                            {specialty}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="font-body text-xs text-on-surface-subtle">
-                          —
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 font-body text-sm text-on-surface">
-                    {counsellor.sessions}
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className="inline-flex items-center gap-1 font-body text-sm font-semibold text-on-surface">
-                      <Star
-                        className="h-3.5 w-3.5 fill-accent-gold text-accent-gold"
-                        aria-hidden="true"
-                      />
-                      {Number(counsellor.rating).toFixed(1)}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <StatusBadge status={counsellor.status} />
-                  </td>
-                  <td className="px-5 py-4 text-right">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCounsellor(counsellor)}
-                      title={`View ${counsellor.name}'s profile`}
-                      aria-label={`View ${counsellor.name}'s profile`}
-                      className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 font-heading text-xs font-semibold text-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary/5"
-                    >
-                      <Eye className="h-4 w-4" aria-hidden="true" />
-                      View Profile
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
           {loading ? (
             <div className="flex items-center justify-center gap-2 px-5 py-16 font-body text-sm text-on-surface-muted">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               Loading counsellors...
             </div>
-          ) : filteredCounsellors.length === 0 ? (
+          ) : (
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-surface-muted font-heading text-sm font-semibold text-on-surface-muted">
+                  <th scope="col" className="px-5 py-3.5">
+                    Counsellor
+                  </th>
+                  <th scope="col" className="px-5 py-3.5">
+                    Specialties
+                  </th>
+                  <th scope="col" className="px-5 py-3.5">
+                    Sessions
+                  </th>
+                  <th scope="col" className="px-5 py-3.5">
+                    Status
+                  </th>
+                  <th scope="col" className="px-5 py-3.5 text-right">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-muted/10">
+                {filteredCounsellors.map((counsellor) => (
+                  <tr
+                    key={counsellor.id}
+                    className="transition-colors hover:bg-surface-muted/40"
+                  >
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-soft-teal font-heading text-xs font-bold text-primary">
+                          {counsellor.initials}
+                        </div>
+                        <div>
+                          <p className="font-heading text-sm font-semibold text-on-surface">
+                            {counsellor.name}
+                          </p>
+                          <p className="font-body text-xs text-on-surface-muted">
+                            {counsellor.email}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex flex-wrap gap-1.5">
+                        {counsellor.specialties.length > 0 ? (
+                          counsellor.specialties.map((specialty) => (
+                            <span
+                              key={specialty}
+                              className="rounded-full bg-surface-muted px-2 py-1 font-heading text-[10px] font-bold uppercase text-on-surface-muted"
+                            >
+                              {specialty}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="font-body text-xs text-on-surface-subtle">
+                            —
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 font-body text-sm text-on-surface">
+                      {counsellor.sessions}
+                    </td>
+                    <td className="px-5 py-4">
+                      <StatusBadge status={counsellor.status} />
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCounsellor(counsellor)}
+                        title={`View ${counsellor.name}'s profile`}
+                        aria-label={`View ${counsellor.name}'s profile`}
+                        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 font-heading text-xs font-semibold text-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary/5"
+                      >
+                        <Eye className="h-4 w-4" aria-hidden="true" />
+                        View Profile
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {!loading && filteredCounsellors.length === 0 ? (
             <div className="flex flex-col items-center gap-3 px-5 py-16 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
                 <Users className="h-6 w-6 text-on-surface-subtle" aria-hidden="true" />
@@ -545,12 +270,12 @@ export default function AdminCounsellors() {
               <p className="font-heading text-base font-semibold text-on-surface">
                 {counsellorList.length === 0
                   ? "No counsellors yet"
-                  : "No counsellors match your filters"}
+                  : "No counsellors match your search"}
               </p>
               <p className="max-w-sm font-body text-sm text-on-surface-muted">
                 {counsellorList.length === 0
-                  ? "Promote a trained student to build your counselling team."
-                  : "Try adjusting your search or choosing a different status filter."}
+                  ? "Promote a student from Manage Students to add a counsellor."
+                  : "Try adjusting your search terms."}
               </p>
             </div>
           ) : null}

@@ -15,3 +15,6 @@ __pycache__/
 
 alembic/__pycache__/
 app/__pycache__/
+
+static/uploads/*
+!static/uploads/.gitkeep

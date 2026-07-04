@@ -4,10 +4,8 @@ import {
   Check,
   Clock,
   Edit3,
-  Globe,
   Plus,
   Save,
-  WifiOff,
   X,
 } from "lucide-react";
 import { ApiError } from "../api/client";
@@ -49,60 +47,60 @@ function DayCard({ day, isEditing, onToggleDay, onRemoveSlot, onAddSlot }) {
           >
             {day.enabled ? "Available" : "Off"}
           </span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={day.enabled}
-            aria-label={`Toggle availability for ${day.day}`}
-            disabled={!isEditing}
-            onClick={() => onToggleDay(day.id)}
-            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${
-              day.enabled ? "bg-primary" : "bg-outline-muted"
-            }`}
-          >
-            <span
-              className={`inline-block h-5 w-5 transform rounded-full bg-surface shadow transition-transform duration-200 ${
-                day.enabled ? "translate-x-5" : "translate-x-0.5"
+          {isEditing && (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={day.enabled}
+              aria-label={`Toggle availability for ${day.day}`}
+              onClick={() => onToggleDay(day.id)}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                day.enabled ? "bg-primary" : "bg-outline-muted"
               }`}
-            />
-          </button>
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-surface shadow transition-transform duration-200 ${
+                  day.enabled ? "translate-x-5" : "translate-x-0.5"
+                }`}
+              />
+            </button>
+          )}
         </div>
       </div>
 
       {day.enabled && (
-        <div className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            {day.slots.length > 0 ? (
-              day.slots.map((slot) => (
+        <div className="space-y-2">
+          {day.slots.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {day.slots.map((slot) => (
                 <span
                   key={slot}
-                  className="inline-flex items-center gap-2 rounded-xl bg-soft-teal px-3 py-1.5 font-heading text-xs font-bold text-primary"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-soft-teal px-3 py-1.5 font-heading text-xs font-semibold text-primary-dark"
                 >
-                  <Clock className="h-3.5 w-3.5" aria-hidden="true" />
                   {slot}
                   {isEditing && (
                     <button
                       type="button"
                       onClick={() => onRemoveSlot(day.id, slot)}
-                      aria-label={`Remove ${slot} from ${day.day}`}
-                      className="rounded-full p-0.5 text-primary/70 transition-colors hover:bg-primary/10 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                      className="rounded-full p-0.5 text-primary transition-colors hover:bg-primary/10"
+                      aria-label={`Remove ${slot}`}
                     >
-                      <X className="h-3.5 w-3.5" aria-hidden="true" />
+                      <X className="h-3 w-3" aria-hidden="true" />
                     </button>
                   )}
                 </span>
-              ))
-            ) : (
-              <p className="font-body text-xs text-on-surface-subtle">
-                No time slots added yet.
-              </p>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="font-body text-xs text-on-surface-subtle">
+              No slots added yet.
+            </p>
+          )}
 
           {isEditing && availableOptions.length > 0 && (
-            <div className="border-t border-outline-muted/15 pt-3">
-              <p className="mb-2 font-heading text-[11px] font-bold uppercase tracking-widest text-on-surface-subtle">
-                Add a slot
+            <div className="pt-2">
+              <p className="mb-2 font-heading text-[10px] font-bold uppercase tracking-wider text-on-surface-subtle">
+                Add slot
               </p>
               <div className="flex flex-wrap gap-2">
                 {availableOptions.map((slot) => (
@@ -110,7 +108,7 @@ function DayCard({ day, isEditing, onToggleDay, onRemoveSlot, onAddSlot }) {
                     key={slot}
                     type="button"
                     onClick={() => onAddSlot(day.id, slot)}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-outline-muted/40 px-3 py-1.5 font-heading text-xs font-semibold text-on-surface-muted transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:border-primary/40 hover:bg-soft-teal hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-surface px-3 py-1.5 font-heading text-xs font-semibold text-primary transition-all duration-200 hover:bg-soft-teal"
                   >
                     <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                     {slot}
@@ -128,7 +126,6 @@ function DayCard({ day, isEditing, onToggleDay, onRemoveSlot, onAddSlot }) {
 export default function CounsellorAvailability() {
   const [schedule, setSchedule] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -145,7 +142,6 @@ export default function CounsellorAvailability() {
         const data = await getMyAvailability();
         if (!cancelled) {
           setSchedule(data.schedule);
-          setIsOnline(data.isOnline);
         }
       } catch (error) {
         if (!cancelled) {
@@ -209,17 +205,15 @@ export default function CounsellorAvailability() {
     );
   };
 
-  const persistAvailability = async (nextSchedule, nextOnline) => {
+  const persistAvailability = async (nextSchedule) => {
     setSaving(true);
     setSaveError("");
     setSaveSuccess("");
     try {
       const result = await updateMyAvailability({
         schedule: nextSchedule,
-        isOnline: nextOnline,
       });
       setSchedule(result.schedule);
-      setIsOnline(result.isOnline);
       return true;
     } catch (error) {
       const message =
@@ -241,26 +235,10 @@ export default function CounsellorAvailability() {
       return;
     }
 
-    const saved = await persistAvailability(schedule, isOnline);
+    const saved = await persistAvailability(schedule);
     if (saved) {
       setIsEditing(false);
       setSaveSuccess("Schedule saved successfully.");
-    }
-  };
-
-  const handleOnlineToggle = async () => {
-    const nextOnline = !isOnline;
-    setIsOnline(nextOnline);
-
-    if (isEditing) {
-      return;
-    }
-
-    const saved = await persistAvailability(schedule, nextOnline);
-    if (saved) {
-      setSaveSuccess("Booking status updated.");
-    } else {
-      setIsOnline(!nextOnline);
     }
   };
 
@@ -332,7 +310,7 @@ export default function CounsellorAvailability() {
 
       <section
         aria-label="Availability summary"
-        className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3"
+        className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2"
       >
         <article className="rounded-2xl border border-primary/5 bg-surface p-5 shadow-md">
           <CalendarClock className="mb-3 h-6 w-6 text-primary" aria-hidden="true" />
@@ -352,51 +330,6 @@ export default function CounsellorAvailability() {
           <p className="font-heading text-3xl font-bold text-on-surface">
             {String(summary.totalSlots).padStart(2, "0")}
           </p>
-        </article>
-
-        <article className="flex flex-col justify-between rounded-2xl border border-primary/5 bg-surface p-5 shadow-md">
-          <div className="mb-3 flex items-center justify-between">
-            <div
-              className={`flex h-9 w-9 items-center justify-center rounded-xl ${
-                isOnline ? "bg-soft-teal text-primary" : "bg-surface-muted text-on-surface-subtle"
-              }`}
-            >
-              {isOnline ? (
-                <Globe className="h-5 w-5" aria-hidden="true" />
-              ) : (
-                <WifiOff className="h-5 w-5" aria-hidden="true" />
-              )}
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={isOnline}
-              aria-label="Toggle online availability status"
-              disabled={saving}
-              onClick={handleOnlineToggle}
-              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${
-                isOnline ? "bg-primary" : "bg-outline-muted"
-              }`}
-            >
-              <span
-                className={`inline-block h-5 w-5 transform rounded-full bg-surface shadow transition-transform duration-200 ${
-                  isOnline ? "translate-x-5" : "translate-x-0.5"
-                }`}
-              />
-            </button>
-          </div>
-          <div>
-            <p className="mb-1 font-heading text-[11px] font-bold uppercase tracking-widest text-on-surface-subtle">
-              Booking Status
-            </p>
-            <p
-              className={`font-heading text-xl font-bold ${
-                isOnline ? "text-primary" : "text-on-surface-subtle"
-              }`}
-            >
-              {isOnline ? "Online" : "Offline"}
-            </p>
-          </div>
         </article>
       </section>
 

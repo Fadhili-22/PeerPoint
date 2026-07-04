@@ -11,6 +11,7 @@ import {
   X,
   BookOpen,
 } from "lucide-react";
+import CounsellorMatchWidget from "../components/CounsellorMatchWidget";
 import CrisisHelpButton from "../components/CrisisHelpButton";
 import PortalSwitcher from "../components/PortalSwitcher";
 import { useAuth } from "../context/AuthContext";
@@ -217,6 +218,7 @@ export default function StudentPortalLayout() {
         <Outlet />
       </main>
 
+      <CounsellorMatchWidget />
       <CrisisHelpButton />
     </div>
   );

@@ -22,6 +22,7 @@ import MySessions from "../pages/MySessions";
 import CounsellorDashboard from "../pages/CounsellorDashboard";
 import CounsellorRequests from "../pages/CounsellorRequests";
 import CounsellorAvailability from "../pages/CounsellorAvailability";
+import CounsellorProfileEdit from "../pages/CounsellorProfileEdit";
 import CounsellorResources from "../pages/CounsellorResources";
 import CounsellorResourceForm from "../pages/CounsellorResourceForm";
 import CounsellorResourcePreview from "../pages/CounsellorResourcePreview";
@@ -29,7 +30,6 @@ import AdminDashboard from "../pages/AdminDashboard";
 import AdminCounsellors from "../pages/AdminCounsellors";
 import AdminStudents from "../pages/AdminStudents";
 import AdminSessions from "../pages/AdminSessions";
-import AdminReports from "../pages/AdminReports";
 import AdminResources from "../pages/AdminResources";
 import AdminResourceForm from "../pages/AdminResourceForm";
 import AdminResourcePreview from "../pages/AdminResourcePreview";
@@ -99,6 +99,7 @@ export default function AppRouter() {
           path="/counsellor/availability"
           element={<CounsellorAvailability />}
         />
+        <Route path="/counsellor/profile" element={<CounsellorProfileEdit />} />
       </Route>
 
       <Route
@@ -119,7 +120,6 @@ export default function AppRouter() {
           path="/admin/resources/:id/preview"
           element={<AdminResourcePreview />}
         />
-        <Route path="/admin/reports" element={<AdminReports />} />
       </Route>
     </Routes>
   );

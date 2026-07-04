@@ -7,8 +7,9 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+
+from app import schemas
 from app.models import (
-    AvailabilityStatus,
     CounsellorProfile,
     CounsellorProfileStatus,
     Resource,
@@ -117,12 +118,6 @@ def _response_meta(rate: int) -> tuple[str, str, str]:
     return "Needs attention", "danger", "danger"
 
 
-def _availability_meta(status: AvailabilityStatus) -> tuple[str, str]:
-    if status == AvailabilityStatus.available:
-        return "Online Now", "online"
-    return "Away", "away"
-
-
 def _build_counsellor_performance(
     db: Session, *, now: datetime
 ) -> list[schemas.CounsellorPerformanceItem]:
@@ -165,7 +160,6 @@ def _build_counsellor_performance(
             rejected=rejected, completed=completed, accepted=accepted
         )
         label, variant, _ = _response_meta(rate)
-        avail_label, avail_variant = _availability_meta(profile.availability_status)
         last_active = None
         if profile.last_active_at:
             last_active = format_relative_time(profile.last_active_at, now=now)
@@ -178,8 +172,6 @@ def _build_counsellor_performance(
                 response_rate=rate,
                 response_label=label,
                 response_variant=variant,
-                availability=avail_label,
-                availability_variant=avail_variant,
                 last_active=last_active,
             )
         )

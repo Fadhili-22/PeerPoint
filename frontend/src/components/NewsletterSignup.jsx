@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { ApiError } from "../api/client";
+import { subscribeToNewsletter } from "../api/newsletter";
 
 const STRATHMORE_EMAIL_SUFFIX = "@strathmore.edu";
 
@@ -6,19 +8,34 @@ export default function NewsletterSignup() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     setSubmitted(false);
 
-    if (!email.trim().toLowerCase().endsWith(STRATHMORE_EMAIL_SUFFIX)) {
+    const trimmed = email.trim();
+    if (!trimmed.toLowerCase().endsWith(STRATHMORE_EMAIL_SUFFIX)) {
       setError("Please use your Strathmore University email address.");
       return;
     }
 
     setError("");
-    setSubmitted(true);
-    setEmail("");
+    setSubmitting(true);
+    try {
+      await subscribeToNewsletter(trimmed);
+      setSubmitted(true);
+      setEmail("");
+    } catch (err) {
+      setSubmitted(false);
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -59,7 +76,8 @@ export default function NewsletterSignup() {
                   if (submitted) setSubmitted(false);
                 }}
                 placeholder="student@strathmore.edu"
-                className="w-full rounded-2xl border-none bg-surface px-6 py-4 font-body text-base text-on-surface placeholder:text-outline transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-primary-accent"
+                disabled={submitting}
+                className="w-full rounded-2xl border-none bg-surface px-6 py-4 font-body text-base text-on-surface placeholder:text-outline transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-primary-accent disabled:opacity-70"
                 aria-invalid={error ? "true" : undefined}
                 aria-describedby={error ? "newsletter-email-error" : undefined}
               />
@@ -80,9 +98,10 @@ export default function NewsletterSignup() {
             </div>
             <button
               type="submit"
-              className="whitespace-nowrap rounded-2xl bg-surface-muted px-8 py-4 font-heading text-sm font-bold text-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-soft-teal focus:outline-none focus:ring-4 focus:ring-primary-accent"
+              disabled={submitting}
+              className="whitespace-nowrap rounded-2xl bg-surface-muted px-8 py-4 font-heading text-sm font-bold text-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-soft-teal focus:outline-none focus:ring-4 focus:ring-primary-accent disabled:opacity-70"
             >
-              Subscribe
+              {submitting ? "Subscribing…" : "Subscribe"}
             </button>
           </form>
         </div>

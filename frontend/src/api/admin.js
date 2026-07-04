@@ -50,10 +50,7 @@ export function mapAdminCounsellor(item) {
     program: item.program,
     specialties: item.specialties ?? [],
     sessions: item.sessions_count ?? 0,
-    rating: item.rating ?? 0,
     status: item.status,
-    availability: item.availability_status,
-    lastActive: formatRelative(item.last_active_at),
   };
 }
 
@@ -148,8 +145,6 @@ export async function getAdminDashboard() {
 }
 
 export function mapAdminDashboard(api) {
-  const pendingTotal = (api.pending_requests ?? 0) + (api.pending_reviews ?? 0);
-
   return {
     headlineStats: [
       {
@@ -178,14 +173,6 @@ export function mapAdminDashboard(api) {
         iconColor: "text-primary",
       },
       {
-        id: "counsellors",
-        label: "Active Counsellors",
-        value: formatDashboardNumber(api.total_counsellors),
-        icon: "headset",
-        iconBg: "bg-soft-teal",
-        iconColor: "text-primary",
-      },
-      {
         id: "sessions",
         label: "Active Sessions",
         value: formatDashboardNumber(api.active_sessions),
@@ -193,15 +180,6 @@ export function mapAdminDashboard(api) {
         icon: "calendar",
         iconBg: "bg-primary-accent/20",
         iconColor: "text-primary-light",
-      },
-      {
-        id: "pending",
-        label: "Pending Approvals",
-        value: formatDashboardNumber(pendingTotal),
-        urgent: pendingTotal > 0,
-        icon: "clock",
-        iconBg: "bg-warning/10",
-        iconColor: "text-accent-gold",
       },
       {
         id: "resources",
@@ -346,8 +324,6 @@ export function mapCounsellorPerformance(items) {
     responseRate: item.response_rate ?? 0,
     responseLabel: item.response_label ?? "",
     responseVariant: item.response_variant ?? "warning",
-    availability: item.availability ?? "Away",
-    availabilityVariant: item.availability_variant ?? "away",
     lastActive: item.last_active ?? "—",
   }));
 }
@@ -377,11 +353,6 @@ function formatMetricValue(value) {
 }
 
 export function mapReportsKpis(api) {
-  const satisfaction =
-    api.avg_satisfaction != null ? `${Math.round(api.avg_satisfaction)}%` : "—";
-  const responseTime =
-    api.avg_response_hours != null ? `${api.avg_response_hours}h` : "—";
-
   return [
     {
       id: "engagement",
@@ -400,24 +371,6 @@ export function mapReportsKpis(api) {
       icon: "calendar",
       iconBg: "bg-soft-teal",
       iconColor: "text-primary",
-    },
-    {
-      id: "satisfaction",
-      label: "Avg Satisfaction",
-      value: satisfaction,
-      sublabel: "post-session",
-      icon: "smile",
-      iconBg: "bg-primary-accent/20",
-      iconColor: "text-primary-light",
-    },
-    {
-      id: "response",
-      label: "Avg Response Time",
-      value: responseTime,
-      sublabel: "not tracked yet",
-      icon: "clock",
-      iconBg: "bg-warning/10",
-      iconColor: "text-accent-gold",
     },
   ];
 }

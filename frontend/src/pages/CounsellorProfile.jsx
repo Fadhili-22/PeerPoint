@@ -232,7 +232,6 @@ export default function CounsellorProfile() {
           <SessionRequestCTA
             counsellorId={counsellor.id}
             counsellorName={counsellor.firstName}
-            isAvailable={counsellor.isAvailable}
           />
           <SharedResourcesCard resources={counsellor.sharedResources} />
 

@@ -1,9 +1,8 @@
 """Seed or bootstrap counsellor accounts (profile + always-on availability).
 
 Counsellors retain an active student role so they can still use student-side flows.
-By default this script marks the counsellor as always available: status ``available``,
-online, active profile, all seven weekdays enabled with the full slot palette, and
-no blocked dates.
+By default this script enables an active profile with all seven weekdays enabled,
+the full slot palette, and no blocked dates.
 
 Usage:
     python -m scripts.seed_counsellor \\
@@ -17,7 +16,6 @@ import argparse
 from app import utils
 from app.database import SessionLocal
 from app.models import (
-    AvailabilityStatus,
     CounsellorAvailabilitySchedule,
     CounsellorProfile,
     CounsellorProfileStatus,
@@ -30,8 +28,6 @@ from app.services.user_roles import ensure_counsellor_profile, grant_role
 
 def configure_always_available(db, profile: CounsellorProfile) -> None:
     """Enable every weekday with the full canonical slot palette."""
-    profile.availability_status = AvailabilityStatus.available
-    profile.is_online = True
     profile.status = CounsellorProfileStatus.active
     profile.unavailable_dates = []
 

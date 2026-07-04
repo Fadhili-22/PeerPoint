@@ -121,8 +121,6 @@ class CounsellorPerformanceItem(BaseModel):
     response_rate: int
     response_label: str
     response_variant: str
-    availability: str
-    availability_variant: str
     last_active: str | None
 
 

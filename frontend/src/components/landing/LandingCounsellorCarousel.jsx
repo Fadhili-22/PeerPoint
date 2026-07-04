@@ -49,15 +49,9 @@ function CounsellorSlide({ counsellor, isActive, prefersReducedMotion }) {
           <h3 className="font-heading text-2xl font-semibold text-on-surface">
             {counsellor.shortName}
           </h3>
-          <div className="flex items-center gap-1.5 text-primary">
-            <span
-              className="h-2 w-2 animate-pulse rounded-full bg-primary"
-              aria-hidden="true"
-            />
-            <span className="text-sm font-semibold">
-              {counsellor.availabilityNote}
-            </span>
-          </div>
+          <p className="font-body text-sm text-on-surface-muted">
+            Year {counsellor.year} — Peer Counsellor
+          </p>
         </div>
       </div>
       <div className="mb-8 space-y-4">
@@ -97,8 +91,8 @@ function EmptyCounsellorCard() {
           Counsellors checking in soon
         </h3>
         <p className="font-body text-base leading-relaxed text-on-surface-muted">
-          No peer counsellors are marked available right now. Browse resources or
-          sign up to get notified when someone is free.
+          Peer counsellors will appear here as they join the platform. Browse resources or
+          sign up to get started.
         </p>
         <Link
           to="/signup"
@@ -127,7 +121,7 @@ export default function LandingCounsellorCarousel() {
       setLoading(true);
       setError(null);
       try {
-        const rows = await getFeaturedCounsellors({ status: "available", limit: 12 });
+        const rows = await getFeaturedCounsellors({ limit: 12 });
         if (!cancelled) {
           setActiveCounsellors(rows);
         }

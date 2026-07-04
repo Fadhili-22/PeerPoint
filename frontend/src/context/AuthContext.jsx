@@ -3,6 +3,7 @@ import {
   computeAvailablePortals,
   fetchCurrentUser,
   loginRequest,
+  logoutRequest,
   PORTAL_HOME_PATHS,
   registerRequest,
 } from "../api/auth";
@@ -192,6 +193,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    void logoutRequest().catch(() => {});
     setAccessToken(null);
     setUser(null);
     persistUser(null);

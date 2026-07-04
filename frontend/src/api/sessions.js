@@ -249,10 +249,3 @@ export async function getCounsellorSlots(counsellorId, date) {
   const data = await apiFetch(`/counsellors/${counsellorId}/slots?date=${date}`);
   return data.slots ?? [];
 }
-
-export async function updateCounsellorAvailabilityStatus(isAvailable) {
-  return apiFetch("/counsellor/me/availability-status", {
-    method: "PATCH",
-    body: { is_available: isAvailable },
-  });
-}

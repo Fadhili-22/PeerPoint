@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.routers import (
     admin,
@@ -51,6 +54,10 @@ app.include_router(admin.router)
 app.include_router(admin_reports.router)
 app.include_router(newsletter.router)
 app.include_router(media.router)
+
+_STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+(_STATIC_DIR / "uploads").mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
 
 @app.get("/")

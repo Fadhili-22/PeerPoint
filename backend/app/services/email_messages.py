@@ -62,3 +62,127 @@ def email_verification(*, full_name: str, verification_token: str) -> tuple[str,
         "— PeerPoint"
     )
     return subject, body
+
+
+def session_accepted(
+    *,
+    student_name: str,
+    counsellor_name: str,
+    scheduled_at: str,
+    session_format: str,
+) -> tuple[str, str]:
+    subject = "PeerPoint — your session request was accepted"
+    body = (
+        f"Hi {student_name},\n\n"
+        f"{counsellor_name} has accepted your peer counselling session request.\n\n"
+        f"When: {scheduled_at}\n"
+        f"Format: {session_format}\n\n"
+        "Log in to PeerPoint to view your upcoming sessions.\n\n"
+        "— PeerPoint"
+    )
+    return subject, body
+
+
+def session_rejected(
+    *,
+    student_name: str,
+    counsellor_name: str,
+    scheduled_at: str,
+    session_format: str,
+    rejection_reason: str | None = None,
+) -> tuple[str, str]:
+    subject = "PeerPoint — update on your session request"
+    reason_block = ""
+    if rejection_reason:
+        reason_block = f"\nReason: {rejection_reason}\n"
+    body = (
+        f"Hi {student_name},\n\n"
+        f"{counsellor_name} was unable to accept your session request "
+        f"for {scheduled_at} ({session_format})."
+        f"{reason_block}\n"
+        "You can request another time or choose a different counsellor on PeerPoint.\n\n"
+        "— PeerPoint"
+    )
+    return subject, body
+
+
+def resource_published(
+    *,
+    title: str,
+    category: str,
+    description: str,
+    url: str,
+) -> tuple[str, str]:
+    subject = f"PeerPoint — new resource: {title}"
+    body = (
+        "A new wellness resource is available on PeerPoint.\n\n"
+        f"Title: {title}\n"
+        f"Category: {category}\n\n"
+        f"{description}\n\n"
+        f"Read it here: {url}\n\n"
+        "— PeerPoint"
+    )
+    return subject, body
+
+
+def session_requested(
+    *,
+    counsellor_name: str,
+    student_display_name: str,
+    topic: str,
+    scheduled_at: str,
+    session_format: str,
+    notes: str | None = None,
+) -> tuple[str, str]:
+    subject = "PeerPoint — new session request"
+    notes_block = ""
+    if notes and notes.strip():
+        notes_block = f"Notes: {notes.strip()}\n"
+    body = (
+        f"Hi {counsellor_name},\n\n"
+        "You have a new peer counselling session request.\n\n"
+        f"Student: {student_display_name}\n"
+        f"Topic: {topic}\n"
+        f"When: {scheduled_at}\n"
+        f"Format: {session_format}\n"
+        f"{notes_block}\n"
+        "Open your counsellor dashboard to review and respond.\n\n"
+        "— PeerPoint"
+    )
+    return subject, body
+
+
+def resource_approved(
+    *,
+    counsellor_name: str,
+    title: str,
+    url: str,
+) -> tuple[str, str]:
+    subject = "PeerPoint — your resource was approved"
+    body = (
+        f"Hi {counsellor_name},\n\n"
+        f"Your resource \"{title}\" was approved and published.\n\n"
+        f"View it here: {url}\n\n"
+        "— PeerPoint"
+    )
+    return subject, body
+
+
+def resource_rejected(
+    *,
+    counsellor_name: str,
+    title: str,
+    rejection_reason: str | None = None,
+) -> tuple[str, str]:
+    subject = "PeerPoint — your resource review outcome"
+    reason_block = ""
+    if rejection_reason and rejection_reason.strip():
+        reason_block = f"\nReason: {rejection_reason.strip()}\n"
+    body = (
+        f"Hi {counsellor_name},\n\n"
+        f"Your resource \"{title}\" was not approved for publishing."
+        f"{reason_block}\n"
+        "Please update the resource and resubmit it for review.\n\n"
+        "— PeerPoint"
+    )
+    return subject, body

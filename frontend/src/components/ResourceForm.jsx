@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import ImageUploadControl from "./ImageUploadControl";
 import { resourceTopicCategories } from "../data/mockResources";
+import { MAX_UPLOAD_SIZE_MB } from "../constants/media";
 
 export const emptyResourceForm = {
   title: "",
@@ -341,6 +343,24 @@ export default function ResourceForm({
                 <p className="mt-1 font-body text-xs text-danger">{errors.image}</p>
               ) : null}
             </div>
+            <div>
+              <p className="mb-2 font-body text-xs text-on-surface-muted">
+                Or upload an image (JPEG, PNG, or WebP, max {MAX_UPLOAD_SIZE_MB} MB).
+              </p>
+              <ImageUploadControl
+                label="Upload image"
+                onUploaded={(url) => updateField("image", url)}
+              />
+            </div>
+            {form.image ? (
+              <div className="overflow-hidden rounded-xl border border-outline-muted/20">
+                <img
+                  src={form.image}
+                  alt="Cover preview"
+                  className="h-40 w-full object-cover"
+                />
+              </div>
+            ) : null}
             <div>
               <FieldLabel htmlFor="resource-image-alt" required>
                 Image alt text

@@ -59,8 +59,17 @@ export async function apiFetch(path, { method = "GET", body, auth = true, header
             ? body
             : JSON.stringify(body),
     });
-  } catch {
-    throw new ApiError(0, "Network error. Please check your connection and try again.");
+  } catch (error) {
+    const target = API_BASE ? `${API_BASE}${path}` : path;
+    const hint = API_BASE
+      ? "Could not reach the API server. Confirm the backend is running and VITE_API_URL is set."
+      : "VITE_API_URL is not configured. Set it in frontend/.env.development and restart the dev server.";
+    throw new ApiError(
+      0,
+      error?.message?.includes("Failed to fetch")
+        ? `Network error while calling ${target}. ${hint}`
+        : `Network error while calling ${target}. Please check your connection and try again.`,
+    );
   }
 
   const contentType = response.headers.get("content-type") ?? "";

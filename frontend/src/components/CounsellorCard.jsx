@@ -1,50 +1,13 @@
 import { Link } from "react-router-dom";
-import { Clock, Star } from "lucide-react";
-
-function AvailabilityBadge({ counsellor }) {
-  if (counsellor.availabilityStatus === "available") {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 font-heading text-[11px] font-semibold text-success">
-        <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
-        Available Now
-      </span>
-    );
-  }
-
-  if (counsellor.availabilityStatus === "busy") {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-warning/10 px-2.5 py-1 font-heading text-[11px] font-semibold text-warning">
-        <span className="h-1.5 w-1.5 rounded-full bg-warning" aria-hidden="true" />
-        Busy Until {counsellor.busyUntil}
-      </span>
-    );
-  }
-
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-outline-muted/20 px-2.5 py-1 font-heading text-[11px] font-semibold text-on-surface-subtle">
-      <span className="h-1.5 w-1.5 rounded-full bg-outline-muted" aria-hidden="true" />
-      Offline
-    </span>
-  );
-}
+import { Clock } from "lucide-react";
 
 export default function CounsellorCard({ counsellor }) {
-  const isAvailable = counsellor.availabilityStatus === "available";
-  const accentClass =
-    counsellor.availabilityStatus === "available"
-      ? "border-success/15"
-      : counsellor.availabilityStatus === "busy"
-        ? "border-warning/15"
-        : "border-outline-muted/20";
-
   return (
-    <article
-      className={`group flex flex-col overflow-hidden rounded-3xl border bg-surface shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${accentClass}`}
-    >
+    <article className="group flex flex-col overflow-hidden rounded-3xl border border-outline-muted/20 bg-surface shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
       <div className="flex flex-1 flex-col p-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="relative shrink-0">
+            <div className="shrink-0">
               {counsellor.photoUrl ? (
                 <img
                   src={counsellor.photoUrl}
@@ -56,16 +19,6 @@ export default function CounsellorCard({ counsellor }) {
                   {counsellor.initials}
                 </div>
               )}
-              <span
-                className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface ${
-                  counsellor.availabilityStatus === "available"
-                    ? "bg-success"
-                    : counsellor.availabilityStatus === "busy"
-                      ? "bg-warning"
-                      : "bg-outline-muted"
-                }`}
-                aria-hidden="true"
-              />
             </div>
             <div className="min-w-0">
               <h3 className="font-heading text-lg font-bold text-on-surface">
@@ -74,24 +27,11 @@ export default function CounsellorCard({ counsellor }) {
                   Year {counsellor.year}
                 </span>
               </h3>
-              <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1 font-body text-sm text-on-surface-muted">
-                  <Star
-                    className="h-4 w-4 fill-accent-gold text-accent-gold"
-                    aria-hidden="true"
-                  />
-                  {counsellor.rating}
-                </span>
-                <span className="text-outline-muted" aria-hidden="true">
-                  ·
-                </span>
-                <span className="font-body text-sm text-on-surface-muted">
-                  {counsellor.sessions} sessions
-                </span>
-              </div>
+              <p className="mt-1.5 font-body text-sm text-on-surface-muted">
+                {counsellor.sessions} sessions
+              </p>
             </div>
           </div>
-          <AvailabilityBadge counsellor={counsellor} />
         </div>
 
         <div className="mb-4 flex flex-wrap gap-2">
@@ -123,22 +63,12 @@ export default function CounsellorCard({ counsellor }) {
           >
             View Profile
           </Link>
-          {isAvailable ? (
-            <Link
-              to={`/student/book/${counsellor.id}`}
-              className="flex flex-1 items-center justify-center rounded-xl bg-primary px-4 py-3 text-center font-heading text-sm font-semibold text-on-primary shadow-sm transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-            >
-              Request Session
-            </Link>
-          ) : (
-            <button
-              type="button"
-              disabled
-              className="flex flex-1 cursor-not-allowed items-center justify-center rounded-xl bg-outline-muted/30 px-4 py-3 font-heading text-sm font-semibold text-on-surface-subtle"
-            >
-              Notify Me
-            </button>
-          )}
+          <Link
+            to={`/student/book/${counsellor.id}`}
+            className="flex flex-1 items-center justify-center rounded-xl bg-primary px-4 py-3 text-center font-heading text-sm font-semibold text-on-primary shadow-sm transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          >
+            Request Session
+          </Link>
         </div>
       </div>
     </article>

@@ -339,7 +339,7 @@ export default function SessionBookingPage() {
 
       <article className="mb-6 rounded-2xl border border-soft-teal bg-surface p-5 shadow-sm">
         <div className="flex gap-4">
-          <div className="relative shrink-0">
+          <div className="shrink-0">
             {counsellor.photoUrl ? (
               <img
                 src={counsellor.photoUrl}
@@ -351,12 +351,6 @@ export default function SessionBookingPage() {
                 {counsellor.initials}
               </div>
             )}
-            {counsellor.availabilityStatus === "available" && (
-              <span
-                className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-surface bg-success"
-                aria-label="Available now"
-              />
-            )}
           </div>
           <div className="min-w-0">
             <h1 className="font-heading text-xl font-semibold text-on-surface">
@@ -367,17 +361,6 @@ export default function SessionBookingPage() {
             </p>
             <p className="mt-1 font-body text-sm font-medium text-primary">
               {counsellor.specialties.join(" • ")}
-            </p>
-            <p
-              className={`mt-2 inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-medium ${
-                counsellor.availabilityStatus === "available"
-                  ? "bg-success/10 text-success"
-                  : counsellor.availabilityStatus === "busy"
-                    ? "bg-warning/10 text-warning"
-                    : "bg-outline-muted/20 text-on-surface-subtle"
-              }`}
-            >
-              {counsellor.availabilityNote}
             </p>
             <p className="mt-3 font-body text-sm leading-relaxed text-on-surface-muted">
               {counsellor.bio}

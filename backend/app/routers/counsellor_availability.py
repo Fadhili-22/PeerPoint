@@ -42,7 +42,6 @@ def _manage_response(
             )
             for row in rows
         ],
-        is_online=profile.is_online,
     )
 
 
@@ -65,7 +64,7 @@ def update_my_availability(
     current_user: User = Depends(require_active_counsellor),
     db: Session = Depends(get_db),
 ):
-    """Upsert the counsellor's own weekday rows and set the online flag.
+    """Upsert the counsellor's own weekday rows.
 
     Every submitted slot string is validated against the canonical
     ``TIME_SLOT_OPTIONS`` palette (audit §5.4); out-of-palette or duplicate
@@ -120,8 +119,6 @@ def update_my_availability(
         else:
             row.enabled = item.enabled
             row.slots = item.slots
-
-    profile.is_online = payload.is_online
 
     db.commit()
     db.refresh(profile)

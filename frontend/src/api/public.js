@@ -1,8 +1,7 @@
 import { apiFetch } from "./client";
 
-export async function getFeaturedCounsellors({ status = "available", limit = 12 } = {}) {
+export async function getFeaturedCounsellors({ limit = 12 } = {}) {
   const params = new URLSearchParams();
-  if (status) params.set("status", status);
   if (limit) params.set("limit", String(limit));
   const query = params.toString();
   const data = await apiFetch(`/public/counsellors/featured${query ? `?${query}` : ""}`, {

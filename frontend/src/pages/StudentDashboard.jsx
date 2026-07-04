@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
   BookOpen,
   CalendarCheck,
+  ChevronLeft,
   ChevronRight,
   UserSearch,
   X,
@@ -134,6 +135,164 @@ function SessionDetailsModal({ session, onClose }) {
   );
 }
 
+function DashboardPanel({ title, actionLabel, actionTo, children }) {
+  return (
+    <section className="flex h-full flex-col rounded-[28px] border border-primary/5 bg-surface p-5 shadow-md">
+      <div className="mb-4 flex items-center justify-between gap-3 border-b border-outline-muted/10 pb-4">
+        <h2 className="font-heading text-lg font-semibold text-on-surface">
+          {title}
+        </h2>
+        {actionTo ? (
+          <Link
+            to={actionTo}
+            className="shrink-0 font-heading text-sm font-semibold text-primary transition-colors hover:text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          >
+            {actionLabel}
+          </Link>
+        ) : null}
+      </div>
+      <div className="flex-1">{children}</div>
+    </section>
+  );
+}
+
+function RecommendedCarousel({ resources, loading }) {
+  const trackRef = useRef(null);
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
+
+  const updateScrollState = () => {
+    const track = trackRef.current;
+    if (!track) return;
+    const { scrollLeft, scrollWidth, clientWidth } = track;
+    setCanScrollPrev(scrollLeft > 4);
+    setCanScrollNext(scrollLeft + clientWidth < scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    updateScrollState();
+    const track = trackRef.current;
+    if (!track) return undefined;
+
+    track.addEventListener("scroll", updateScrollState, { passive: true });
+    window.addEventListener("resize", updateScrollState);
+
+    return () => {
+      track.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", updateScrollState);
+    };
+  }, [resources, loading]);
+
+  const scrollByCard = (direction) => {
+    const track = trackRef.current;
+    if (!track) return;
+    track.scrollBy({ left: direction * 260, behavior: "smooth" });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex snap-x gap-3 overflow-x-auto pb-1">
+        {[1, 2].map((item) => (
+          <div
+            key={item}
+            className="min-w-[240px] snap-start overflow-hidden rounded-2xl border border-soft-teal bg-surface-muted/40"
+          >
+            <div className="h-28 animate-pulse bg-surface-muted/60" />
+            <div className="space-y-2 p-3">
+              <div className="h-4 w-20 animate-pulse rounded bg-surface-muted/60" />
+              <div className="h-4 w-full animate-pulse rounded bg-surface-muted/60" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (resources.length === 0) {
+    return (
+      <p className="rounded-xl border border-dashed border-outline-muted/30 px-4 py-6 text-center font-body text-sm text-on-surface-muted">
+        No resources yet.{" "}
+        <Link to="/student/resources" className="font-semibold text-primary">
+          Browse the Resource Hub
+        </Link>
+      </p>
+    );
+  }
+
+  const showControls = resources.length > 1;
+
+  return (
+    <div className="relative">
+      {showControls ? (
+        <>
+          <button
+            type="button"
+            onClick={() => scrollByCard(-1)}
+            disabled={!canScrollPrev}
+            aria-label="Previous recommended resource"
+            className="absolute -left-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-primary/10 bg-surface text-primary shadow-sm transition-all hover:bg-primary/5 disabled:pointer-events-none disabled:opacity-30"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollByCard(1)}
+            disabled={!canScrollNext}
+            aria-label="Next recommended resource"
+            className="absolute -right-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-primary/10 bg-surface text-primary shadow-sm transition-all hover:bg-primary/5 disabled:pointer-events-none disabled:opacity-30"
+          >
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </>
+      ) : null}
+      <div
+        ref={trackRef}
+        className={`scrollbar-hide flex snap-x gap-3 overflow-x-auto pb-1 ${
+          showControls ? "px-1" : ""
+        }`}
+      >
+        {resources.map((resource) => (
+          <article
+            key={resource.id}
+            className="min-w-[240px] max-w-[240px] snap-start overflow-hidden rounded-2xl border border-soft-teal bg-surface shadow-sm"
+          >
+            <img
+              src={resource.image}
+              alt={resource.imageAlt}
+              className="h-28 w-full object-cover"
+            />
+            <div className="p-3">
+              <div className="mb-1.5 flex gap-2">
+                <span className="rounded-full bg-soft-teal px-2 py-0.5 font-heading text-[10px] font-bold uppercase tracking-wider text-primary">
+                  {resource.category}
+                </span>
+              </div>
+              <h4 className="mb-1.5 line-clamp-2 font-heading text-sm font-semibold text-on-surface">
+                {resource.title}
+              </h4>
+              <Link
+                to={`/student/resources/${resource.id}`}
+                className="group inline-flex items-center gap-1 font-heading text-sm font-semibold text-primary transition-colors hover:text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              >
+                Read More
+                <ChevronRight
+                  className="h-4 w-4 transition-transform group-hover:translate-x-1"
+                  aria-hidden="true"
+                />
+              </Link>
+            </div>
+          </article>
+        ))}
+      </div>
+      {showControls ? (
+        <p className="mt-2 text-center font-body text-xs text-on-surface-muted">
+          Swipe or use arrows to see more recommendations
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export default function StudentDashboard() {
   const { user } = useAuth();
   const firstName = user.fullName.split(" ")[0];
@@ -243,19 +402,8 @@ export default function StudentDashboard() {
         />
       </section>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-heading text-xl font-semibold text-on-surface">
-              My Sessions
-            </h2>
-            <Link
-              to="/student/sessions"
-              className="font-heading text-sm font-semibold text-primary transition-colors hover:text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-            >
-              View All
-            </Link>
-          </div>
+      <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2">
+        <DashboardPanel title="My Sessions" actionLabel="View All" actionTo="/student/sessions">
           <div className="space-y-3">
             {sessionsLoading ? (
               [1, 2].map((item) => (
@@ -281,10 +429,10 @@ export default function StudentDashboard() {
                 return (
                   <article
                     key={session.id}
-                    className="flex items-center justify-between rounded-xl border border-soft-teal bg-surface p-3 shadow-sm"
+                    className="flex items-center justify-between rounded-xl border border-soft-teal bg-surface-muted/30 p-3"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-muted font-heading text-xs font-bold text-primary">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-soft-teal font-heading text-xs font-bold text-primary">
                         {session.initials}
                       </div>
                       <div>
@@ -315,72 +463,18 @@ export default function StudentDashboard() {
               })
             )}
           </div>
-        </section>
+        </DashboardPanel>
 
-        <section>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-heading text-xl font-semibold text-on-surface">
-              Recommended for You
-            </h2>
-            <Link
-              to="/student/resources"
-              className="font-heading text-sm font-semibold text-primary transition-colors hover:text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-            >
-              Explore All
-            </Link>
-          </div>
-          {recommendedLoading ? (
-            <div className="flex snap-x gap-3 overflow-x-auto pb-1">
-              {[1, 2].map((item) => (
-                <div
-                  key={item}
-                  className="min-w-[240px] snap-start overflow-hidden rounded-2xl border border-soft-teal bg-surface-muted/40"
-                >
-                  <div className="h-28 animate-pulse bg-surface-muted/60" />
-                  <div className="space-y-2 p-3">
-                    <div className="h-4 w-20 animate-pulse rounded bg-surface-muted/60" />
-                    <div className="h-4 w-full animate-pulse rounded bg-surface-muted/60" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : recommendedResources.length > 0 ? (
-            <div className="scrollbar-hide flex snap-x gap-3 overflow-x-auto pb-1">
-              {recommendedResources.map((resource) => (
-                <article
-                  key={resource.id}
-                  className="min-w-[240px] snap-start overflow-hidden rounded-2xl border border-soft-teal bg-surface shadow-sm"
-                >
-                  <img
-                    src={resource.image}
-                    alt={resource.imageAlt}
-                    className="h-28 w-full object-cover"
-                  />
-                  <div className="p-3">
-                    <div className="mb-1.5 flex gap-2">
-                      <span className="rounded-full bg-soft-teal px-2 py-0.5 font-heading text-[10px] font-bold uppercase tracking-wider text-primary">
-                        {resource.category}
-                      </span>
-                    </div>
-                    <h4 className="mb-1.5 font-heading text-sm font-semibold text-on-surface">
-                      {resource.title}
-                    </h4>
-                    <Link
-                      to={`/student/resources/${resource.id}`}
-                      className="group inline-flex items-center gap-1 font-heading text-sm font-semibold text-primary transition-colors hover:text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                    >
-                      Read More
-                      <ChevronRight
-                        className="h-4 w-4 transition-transform group-hover:translate-x-1"
-                        aria-hidden="true"
-                      />
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : null}
-        </section>
+        <DashboardPanel
+          title="Recommended for You"
+          actionLabel="Explore All"
+          actionTo="/student/resources"
+        >
+          <RecommendedCarousel
+            resources={recommendedResources}
+            loading={recommendedLoading}
+          />
+        </DashboardPanel>
       </div>
 
       <footer className="mt-6 w-full border-t border-outline-muted/30 py-4">

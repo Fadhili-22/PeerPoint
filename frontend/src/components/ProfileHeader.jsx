@@ -1,4 +1,4 @@
-import { Award, Clock, Languages, Star } from "lucide-react";
+import { Award, Clock, Languages } from "lucide-react";
 
 function StatPill({ value, label, icon: StatIcon }) {
   return (
@@ -19,7 +19,7 @@ export default function ProfileHeader({ counsellor }) {
       <div className="relative px-6 pb-6">
         <div className="-mt-12 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex items-end gap-4">
-            <div className="relative">
+            <div>
               {counsellor.photoUrl ? (
                 <img
                   src={counsellor.photoUrl}
@@ -31,25 +31,11 @@ export default function ProfileHeader({ counsellor }) {
                   {counsellor.initials}
                 </div>
               )}
-              <span
-                className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-surface ${
-                  counsellor.isAvailable ? "bg-success" : "bg-warning"
-                }`}
-                aria-hidden="true"
-              />
             </div>
             <div className="pb-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="font-heading text-2xl font-extrabold text-on-surface">
-                  {counsellor.shortName}
-                </h1>
-                {counsellor.isAvailable && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 font-heading text-[11px] font-semibold text-success">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
-                    Available Now
-                  </span>
-                )}
-              </div>
+              <h1 className="font-heading text-2xl font-extrabold text-on-surface">
+                {counsellor.shortName}
+              </h1>
               <p className="mt-1 font-body text-sm text-on-surface-muted">
                 {counsellor.yearLabel} Year — {counsellor.program}
               </p>
@@ -61,13 +47,6 @@ export default function ProfileHeader({ counsellor }) {
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-1 font-heading text-[11px] font-semibold text-on-surface-muted">
                   <Languages className="h-3 w-3 text-primary" aria-hidden="true" />
                   {counsellor.languages.join(" & ")}
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-accent-gold/10 px-2.5 py-1 font-heading text-[11px] font-semibold text-accent-gold">
-                  <Star
-                    className="h-3 w-3 fill-accent-gold text-accent-gold"
-                    aria-hidden="true"
-                  />
-                  {counsellor.rating}
                 </span>
               </div>
             </div>

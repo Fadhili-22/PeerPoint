@@ -17,7 +17,7 @@ from app.services.admin_account_requests import (
 from app.services.admin_counsellors import (
     list_admin_counsellors,
     list_promotion_candidates,
-    validate_promotion_candidate,
+    validate_promotion_target,
 )
 from app.services.admin_dashboard import get_admin_dashboard
 from app.services.admin_sessions import list_admin_sessions
@@ -127,7 +127,7 @@ def promote_counsellor(
             message="User already has an active counsellor role.",
         )
 
-    validate_promotion_candidate(db, user_id)
+    validate_promotion_target(db, user_id)
 
     grant_counsellor_role(db, user_id=user_id, granted_by=admin.id)
     db.commit()

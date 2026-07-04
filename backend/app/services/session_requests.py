@@ -95,6 +95,10 @@ def scheduled_at_from_request(request: SessionRequest) -> datetime:
     )
 
 
+def scheduled_at_label(request: SessionRequest) -> str:
+    return f"{request.preferred_date.isoformat()} at {request.preferred_time}"
+
+
 def _load_active_counsellor_profile(
     db: Session, counsellor_user_id: int
 ) -> CounsellorProfile | None:
@@ -204,7 +208,7 @@ def create_session_request(
     student: User,
     *,
     today: date | None = None,
-) -> SessionRequest:
+) -> tuple[SessionRequest, User | None]:
     validate_create_payload(db, payload, student, today=today)
 
     request = SessionRequest(
@@ -226,7 +230,8 @@ def create_session_request(
     db.add(request)
     db.commit()
     db.refresh(request)
-    return request
+    counsellor = db.query(User).filter(User.id == request.counsellor_id).first()
+    return request, counsellor
 
 
 def list_student_requests(

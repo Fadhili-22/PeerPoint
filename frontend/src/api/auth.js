@@ -127,6 +127,10 @@ export async function fetchCurrentUser() {
   return mapAuthUser(data);
 }
 
+export async function logoutRequest() {
+  return apiFetch("/auth/logout", { method: "POST" });
+}
+
 export async function forgotPassword(email) {
   return apiFetch("/auth/forgot-password", {
     method: "POST",

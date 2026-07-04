@@ -39,7 +39,7 @@ export function mapAvailabilityToSchedule(apiResponse) {
   });
 }
 
-export function mapScheduleToApiPayload(schedule, isOnline) {
+export function mapScheduleToApiPayload(schedule) {
   return {
     schedule: schedule.map((day) => ({
       day_of_week: day.dayOfWeek,
@@ -48,7 +48,6 @@ export function mapScheduleToApiPayload(schedule, isOnline) {
         ? day.slots.filter((slot) => TIME_SLOT_OPTIONS.includes(slot))
         : [],
     })),
-    is_online: isOnline,
   };
 }
 
@@ -56,17 +55,15 @@ export async function getMyAvailability() {
   const data = await apiFetch("/counsellor/me/availability");
   return {
     schedule: mapAvailabilityToSchedule(data),
-    isOnline: data.is_online,
   };
 }
 
-export async function updateMyAvailability({ schedule, isOnline }) {
+export async function updateMyAvailability({ schedule }) {
   const data = await apiFetch("/counsellor/me/availability", {
     method: "PUT",
-    body: mapScheduleToApiPayload(schedule, isOnline),
+    body: mapScheduleToApiPayload(schedule),
   });
   return {
     schedule: mapAvailabilityToSchedule(data),
-    isOnline: data.is_online,
   };
 }

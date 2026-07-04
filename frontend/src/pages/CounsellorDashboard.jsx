@@ -3,11 +3,9 @@ import { Link } from "react-router-dom";
 import {
   AlertTriangle,
   BookOpen,
-  CalendarCheck,
   CalendarClock,
   Check,
   CheckCircle2,
-  CheckCheck,
   ClipboardList,
   Edit3,
   LineChart,
@@ -20,39 +18,23 @@ import ComingSoonText from "../components/ComingSoonText";
 import RejectSessionModal from "../components/RejectSessionModal";
 import { ResourceStatusBadge } from "../components/AdminResourceRowActions";
 import { ApiError } from "../api/client";
+import { getMyCounsellorProfile } from "../api/counsellorProfile";
+import { getMyAvailability } from "../api/counsellorAvailability";
 import { listMyResources } from "../api/resources";
 import { useAuth } from "../context/AuthContext";
-import { useResources } from "../context/ResourcesContext";
 import {
   acceptSessionRequest,
   getCounsellorSessionRequests,
   getCounsellorUpcomingSessions,
   rejectSessionRequest,
-  updateCounsellorAvailabilityStatus,
 } from "../api/sessions";
-import {
-  attentionAlert,
-  availabilitySlots,
-  counsellorKpis,
-  recentActivity,
-} from "../data/mockCounsellorDashboard";
+import { MOCK_COUNSELLOR_RESPONSE_RATE } from "../data/mockCounsellorDashboard";
 
 const kpiIcons = {
   pending: ClipboardList,
   calendar: CalendarClock,
   completed: CheckCircle2,
   stats: LineChart,
-};
-
-const activityIcons = {
-  check: Check,
-  done: CheckCheck,
-  calendar: CalendarCheck,
-};
-
-const activityVariants = {
-  success: "bg-success/10 text-success",
-  primary: "bg-soft-teal text-primary",
 };
 
 function StatCard({ kpi }) {
@@ -75,30 +57,36 @@ function StatCard({ kpi }) {
   );
 }
 
+function formatSlotCount(count) {
+  return count === 1 ? "1 slot" : `${count} slots`;
+}
+
 export default function CounsellorDashboard() {
   const { user } = useAuth();
-  const { counsellorActivity } = useResources();
   const firstName = user.fullName.split(" ")[0];
-  const [isAvailable, setIsAvailable] = useState(true);
-  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availabilitySlots, setAvailabilitySlots] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [allPendingRequests, setAllPendingRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(true);
   const [upcomingSessions, setUpcomingSessions] = useState([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [sessionsCount, setSessionsCount] = useState(0);
   const [submissions, setSubmissions] = useState([]);
   const [submissionsLoading, setSubmissionsLoading] = useState(true);
   const [actionError, setActionError] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [rejectTarget, setRejectTarget] = useState(null);
 
-  const pendingCount = requests.length;
+  const pendingCount = allPendingRequests.length;
 
   const loadPendingRequests = useCallback(async () => {
     setRequestsLoading(true);
     try {
       const data = await getCounsellorSessionRequests("pending");
+      setAllPendingRequests(data);
       setRequests(data.slice(0, 5));
     } catch {
+      setAllPendingRequests([]);
       setRequests([]);
     } finally {
       setRequestsLoading(false);
@@ -129,19 +117,87 @@ export default function CounsellorDashboard() {
     }
   }, []);
 
+  const loadProfile = useCallback(async () => {
+    try {
+      const profile = await getMyCounsellorProfile();
+      setSessionsCount(profile.sessionsCount ?? 0);
+    } catch {
+      setSessionsCount(0);
+    }
+  }, []);
+
+  const loadAvailability = useCallback(async () => {
+    try {
+      const { schedule } = await getMyAvailability();
+      setAvailabilitySlots(
+        schedule
+          .filter((day) => day.enabled && day.slots.length > 0)
+          .slice(0, 4)
+          .map((day) => ({
+            id: day.id,
+            day: day.short,
+            slots: formatSlotCount(day.slots.length),
+          })),
+      );
+    } catch {
+      setAvailabilitySlots([]);
+    }
+  }, []);
+
   useEffect(() => {
     loadPendingRequests();
     loadUpcomingSessions();
     loadSubmissions();
-  }, [loadPendingRequests, loadUpcomingSessions, loadSubmissions]);
+    loadProfile();
+    loadAvailability();
+  }, [
+    loadPendingRequests,
+    loadUpcomingSessions,
+    loadSubmissions,
+    loadProfile,
+    loadAvailability,
+  ]);
 
-  const dashboardKpis = useMemo(() => {
-    return counsellorKpis.map((kpi) =>
-      kpi.id === "pending"
-        ? { ...kpi, value: String(pendingCount).padStart(2, "0"), highlight: pendingCount > 0 }
-        : kpi,
-    );
-  }, [pendingCount]);
+  const dashboardKpis = useMemo(
+    () => [
+      {
+        id: "pending",
+        label: "Pending Requests",
+        value: String(pendingCount).padStart(2, "0"),
+        icon: "pending",
+        highlight: pendingCount > 0,
+      },
+      {
+        id: "upcoming",
+        label: "Upcoming Sessions",
+        value: String(upcomingSessions.length).padStart(2, "0"),
+        icon: "calendar",
+      },
+      {
+        id: "completed",
+        label: "Completed Total",
+        value: String(sessionsCount),
+        icon: "completed",
+      },
+      {
+        id: "response",
+        label: "Response Rate",
+        value: MOCK_COUNSELLOR_RESPONSE_RATE,
+        icon: "stats",
+      },
+    ],
+    [pendingCount, upcomingSessions.length, sessionsCount],
+  );
+
+  const overdueAttention = useMemo(() => {
+    const overdue = allPendingRequests
+      .filter((request) => request.overdue)
+      .sort(
+        (a, b) =>
+          new Date(a.requestedAt).getTime() - new Date(b.requestedAt).getTime(),
+      );
+    return overdue[0] ?? null;
+  }, [allPendingRequests]);
 
   const submissionsNeedingAttention = useMemo(
     () =>
@@ -152,18 +208,12 @@ export default function CounsellorDashboard() {
     [submissions],
   );
 
-  const mergedRecentActivity = useMemo(
-    () => [...counsellorActivity, ...recentActivity].slice(0, 5),
-    [counsellorActivity],
-  );
-
   const handleAccept = async (id) => {
     setActionLoading(true);
     setActionError("");
     try {
       await acceptSessionRequest(id);
-      await loadPendingRequests();
-      await loadUpcomingSessions();
+      await Promise.all([loadPendingRequests(), loadUpcomingSessions(), loadProfile()]);
     } catch (error) {
       setActionError(error.message || "Unable to accept request.");
     } finally {
@@ -185,82 +235,36 @@ export default function CounsellorDashboard() {
     }
   };
 
-  const handleAvailabilityToggle = async () => {
-    const nextValue = !isAvailable;
-    setAvailabilityLoading(true);
-    setActionError("");
-    try {
-      await updateCounsellorAvailabilityStatus(nextValue);
-      setIsAvailable(nextValue);
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 403) {
-        setActionError("You are not authorized to update availability.");
-      } else {
-        setActionError(error.message || "Unable to update availability.");
-      }
-    } finally {
-      setAvailabilityLoading(false);
-    }
-  };
-
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col">
-      {/* Welcome header + availability toggle + attention callout */}
       <section className="mb-6 flex flex-col items-start gap-4 lg:flex-row">
         <div className="flex-1">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="mb-1 font-heading text-2xl font-semibold text-on-surface md:text-[28px] md:leading-9">
-                Welcome back, {firstName}
-              </h1>
-              <p className="font-body text-base text-on-surface-muted">
-                You have {pendingCount} new requests waiting for your response.
-              </p>
-            </div>
-            <div className="flex items-center gap-3 self-start rounded-full bg-soft-teal px-4 py-2 sm:self-auto">
-              <span
-                className={`font-heading text-sm font-semibold ${
-                  isAvailable ? "text-primary" : "text-on-surface-subtle"
-                }`}
-              >
-                {isAvailable ? "Available" : "Unavailable"}
-              </span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={isAvailable}
-                aria-label="Toggle availability"
-                disabled={availabilityLoading}
-                onClick={handleAvailabilityToggle}
-                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 ${
-                  isAvailable ? "bg-primary" : "bg-outline-muted"
-                }`}
-              >
-                <span
-                  className={`inline-block h-5 w-5 transform rounded-full bg-surface shadow transition-transform duration-200 ${
-                    isAvailable ? "translate-x-5" : "translate-x-0.5"
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
+          <h1 className="mb-1 font-heading text-2xl font-semibold text-on-surface md:text-[28px] md:leading-9">
+            Welcome back, {firstName}
+          </h1>
+          <p className="font-body text-base text-on-surface-muted">
+            You have {pendingCount} new requests waiting for your response.
+          </p>
         </div>
 
-        <aside className="w-full rounded-2xl border border-accent-gold/20 bg-accent-gold/10 p-4 lg:w-80">
-          <div className="flex items-start gap-3">
-            <div className="rounded-xl bg-surface p-2 text-accent-gold">
-              <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+        {overdueAttention ? (
+          <aside className="w-full rounded-2xl border border-accent-gold/20 bg-accent-gold/10 p-4 lg:w-80">
+            <div className="flex items-start gap-3">
+              <div className="rounded-xl bg-surface p-2 text-accent-gold">
+                <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <div>
+                <p className="mb-0.5 font-heading text-sm font-bold text-accent-gold">
+                  Attention Needed
+                </p>
+                <p className="font-body text-sm leading-snug text-on-surface-muted">
+                  Request from {overdueAttention.name} waiting for{" "}
+                  {overdueAttention.requested}.
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="mb-0.5 font-heading text-sm font-bold text-accent-gold">
-                {attentionAlert.title}
-              </p>
-              <p className="font-body text-sm leading-snug text-on-surface-muted">
-                {attentionAlert.description}
-              </p>
-            </div>
-          </div>
-        </aside>
+          </aside>
+        ) : null}
       </section>
 
       {actionError ? (
@@ -269,7 +273,6 @@ export default function CounsellorDashboard() {
         </p>
       ) : null}
 
-      {/* KPI Row */}
       <section
         aria-label="Counsellor key metrics"
         className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4"
@@ -279,11 +282,8 @@ export default function CounsellorDashboard() {
         ))}
       </section>
 
-      {/* Main Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Primary column */}
         <div className="space-y-6 lg:col-span-8">
-          {/* New Session Requests */}
           <section className="overflow-hidden rounded-2xl border border-primary/5 bg-surface shadow-md">
             <div className="flex items-center justify-between border-b border-outline-muted/10 p-5">
               <h2 className="font-heading text-lg font-semibold text-on-surface">
@@ -394,7 +394,6 @@ export default function CounsellorDashboard() {
             </div>
           </section>
 
-          {/* Resource Submissions teaser */}
           <section className="overflow-hidden rounded-2xl border border-primary/5 bg-surface shadow-md">
             <div className="flex items-center justify-between border-b border-outline-muted/10 p-5">
               <h2 className="font-heading text-lg font-semibold text-on-surface">
@@ -485,7 +484,6 @@ export default function CounsellorDashboard() {
             )}
           </section>
 
-          {/* Upcoming Sessions */}
           <section className="rounded-2xl border border-primary/5 bg-surface p-5 shadow-md">
             <h2 className="mb-4 font-heading text-lg font-semibold text-on-surface">
               Upcoming Sessions
@@ -543,9 +541,7 @@ export default function CounsellorDashboard() {
           </section>
         </div>
 
-        {/* Sidebar column */}
         <aside className="space-y-6 lg:col-span-4">
-          {/* Today's Schedule — mock preview retained */}
           <section className="rounded-2xl border border-primary/5 bg-surface p-5 shadow-md">
             <h2 className="mb-4 font-heading text-base font-semibold text-on-surface">
               Today's Schedule
@@ -589,7 +585,6 @@ export default function CounsellorDashboard() {
             )}
           </section>
 
-          {/* Availability */}
           <section className="rounded-2xl border border-primary/5 bg-surface p-5 shadow-md">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-heading text-base font-semibold text-on-surface">
@@ -602,21 +597,27 @@ export default function CounsellorDashboard() {
                 Edit
               </Link>
             </div>
-            <div className="mb-5 grid grid-cols-2 gap-3">
-              {availabilitySlots.map((slot) => (
-                <div
-                  key={slot.id}
-                  className="rounded-xl border border-outline-muted/20 bg-surface-muted/50 p-3 text-center"
-                >
-                  <p className="font-heading text-[10px] font-bold uppercase text-on-surface-subtle">
-                    {slot.day}
-                  </p>
-                  <p className="font-heading text-sm font-bold text-on-surface">
-                    {slot.slots}
-                  </p>
-                </div>
-              ))}
-            </div>
+            {availabilitySlots.length > 0 ? (
+              <div className="mb-5 grid grid-cols-2 gap-3">
+                {availabilitySlots.map((slot) => (
+                  <div
+                    key={slot.id}
+                    className="rounded-xl border border-outline-muted/20 bg-surface-muted/50 p-3 text-center"
+                  >
+                    <p className="font-heading text-[10px] font-bold uppercase text-on-surface-subtle">
+                      {slot.day}
+                    </p>
+                    <p className="font-heading text-sm font-bold text-on-surface">
+                      {slot.slots}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mb-5 font-body text-sm text-on-surface-muted">
+                No availability slots set yet.
+              </p>
+            )}
             <Link
               to="/counsellor/availability"
               className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-primary/20 py-2.5 font-heading text-sm font-semibold text-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-soft-teal focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
@@ -625,39 +626,9 @@ export default function CounsellorDashboard() {
               Edit Availability
             </Link>
           </section>
-
-          {/* Recent Activity */}
-          <section className="rounded-2xl border border-primary/5 bg-surface p-5 shadow-md">
-            <h2 className="mb-4 font-heading text-base font-semibold text-on-surface">
-              Recent Activity
-            </h2>
-            <div className="space-y-4">
-              {mergedRecentActivity.map((activity) => {
-                const Icon = activityIcons[activity.icon];
-                return (
-                  <div key={activity.id} className="flex gap-3">
-                    <div
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${activityVariants[activity.variant]}`}
-                    >
-                      <Icon className="h-4 w-4" aria-hidden="true" />
-                    </div>
-                    <div>
-                      <p className="font-body text-xs font-medium text-on-surface">
-                        {activity.text}
-                      </p>
-                      <p className="font-heading text-[10px] font-bold uppercase text-on-surface-subtle">
-                        {activity.time}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
         </aside>
       </div>
 
-      {/* Footer */}
       <footer className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-outline-muted/30 py-4 md:flex-row">
         <p className="font-body text-xs font-medium text-on-surface-muted">
           © 2026 PeerPoint. Endorsed by Strathmore University Mental Health Club

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { listCounsellors } from "../api/counsellors";
 import CounsellorCard from "../components/CounsellorCard";
@@ -10,24 +11,22 @@ import {
 } from "../constants/counsellorFilters";
 
 export default function CounsellorDirectory() {
+  const location = useLocation();
   const [counsellors, setCounsellors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [search, setSearch] = useState("");
   const [selectedChips, setSelectedChips] = useState([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [availability, setAvailability] = useState("all");
-  const [selectedSpecialties, setSelectedSpecialties] = useState([]);
+  const [selectedSpecialties, setSelectedSpecialties] = useState(
+    () => location.state?.specialties ?? [],
+  );
   const [selectedLanguage, setSelectedLanguage] = useState("all");
   const [selectedYear, setSelectedYear] = useState("all");
 
-  const chipAvailabilityActive = selectedChips.includes("available-now");
-  const chipSpecialties = selectedChips.filter((chip) => chip !== "available-now");
-
-  const effectiveAvailability = chipAvailabilityActive ? "available" : availability;
   const effectiveSpecialties =
-    chipSpecialties.length > 0
-      ? [...new Set([...chipSpecialties, ...selectedSpecialties])]
+    selectedChips.length > 0
+      ? [...new Set([...selectedChips, ...selectedSpecialties])]
       : selectedSpecialties;
 
   useEffect(() => {
@@ -37,11 +36,8 @@ export default function CounsellorDirectory() {
       setLoading(true);
       setLoadError("");
       try {
-        const apiAvailability =
-          effectiveAvailability === "available" ? "available" : undefined;
         const data = await listCounsellors({
           search: search.trim() || undefined,
-          availability: apiAvailability,
           specialties: effectiveSpecialties,
           language: selectedLanguage !== "all" ? selectedLanguage : undefined,
           year: selectedYear !== "all" ? selectedYear : undefined,
@@ -65,30 +61,10 @@ export default function CounsellorDirectory() {
     return () => {
       cancelled = true;
     };
-  }, [
-    search,
-    effectiveAvailability,
-    effectiveSpecialties,
-    selectedLanguage,
-    selectedYear,
-  ]);
+  }, [search, effectiveSpecialties, selectedLanguage, selectedYear]);
 
-  const filteredCounsellors = useMemo(() => {
-    return counsellors.filter((counsellor) => {
-      if (effectiveAvailability === "today") {
-        return counsellor.availabilityStatus !== "offline";
-      }
-      return true;
-    });
-  }, [counsellors, effectiveAvailability]);
-
-  const availableCount = counsellors.filter(
-    (counsellor) => counsellor.availabilityStatus === "available",
-  ).length;
   const hasActiveFilters =
-    chipAvailabilityActive ||
-    chipSpecialties.length > 0 ||
-    availability !== "all" ||
+    selectedChips.length > 0 ||
     selectedSpecialties.length > 0 ||
     selectedLanguage !== "all" ||
     selectedYear !== "all" ||
@@ -113,18 +89,13 @@ export default function CounsellorDirectory() {
   const clearAllFilters = () => {
     setSearch("");
     setSelectedChips([]);
-    setAvailability("all");
     setSelectedSpecialties([]);
     setSelectedLanguage("all");
     setSelectedYear("all");
   };
 
   const activeFilterLabels = [
-    ...(chipAvailabilityActive || availability === "available"
-      ? ["Available Now"]
-      : []),
-    ...(availability === "today" ? ["Available today"] : []),
-    ...effectiveSpecialties.map((specialty) => specialty),
+    ...effectiveSpecialties,
     ...(selectedLanguage !== "all" ? [selectedLanguage] : []),
     ...(selectedYear !== "all" ? [`Year ${selectedYear}`] : []),
   ];
@@ -188,7 +159,7 @@ export default function CounsellorDirectory() {
 
       <section className="mb-6">
         <p className="font-heading text-lg font-bold text-on-surface">
-          {availableCount} Counsellors Available
+          {counsellors.length} Counsellors
         </p>
         <p className="mt-1 font-body text-sm text-on-surface-muted">
           {hasActiveFilters
@@ -204,17 +175,6 @@ export default function CounsellorDirectory() {
                 label={label}
                 removable
                 onRemove={() => {
-                  if (label === "Available Now") {
-                    setSelectedChips((current) =>
-                      current.filter((id) => id !== "available-now"),
-                    );
-                    setAvailability("all");
-                    return;
-                  }
-                  if (label === "Available today") {
-                    setAvailability("all");
-                    return;
-                  }
                   if (label.startsWith("Year ")) {
                     setSelectedYear("all");
                     return;
@@ -247,42 +207,26 @@ export default function CounsellorDirectory() {
         <section className="rounded-3xl border border-danger/20 bg-danger/5 px-6 py-12 text-center">
           <p className="font-body text-sm text-danger">{loadError}</p>
         </section>
-      ) : filteredCounsellors.length > 0 ? (
-        <section
-          className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"
-          aria-label="Counsellor results"
-        >
-          {filteredCounsellors.map((counsellor) => (
+      ) : counsellors.length > 0 ? (
+        <section className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {counsellors.map((counsellor) => (
             <CounsellorCard key={counsellor.id} counsellor={counsellor} />
           ))}
         </section>
       ) : (
-        <section className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-outline-muted/40 bg-surface px-6 py-16 text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
-            <Search className="h-6 w-6 text-on-surface-subtle" aria-hidden="true" />
-          </div>
-          <h2 className="mb-2 font-heading text-xl font-bold text-on-surface">
-            No counsellors match
-          </h2>
-          <p className="mb-6 max-w-md font-body text-sm text-on-surface-muted">
-            Try adjusting your search or removing a filter. Someone is always here
-            to help.
+        <section className="rounded-3xl border border-outline-muted/20 bg-surface px-6 py-16 text-center shadow-sm">
+          <p className="font-heading text-lg font-bold text-on-surface">
+            No counsellors found
           </p>
-          <button
-            type="button"
-            onClick={clearAllFilters}
-            className="rounded-xl bg-primary px-5 py-2.5 font-heading text-sm font-semibold text-on-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-          >
-            Clear all filters
-          </button>
+          <p className="mt-2 font-body text-sm text-on-surface-muted">
+            Try adjusting your search or filters to see more results.
+          </p>
         </section>
       )}
 
       <FilterDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        availability={availability}
-        onAvailabilityChange={setAvailability}
         selectedSpecialties={selectedSpecialties}
         onToggleSpecialty={toggleDrawerSpecialty}
         selectedLanguage={selectedLanguage}
@@ -290,7 +234,10 @@ export default function CounsellorDirectory() {
         selectedYear={selectedYear}
         onYearChange={setSelectedYear}
         onApply={() => setDrawerOpen(false)}
-        onClear={clearAllFilters}
+        onClear={() => {
+          clearAllFilters();
+          setDrawerOpen(false);
+        }}
       />
     </div>
   );

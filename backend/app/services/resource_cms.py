@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, timezone
 
-from fastapi import HTTPException, status
+from fastapi import BackgroundTasks, HTTPException, status
 from sqlalchemy import String, cast, func, nulls_last, or_
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,7 @@ from app.models import Resource, ResourceCategory as ResourceCategoryModel
 from app.models import ResourceStatus as ResourceStatusModel
 from app.models import User
 from app.schemas.enums import ResourceCategory, ResourceStatus, ReviewDecision
+from app.services.newsletter_emails import schedule_resource_published_notifications
 from app.services.resources import _load_options, to_resource_response
 
 COUNSELLOR_AUTHOR_ROLE = "Peer Counsellor, PeerPoint"
@@ -357,12 +358,15 @@ def create_admin_resource(
     db: Session,
     user: User,
     payload: schemas.ResourceCreate,
+    *,
+    background_tasks: BackgroundTasks | None = None,
 ) -> schemas.ResourceResponse:
     validate_resource_payload(payload)
     body = normalize_body(payload.body)
     resource_id = generate_unique_resource_id(db, payload.title)
     now = _utcnow()
     publish = bool(payload.publish)
+    previous_status = ResourceStatusModel.draft
 
     resource = Resource(
         id=resource_id,
@@ -398,6 +402,13 @@ def create_admin_resource(
     db.add(resource)
     db.flush()
     db.refresh(resource)
+    if background_tasks is not None:
+        schedule_resource_published_notifications(
+            db,
+            background_tasks,
+            resource,
+            previous_status=previous_status,
+        )
     return to_resource_response(resource)
 
 
@@ -417,8 +428,15 @@ def update_admin_resource(
     return to_resource_response(resource)
 
 
-def publish_admin_resource(db: Session, resource_id: str, user_id: int) -> Resource:
+def publish_admin_resource(
+    db: Session,
+    resource_id: str,
+    user_id: int,
+    *,
+    background_tasks: BackgroundTasks | None = None,
+) -> Resource:
     resource = _get_resource_or_404(db, resource_id)
+    previous_status = resource.status
     now = _utcnow()
     resource.status = ResourceStatusModel.published
     if resource.published_at is None:
@@ -426,6 +444,13 @@ def publish_admin_resource(db: Session, resource_id: str, user_id: int) -> Resou
     resource.updated_at = now
     resource.last_edited_by_id = user_id
     db.flush()
+    if background_tasks is not None:
+        schedule_resource_published_notifications(
+            db,
+            background_tasks,
+            resource,
+            previous_status=previous_status,
+        )
     return resource
 
 
@@ -490,6 +515,8 @@ def review_admin_resource(
     resource_id: str,
     admin: User,
     payload: schemas.ResourceReviewRequest,
+    *,
+    background_tasks: BackgroundTasks | None = None,
 ) -> Resource:
     resource = _get_resource_or_404(db, resource_id)
     if resource.status != ResourceStatusModel.pending_review:
@@ -503,6 +530,7 @@ def review_admin_resource(
             detail="Resource not found",
         )
 
+    previous_status = resource.status
     now = _utcnow()
     resource.reviewed_by_id = admin.id
     resource.reviewed_at = now
@@ -524,4 +552,11 @@ def review_admin_resource(
         resource.rejection_reason = reason or None
 
     db.flush()
+    if background_tasks is not None:
+        schedule_resource_published_notifications(
+            db,
+            background_tasks,
+            resource,
+            previous_status=previous_status,
+        )
     return resource

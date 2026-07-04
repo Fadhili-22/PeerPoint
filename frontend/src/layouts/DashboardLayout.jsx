@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  BarChart3,
   BookOpen,
   Calendar,
   ClipboardList,
@@ -11,6 +10,7 @@ import {
   MessageCircle,
   Settings,
   UserCheck,
+  User,
   Users,
   X,
 } from "lucide-react";
@@ -23,6 +23,7 @@ const navByRole = {
     { to: "/counsellor/requests", label: "Requests", icon: ClipboardList },
     { to: "/counsellor/resources", label: "Resources", icon: BookOpen },
     { to: "/counsellor/availability", label: "Availability", icon: UserCheck },
+    { to: "/counsellor/profile", label: "Profile", icon: User },
   ],
   admin: [
     { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -30,7 +31,6 @@ const navByRole = {
     { to: "/admin/students", label: "Manage Students", icon: Users },
     { to: "/admin/sessions", label: "Sessions", icon: Calendar },
     { to: "/admin/resources", label: "Resources", icon: BookOpen },
-    { to: "/admin/reports", label: "Reports", icon: BarChart3 },
   ],
 };
 
@@ -77,6 +77,9 @@ function SidebarNav({ navItems, activeIndex, onNavigate, className = "" }) {
 }
 
 function SidebarFooter({ user, initials, onLogout, dashboardRole, onNavigate }) {
+  const settingsPath =
+    dashboardRole === "counsellor" ? "/counsellor/profile" : null;
+
   return (
     <div className="space-y-2 border-t border-primary/10 px-3 py-3">
       <PortalSwitcher
@@ -86,19 +89,30 @@ function SidebarFooter({ user, initials, onLogout, dashboardRole, onNavigate }) 
         onNavigate={onNavigate}
       />
 
-      <button
-        type="button"
-        disabled
-        title="Coming soon"
-        aria-disabled="true"
-        className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-on-surface/40"
-      >
-        <Settings className="h-4 w-4" />
-        Settings
-        <span className="ml-auto rounded-full bg-surface-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
-          Soon
-        </span>
-      </button>
+      {settingsPath ? (
+        <NavLink
+          to={settingsPath}
+          onClick={onNavigate}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-on-surface/70 transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary/5 hover:text-primary-dark"
+        >
+          <Settings className="h-4 w-4" />
+          Profile
+        </NavLink>
+      ) : (
+        <button
+          type="button"
+          disabled
+          title="Coming soon"
+          aria-disabled="true"
+          className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-on-surface/40"
+        >
+          <Settings className="h-4 w-4" />
+          Settings
+          <span className="ml-auto rounded-full bg-surface-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+            Soon
+          </span>
+        </button>
+      )}
 
       <button
         type="button"

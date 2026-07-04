@@ -1,11 +1,16 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.orm import Session
 
 from app import schemas
+from app.config import settings
 from app.database import get_db
 from app.dependencies import require_admin
 from app.models import User
-from app.schemas.enums import ResourceStatus
+from app.schemas.enums import ResourceStatus, ReviewDecision
+from app.services.account_emails import (
+    notify_resource_approved,
+    notify_resource_rejected,
+)
 from app.services import resource_cms as resource_cms_service
 
 router = APIRouter(prefix="/admin/resources", tags=["Admin Resources"])
@@ -55,11 +60,12 @@ def get_admin_resource(
 @router.post("", response_model=schemas.ResourceResponse, status_code=201)
 def create_admin_resource(
     payload: schemas.ResourceCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     resource = resource_cms_service.create_admin_resource(
-        db, current_user, payload
+        db, current_user, payload, background_tasks=background_tasks
     )
     db.commit()
     return resource
@@ -82,11 +88,12 @@ def update_admin_resource(
 @router.post("/{resource_id}/publish", response_model=schemas.ResourceActionResponse)
 def publish_resource(
     resource_id: str,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     resource = resource_cms_service.publish_admin_resource(
-        db, resource_id, current_user.id
+        db, resource_id, current_user.id, background_tasks=background_tasks
     )
     db.commit()
     return schemas.ResourceActionResponse(
@@ -169,12 +176,34 @@ def restore_resource(
 def review_resource(
     resource_id: str,
     payload: schemas.ResourceReviewRequest,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     resource = resource_cms_service.review_admin_resource(
-        db, resource_id, current_user, payload
+        db, resource_id, current_user, payload, background_tasks=background_tasks
     )
+    submitter = resource.submitted_by
+    if submitter is not None and payload.decision in (
+        ReviewDecision.approve_publish,
+        ReviewDecision.reject,
+    ):
+        if payload.decision == ReviewDecision.approve_publish:
+            background_tasks.add_task(
+                notify_resource_approved,
+                counsellor_email=submitter.email,
+                counsellor_name=submitter.full_name,
+                title=resource.title,
+                url=f"{settings.FRONTEND_URL.rstrip('/')}/student/resources/{resource.id}",
+            )
+        else:
+            background_tasks.add_task(
+                notify_resource_rejected,
+                counsellor_email=submitter.email,
+                counsellor_name=submitter.full_name,
+                title=resource.title,
+                rejection_reason=resource.rejection_reason,
+            )
     db.commit()
     return schemas.ResourceActionResponse(
         id=resource.id,

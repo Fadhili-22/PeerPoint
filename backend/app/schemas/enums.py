@@ -7,12 +7,6 @@ class UserRole(str, Enum):
     admin = "admin"
 
 
-class AvailabilityStatus(str, Enum):
-    available = "available"
-    busy = "busy"
-    offline = "offline"
-
-
 class CounsellorProfileStatus(str, Enum):
     active = "active"
     inactive = "inactive"
