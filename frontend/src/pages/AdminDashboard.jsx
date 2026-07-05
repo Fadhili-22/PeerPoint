@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   BookOpen,
   Calendar,
@@ -10,7 +11,6 @@ import {
   Users,
 } from "lucide-react";
 import ComingSoonButton from "../components/ComingSoonButton";
-import ComingSoonText from "../components/ComingSoonText";
 import { useAuth } from "../context/AuthContext";
 import {
   getAdminDashboard,
@@ -21,6 +21,7 @@ import {
   mapCounsellorPerformance,
   mapTopResources,
 } from "../api/admin";
+import { AdminReportsSection } from "./AdminReports";
 
 const kpiIcons = {
   users: Users,
@@ -83,6 +84,8 @@ function PulseBar({ label, value, tone = "primary" }) {
   );
 }
 
+const PREVIEW_ROW_LIMIT = 5;
+
 function HeadlineStat({ stat }) {
   const Icon = stat.icon ?? Users;
 
@@ -95,6 +98,35 @@ function HeadlineStat({ stat }) {
       <p className="mt-1 font-body text-[11px] font-medium uppercase tracking-wide text-on-surface-muted">
         {stat.label}
       </p>
+    </article>
+  );
+}
+
+function ViewAllLink({ to, label }) {
+  return (
+    <Link
+      to={to}
+      className="font-heading text-sm font-semibold text-primary transition-colors hover:text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+    >
+      {label}
+    </Link>
+  );
+}
+
+function DirectoryPreviewCard({ title, count, description, icon: Icon, to }) {
+  return (
+    <article className="rounded-[28px] border border-primary/5 bg-surface p-5 shadow-md">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-primary/10 p-2.5 text-primary">
+            <Icon className="h-5 w-5" aria-hidden="true" />
+          </div>
+          <h2 className="font-heading text-lg font-semibold text-on-surface">{title}</h2>
+        </div>
+        <ViewAllLink to={to} label="View all" />
+      </div>
+      <p className="font-heading text-3xl font-semibold text-on-surface">{count}</p>
+      <p className="mt-1 font-body text-sm text-on-surface-muted">{description}</p>
     </article>
   );
 }
@@ -266,6 +298,11 @@ export default function AdminDashboard() {
   const [search, setSearch] = useState("");
   const [headlineStats, setHeadlineStats] = useState(defaultHeadlineStats);
   const [platformKpis, setPlatformKpis] = useState([]);
+  const [monthlyActiveStudentsKpi, setMonthlyActiveStudentsKpi] = useState(null);
+  const [directoryPreviews, setDirectoryPreviews] = useState({
+    students: { count: "…", description: "Active student accounts on the platform" },
+    counsellors: { count: "…", description: "Counsellors listed in the directory" },
+  });
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
@@ -303,6 +340,8 @@ export default function AdminDashboard() {
           })),
         );
         setPlatformKpis(mapped.platformKpis);
+        setMonthlyActiveStudentsKpi(mapped.monthlyActiveStudentsKpi);
+        setDirectoryPreviews(mapped.directoryPreviews);
       } catch (err) {
         if (!cancelled) {
           setDashboardError(err.message ?? "Failed to load dashboard metrics.");
@@ -378,7 +417,17 @@ export default function AdminDashboard() {
         resource.title.toLowerCase().includes(query) ||
         resource.category.toLowerCase().includes(query),
     );
-  }, [search]);
+  }, [search, topResources]);
+
+  const counsellorPerformancePreview = useMemo(
+    () => filteredCounsellorPerformance.slice(0, PREVIEW_ROW_LIMIT),
+    [filteredCounsellorPerformance],
+  );
+
+  const topResourcesPreview = useMemo(
+    () => filteredTopResources.slice(0, PREVIEW_ROW_LIMIT),
+    [filteredTopResources],
+  );
 
   const completionPercent =
     statusDistribution.segments.find(
@@ -462,9 +511,36 @@ export default function AdminDashboard() {
               Loading platform metrics…
             </p>
           ) : (
-            primaryKpis.map((kpi) => <KpiCard key={kpi.id} kpi={kpi} />)
+            <>
+              {primaryKpis.map((kpi) => (
+                <KpiCard key={kpi.id} kpi={kpi} />
+              ))}
+              {monthlyActiveStudentsKpi ? (
+                <KpiCard key={monthlyActiveStudentsKpi.id} kpi={monthlyActiveStudentsKpi} />
+              ) : null}
+            </>
           )}
         </div>
+      </section>
+
+      <section
+        aria-label="Directory previews"
+        className="grid grid-cols-1 gap-4 md:grid-cols-2"
+      >
+        <DirectoryPreviewCard
+          title="Students"
+          count={directoryPreviews.students.count}
+          description={directoryPreviews.students.description}
+          icon={Users}
+          to="/admin/students"
+        />
+        <DirectoryPreviewCard
+          title="Counsellors"
+          count={directoryPreviews.counsellors.count}
+          description={directoryPreviews.counsellors.description}
+          icon={Headset}
+          to="/admin/counsellors"
+        />
       </section>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
@@ -499,6 +575,7 @@ export default function AdminDashboard() {
             <h2 className="font-heading text-lg font-semibold text-on-surface">
               Counsellor Workload &amp; Performance
             </h2>
+            <ViewAllLink to="/admin/counsellors" label="View all" />
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -525,37 +602,46 @@ export default function AdminDashboard() {
                       Loading counsellor performance…
                     </td>
                   </tr>
-                ) : (
-                  filteredCounsellorPerformance.map((counsellor) => (
-                  <tr
-                    key={counsellor.id}
-                    className="transition-colors hover:bg-surface-muted/40"
-                  >
-                    <td className="px-5 py-4 font-heading text-sm font-semibold text-on-surface">
-                      {counsellor.name}
-                    </td>
-                    <td className="px-5 py-4 font-body text-sm text-on-surface">
-                      {counsellor.sessionsHandled} Sessions
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`rounded-full px-2 py-0.5 font-body text-xs font-bold ${
-                            counsellor.responseVariant === "success"
-                              ? "bg-success/10 text-success"
-                              : counsellor.responseVariant === "danger"
-                                ? "bg-danger/10 text-danger"
-                                : "bg-accent-gold/10 text-accent-gold"
-                          }`}
-                        >
-                          {counsellor.responseRate}%
-                        </span>
-                        <span className="font-body text-[10px] text-on-surface-muted">
-                          {counsellor.responseLabel}
-                        </span>
-                      </div>
+                ) : counsellorPerformancePreview.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="px-5 py-8 text-center font-body text-sm text-on-surface-muted"
+                    >
+                      No counsellor performance data to preview.
                     </td>
                   </tr>
+                ) : (
+                  counsellorPerformancePreview.map((counsellor) => (
+                    <tr
+                      key={counsellor.id}
+                      className="transition-colors hover:bg-surface-muted/40"
+                    >
+                      <td className="px-5 py-4 font-heading text-sm font-semibold text-on-surface">
+                        {counsellor.name}
+                      </td>
+                      <td className="px-5 py-4 font-body text-sm text-on-surface">
+                        {counsellor.sessionsHandled} Sessions
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`rounded-full px-2 py-0.5 font-body text-xs font-bold ${
+                              counsellor.responseVariant === "success"
+                                ? "bg-success/10 text-success"
+                                : counsellor.responseVariant === "danger"
+                                  ? "bg-danger/10 text-danger"
+                                  : "bg-accent-gold/10 text-accent-gold"
+                            }`}
+                          >
+                            {counsellor.responseRate}%
+                          </span>
+                          <span className="font-body text-[10px] text-on-surface-muted">
+                            {counsellor.responseLabel}
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
                   ))
                 )}
               </tbody>
@@ -572,10 +658,13 @@ export default function AdminDashboard() {
               <h2 className="font-heading text-lg font-semibold text-on-surface">
                 Top Performing Resources
               </h2>
-              <ComingSoonButton className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 font-heading text-sm font-semibold text-on-primary shadow-sm">
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                Publish New
-              </ComingSoonButton>
+              <div className="flex items-center gap-4">
+                <ViewAllLink to="/admin/resources" label="View all" />
+                <ComingSoonButton className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 font-heading text-sm font-semibold text-on-primary shadow-sm">
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  Publish New
+                </ComingSoonButton>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
@@ -596,27 +685,47 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-muted/10">
-                  {filteredTopResources.map((resource) => (
-                    <tr
-                      key={resource.id}
-                      className="transition-colors hover:bg-soft-teal/30"
-                    >
-                      <td className="px-5 py-4 font-body font-medium text-primary">
-                        {resource.title}
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="rounded-full bg-surface-muted px-2 py-1 font-heading text-[10px] font-bold uppercase text-on-surface-muted">
-                          {resource.category}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 font-body text-sm text-on-surface">
-                        {resource.views}
-                      </td>
-                      <td className="px-5 py-4 font-body text-sm text-on-surface">
-                        {resource.saves}
+                  {analyticsLoading ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-5 py-8 text-center font-body text-sm text-on-surface-muted"
+                      >
+                        Loading top resources…
                       </td>
                     </tr>
-                  ))}
+                  ) : topResourcesPreview.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-5 py-8 text-center font-body text-sm text-on-surface-muted"
+                      >
+                        No published resources to preview.
+                      </td>
+                    </tr>
+                  ) : (
+                    topResourcesPreview.map((resource) => (
+                      <tr
+                        key={resource.id}
+                        className="transition-colors hover:bg-soft-teal/30"
+                      >
+                        <td className="px-5 py-4 font-body font-medium text-primary">
+                          {resource.title}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="rounded-full bg-surface-muted px-2 py-1 font-heading text-[10px] font-bold uppercase text-on-surface-muted">
+                            {resource.category}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 font-body text-sm text-on-surface">
+                          {resource.views}
+                        </td>
+                        <td className="px-5 py-4 font-body text-sm text-on-surface">
+                          {resource.saves}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -624,20 +733,31 @@ export default function AdminDashboard() {
         </section>
       </div>
 
+      <AdminReportsSection />
+
       <footer className="mt-2 flex flex-col items-center justify-between gap-4 border-t border-outline-muted/30 py-6 md:flex-row">
         <p className="font-body text-xs text-on-surface-muted">
           Endorsed by Strathmore University Mental Health Club
         </p>
         <div className="flex gap-6">
-          <ComingSoonText className="font-body text-xs text-on-surface-muted">
+          <Link
+            to="/privacy-policy"
+            className="font-body text-xs text-on-surface-muted transition-colors hover:text-primary"
+          >
             Privacy Policy
-          </ComingSoonText>
-          <ComingSoonText className="font-body text-xs text-on-surface-muted">
+          </Link>
+          <Link
+            to="/contact-support"
+            className="font-body text-xs text-on-surface-muted transition-colors hover:text-primary"
+          >
             Contact Support
-          </ComingSoonText>
-          <ComingSoonText className="font-body text-xs text-on-surface-muted">
+          </Link>
+          <Link
+            to="/terms-of-service"
+            className="font-body text-xs text-on-surface-muted transition-colors hover:text-primary"
+          >
             Terms of Service
-          </ComingSoonText>
+          </Link>
         </div>
       </footer>
     </div>

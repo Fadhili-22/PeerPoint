@@ -13,6 +13,7 @@ from app.models import (
     CounsellorProfile,
     CounsellorProfileStatus,
     SessionFormat as SessionFormatModel,
+    SessionRating,
     SessionRequest,
     SessionRequestStatus as SessionRequestStatusModel,
     SessionTopic as SessionTopicModel,
@@ -237,6 +238,12 @@ def create_session_request(
 def list_student_requests(
     db: Session, student_id: int
 ) -> list[schemas.SessionRequestStudentView]:
+    rated_ids = {
+        row[0]
+        for row in db.query(SessionRating.session_request_id)
+        .filter(SessionRating.student_id == student_id)
+        .all()
+    }
     rows = (
         db.query(SessionRequest, User, CounsellorProfile)
         .join(User, SessionRequest.counsellor_id == User.id)
@@ -258,6 +265,7 @@ def list_student_requests(
             requested_at=req.requested_at,
             overdue=is_overdue(req),
             rejection_reason=req.rejection_reason,
+            has_rating=req.id in rated_ids,
         )
         for req, counsellor_user, _profile in rows
     ]
@@ -314,15 +322,18 @@ def to_counsellor_view(request: SessionRequest) -> schemas.SessionRequestCounsel
 def to_counsellor_detail(request: SessionRequest) -> schemas.SessionRequestDetail:
     base = to_counsellor_view(request)
     student_email = None
+    student_phone = None
     if request.status in (
         SessionRequestStatusModel.accepted,
         SessionRequestStatusModel.completed,
     ):
         student_email = request.student.email
+        student_phone = request.student.phone
     return schemas.SessionRequestDetail(
         **base.model_dump(),
         duration_minutes=DEFAULT_SESSION_DURATION_MINUTES,
         student_email=student_email,
+        student_phone=student_phone,
     )
 
 
@@ -443,7 +454,12 @@ def get_student_session_detail(
         db.query(User).filter(User.id == request.counsellor_id).one()
     )
     item = _to_student_session_item(request, counsellor)
-    return schemas.StudentSessionDetail(**item.model_dump(), notes=request.notes)
+    return schemas.StudentSessionDetail(
+        **item.model_dump(),
+        notes=request.notes,
+        counsellor_email=counsellor.email,
+        counsellor_phone=counsellor.phone,
+    )
 
 
 def _to_student_session_item(

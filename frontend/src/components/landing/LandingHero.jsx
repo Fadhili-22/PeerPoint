@@ -28,7 +28,7 @@ export default function LandingHero() {
               Find a Counsellor
             </Link>
             <Link
-              to="/login"
+              to="/student/resources"
               className="rounded-xl border-2 border-primary px-8 py-4 font-heading text-base font-semibold text-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-soft-teal"
             >
               Browse Resources

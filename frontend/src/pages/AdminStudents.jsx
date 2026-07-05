@@ -1,218 +1,385 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowUpRight, Loader2, UserPlus, Users } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Loader2, Search, Users, X } from "lucide-react";
 import AdminPageHeader from "../components/AdminPageHeader";
 import { ApiError } from "../api/client";
 import {
-  listAdminCounsellors,
+  getAdminStudent,
   listAdminStudents,
-  promoteCounsellor,
+  toggleStudentActive,
 } from "../api/admin";
 
-function formatNumber(value) {
-  return value.toLocaleString("en-US");
+function AccountStatusBadge({ isActive }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-body text-xs font-bold ${
+        isActive ? "bg-success/10 text-success" : "bg-surface-muted text-on-surface-muted"
+      }`}
+    >
+      <span
+        className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-success" : "bg-outline-muted"}`}
+        aria-hidden="true"
+      />
+      {isActive ? "Active" : "Inactive"}
+    </span>
+  );
+}
+
+function StudentDetailModal({
+  student,
+  loading,
+  error,
+  toggling,
+  onClose,
+  onToggle,
+}) {
+  if (!student && !loading) return null;
+
+  const isActive = student?.isActive ?? true;
+  const toggleLabel = isActive ? "Deactivate" : "Reactivate";
+  const confirmMessage = isActive
+    ? "Are you sure you want to deactivate this account?"
+    : "Are you sure you want to reactivate this account?";
+
+  const handleToggle = () => {
+    if (window.confirm(confirmMessage)) {
+      onToggle();
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-on-surface/40 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label={student ? `Student profile for ${student.name}` : "Student profile"}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl border border-primary/5 bg-surface p-6 shadow-xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        {loading ? (
+          <p className="font-body text-sm text-on-surface-muted">Loading student…</p>
+        ) : student ? (
+          <>
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-soft-teal font-heading text-base font-bold text-primary">
+                  {student.initials}
+                </div>
+                <div>
+                  <h2 className="font-heading text-lg font-semibold text-on-surface">
+                    {student.name}
+                  </h2>
+                  <p className="font-body text-sm text-on-surface-muted">
+                    {student.email}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close profile"
+                className="rounded-lg p-2 text-on-surface-subtle transition-colors hover:bg-surface-muted hover:text-on-surface"
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            <dl className="space-y-3 font-body text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-on-surface-muted">Phone</dt>
+                <dd className="text-right font-medium text-on-surface">
+                  {student.phone || "—"}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-on-surface-muted">Sessions completed</dt>
+                <dd className="text-right font-medium text-on-surface">
+                  {student.sessions}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-on-surface-muted">Last active</dt>
+                <dd className="text-right font-medium text-on-surface">
+                  {student.lastActive}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-on-surface-muted">Status</dt>
+                <dd>
+                  <AccountStatusBadge isActive={isActive} />
+                </dd>
+              </div>
+            </dl>
+
+            {student.recentActivity?.length > 0 ? (
+              <div className="mt-5 rounded-xl bg-surface-muted/60 p-4">
+                <p className="mb-2 font-heading text-xs font-bold uppercase tracking-widest text-on-surface-subtle">
+                  Recent activity
+                </p>
+                <ul className="space-y-2 font-body text-sm text-on-surface-muted">
+                  {student.recentActivity.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {error ? (
+              <p className="mt-4 font-body text-sm text-danger" role="alert">
+                {error}
+              </p>
+            ) : null}
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={handleToggle}
+                disabled={toggling}
+                className={`flex-1 rounded-xl px-4 py-2.5 font-heading text-sm font-semibold transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 ${
+                  isActive
+                    ? "border border-danger/30 bg-danger/10 text-danger"
+                    : "bg-primary text-on-primary"
+                }`}
+              >
+                {toggling ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    Updating…
+                  </span>
+                ) : (
+                  toggleLabel
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 rounded-xl border border-outline-muted/30 px-4 py-2.5 font-heading text-sm font-semibold text-on-surface-muted"
+              >
+                Close
+              </button>
+            </div>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 export default function AdminStudents() {
   const [search, setSearch] = useState("");
-  const [students, setStudents] = useState([]);
-  const [counsellorUserIds, setCounsellorUserIds] = useState(new Set());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [feedback, setFeedback] = useState("");
-  const [promotingId, setPromotingId] = useState(null);
-
-  const loadStudents = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const [rows, counsellors] = await Promise.all([
-        listAdminStudents(),
-        listAdminCounsellors(),
-      ]);
-      setStudents(rows);
-      setCounsellorUserIds(new Set(counsellors.map((c) => c.userId)));
-    } catch (err) {
-      setStudents([]);
-      setCounsellorUserIds(new Set());
-      setError(err.message ?? "Failed to load students.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
+  const [toggling, setToggling] = useState(false);
 
   useEffect(() => {
-    loadStudents();
-  }, [loadStudents]);
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
 
-  const filteredStudents = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return students;
-    return students.filter(
-      (student) =>
-        student.name.toLowerCase().includes(query) ||
-        student.email.toLowerCase().includes(query),
-    );
-  }, [students, search]);
-
-  const handlePromote = async (student) => {
-    setPromotingId(student.userId);
-    setError("");
-    setFeedback("");
-    try {
-      const result = await promoteCounsellor(student.userId);
-      setFeedback(result?.message || `${student.name} promoted to counsellor.`);
-      await loadStudents();
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message || "Unable to promote this student.");
-      } else {
-        setError("Unable to promote this student. Please try again.");
-      }
-    } finally {
-      setPromotingId(null);
+  useEffect(() => {
+    if (!debouncedSearch) {
+      setResults([]);
+      setSearchError("");
+      setSearching(false);
+      return;
     }
+
+    let cancelled = false;
+
+    async function runSearch() {
+      setSearching(true);
+      setSearchError("");
+      try {
+        const rows = await listAdminStudents({ search: debouncedSearch });
+        if (!cancelled) {
+          setResults(rows);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setResults([]);
+          if (err instanceof ApiError && err.status === 403) {
+            setSearchError("You are not authorized to manage students.");
+          } else {
+            setSearchError(err.message || "Unable to search students.");
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setSearching(false);
+        }
+      }
+    }
+
+    runSearch();
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedSearch]);
+
+  useEffect(() => {
+    if (!selectedStudentId) {
+      setSelectedStudent(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadDetail() {
+      setDetailLoading(true);
+      setDetailError("");
+      try {
+        const detail = await getAdminStudent(selectedStudentId);
+        if (!cancelled) {
+          setSelectedStudent(detail);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setSelectedStudent(null);
+          setDetailError(err.message || "Unable to load student details.");
+        }
+      } finally {
+        if (!cancelled) {
+          setDetailLoading(false);
+        }
+      }
+    }
+
+    loadDetail();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedStudentId]);
+
+  const handleSelectStudent = (student) => {
+    setSelectedStudentId(student.userId);
+    setDetailError("");
   };
+
+  const handleCloseModal = () => {
+    setSelectedStudentId(null);
+    setSelectedStudent(null);
+    setDetailError("");
+  };
+
+  const handleToggleActive = useCallback(async () => {
+    if (!selectedStudent) return;
+
+    setToggling(true);
+    setDetailError("");
+    try {
+      const result = await toggleStudentActive(selectedStudent.userId);
+      const updatedStudent = {
+        ...selectedStudent,
+        isActive: result.isActive,
+      };
+      setSelectedStudent(updatedStudent);
+      setResults((current) =>
+        current.map((student) =>
+          student.userId === updatedStudent.userId
+            ? { ...student, isActive: result.isActive }
+            : student,
+        ),
+      );
+    } catch (err) {
+      setDetailError(err.message || "Unable to update account status.");
+    } finally {
+      setToggling(false);
+    }
+  }, [selectedStudent]);
+
+  const showDropdown = debouncedSearch.length > 0;
 
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
       <AdminPageHeader
         eyebrow="Student management"
         title="Manage Students"
-        description="View student accounts and promote students to peer counsellor when ready."
-        searchPlaceholder="Search students by name or email..."
-        searchValue={search}
-        onSearchChange={setSearch}
-        stats={[
-          { label: "Students", value: formatNumber(students.length), icon: Users },
-        ]}
+        description="Search for a student to view their profile and manage account access."
+        stats={[{ label: "Search", value: "—", icon: Users }]}
       />
 
-      {error ? (
-        <div
-          role="alert"
-          className="rounded-2xl border border-danger/20 bg-danger/5 px-4 py-3 font-body text-sm text-danger"
-        >
-          {error}
+      <section className="relative">
+        <label htmlFor="admin-student-search" className="sr-only">
+          Search students
+        </label>
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-on-surface-subtle"
+            aria-hidden="true"
+          />
+          <input
+            id="admin-student-search"
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search students by name or email..."
+            className="w-full rounded-2xl border border-outline-muted/40 bg-surface py-3.5 pl-12 pr-4 font-body text-base text-on-surface shadow-sm transition-all duration-200 placeholder:text-on-surface-subtle focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary-accent/40"
+            autoComplete="off"
+          />
         </div>
-      ) : null}
-      {feedback ? (
-        <div
-          role="status"
-          className="rounded-2xl border border-success/20 bg-success/5 px-4 py-3 font-body text-sm text-success"
-        >
-          {feedback}
-        </div>
-      ) : null}
 
-      <section
-        aria-label="Student directory"
-        className="overflow-hidden rounded-[28px] border border-primary/5 bg-surface shadow-md"
-      >
-        <div className="border-b border-outline-muted/10 p-5">
-          <div className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5 text-primary" aria-hidden="true" />
-            <h2 className="font-heading text-lg font-semibold text-on-surface">
-              All Students
-            </h2>
-          </div>
-          <p className="mt-1 font-body text-sm text-on-surface-muted">
-            Select a student and promote them to peer counsellor. They will receive
-            a default counsellor profile to complete.
-          </p>
-        </div>
-        {loading ? (
-          <p className="px-5 py-12 text-center font-body text-sm text-on-surface-muted">
-            Loading students…
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-surface-muted font-heading text-sm font-semibold text-on-surface-muted">
-                  <th scope="col" className="px-5 py-3.5">
-                    Student
-                  </th>
-                  <th scope="col" className="px-5 py-3.5">
-                    Sessions
-                  </th>
-                  <th scope="col" className="px-5 py-3.5 text-right">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-muted/10">
-                {filteredStudents.map((student) => {
-                  const isCounsellor = counsellorUserIds.has(student.userId);
-                  const isPromoting = promotingId === student.userId;
-                  return (
-                    <tr
-                      key={student.id}
-                      className="transition-colors hover:bg-surface-muted/40"
+        {showDropdown ? (
+          <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-2xl border border-primary/10 bg-surface shadow-xl">
+            {searching ? (
+              <p className="px-4 py-6 text-center font-body text-sm text-on-surface-muted">
+                Searching…
+              </p>
+            ) : searchError ? (
+              <p className="px-4 py-6 text-center font-body text-sm text-danger" role="alert">
+                {searchError}
+              </p>
+            ) : results.length === 0 ? (
+              <p className="px-4 py-6 text-center font-body text-sm text-on-surface-muted">
+                No students match your search.
+              </p>
+            ) : (
+              <ul className="max-h-80 overflow-y-auto divide-y divide-outline-muted/10">
+                {results.map((student) => (
+                  <li key={student.userId}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectStudent(student)}
+                      className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-surface-muted/60"
                     >
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-soft-teal font-heading text-xs font-bold text-primary">
-                            {student.initials}
-                          </div>
-                          <div>
-                            <p className="font-heading text-sm font-semibold text-on-surface">
-                              {student.name}
-                            </p>
-                            <p className="font-body text-xs text-on-surface-muted">
-                              {student.email}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 font-body text-sm text-on-surface">
-                        {student.sessions}
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        {isCounsellor ? (
-                          <span className="font-body text-xs font-medium text-on-surface-muted">
-                            Already a counsellor
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handlePromote(student)}
-                            disabled={isPromoting}
-                            title={`Promote ${student.name} to counsellor`}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 font-heading text-xs font-semibold text-on-primary shadow-sm transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {isPromoting ? (
-                              <Loader2
-                                className="h-4 w-4 animate-spin"
-                                aria-hidden="true"
-                              />
-                            ) : (
-                              <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                            )}
-                            {isPromoting ? "Promoting…" : "Promote to Counsellor"}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {filteredStudents.length === 0 ? (
-              <div className="flex flex-col items-center gap-3 px-5 py-16 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
-                  <Users className="h-6 w-6 text-on-surface-subtle" aria-hidden="true" />
-                </div>
-                <p className="font-heading text-base font-semibold text-on-surface">
-                  No students match your search
-                </p>
-                <p className="max-w-sm font-body text-sm text-on-surface-muted">
-                  Try adjusting your search terms.
-                </p>
-              </div>
-            ) : null}
+                      <div className="min-w-0">
+                        <p className="font-heading text-sm font-semibold text-on-surface">
+                          {student.name}
+                        </p>
+                        <p className="font-body text-xs text-on-surface-muted">
+                          {student.email}
+                        </p>
+                        <p className="font-body text-xs text-on-surface-muted">
+                          {student.phone || "No phone on file"}
+                        </p>
+                      </div>
+                      <AccountStatusBadge isActive={student.isActive} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-        )}
+        ) : null}
       </section>
+
+      <StudentDetailModal
+        student={selectedStudent}
+        loading={detailLoading}
+        error={detailError}
+        toggling={toggling}
+        onClose={handleCloseModal}
+        onToggle={handleToggleActive}
+      />
     </div>
   );
 }

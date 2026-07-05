@@ -116,6 +116,7 @@ function mapStudentRequest(item) {
     requestedAt: item.requested_at,
     overdue: item.overdue,
     rejectionReason: item.rejection_reason ?? null,
+    hasRating: item.has_rating ?? false,
   };
 }
 
@@ -207,6 +208,8 @@ export async function getMySessionDetail(id) {
   return {
     ...mapStudentSession(data),
     notes: data.notes,
+    counsellorEmail: data.counsellor_email,
+    counsellorPhone: data.counsellor_phone,
   };
 }
 
@@ -222,6 +225,7 @@ export async function getCounsellorSessionRequestDetail(id) {
     ...mapCounsellorRequest(data),
     duration: data.duration_minutes ? `${data.duration_minutes} min` : "45 min",
     studentEmail: data.student_email,
+    studentPhone: data.student_phone,
   };
 }
 
@@ -243,6 +247,16 @@ export async function completeSessionRequest(id) {
 export async function getCounsellorUpcomingSessions() {
   const data = await apiFetch("/counsellor/me/sessions/upcoming");
   return (data.sessions ?? []).map(mapCounsellorUpcomingSession);
+}
+
+export async function submitSessionRating(sessionRequestId, { stars, comment }) {
+  return apiFetch(`/students/me/sessions/${sessionRequestId}/rating`, {
+    method: "POST",
+    body: {
+      stars,
+      comment: comment?.trim() || null,
+    },
+  });
 }
 
 export async function getCounsellorSlots(counsellorId, date) {

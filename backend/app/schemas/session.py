@@ -41,6 +41,16 @@ class SessionRequestStudentView(BaseModel):
     requested_at: datetime
     overdue: bool
     rejection_reason: str | None = None
+    has_rating: bool = False
+
+
+class SessionRatingCreate(BaseModel):
+    stars: int = Field(..., ge=1, le=5)
+    comment: str | None = None
+
+
+class SessionRatingSubmitResponse(BaseModel):
+    message: str
 
 
 class SessionRequestListResponse(BaseModel):
@@ -69,6 +79,7 @@ class SessionRequestCounsellorListResponse(BaseModel):
 class SessionRequestDetail(SessionRequestCounsellorView):
     duration_minutes: int | None = None
     student_email: str | None = None
+    student_phone: str | None = None
 
 
 class SessionRequestReject(BaseModel):
@@ -98,6 +109,8 @@ class StudentSessionListResponse(BaseModel):
 
 class StudentSessionDetail(StudentSessionItem):
     notes: str | None = None
+    counsellor_email: str | None = None
+    counsellor_phone: str | None = None
 
 
 class CounsellorUpcomingSession(BaseModel):

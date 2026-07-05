@@ -54,6 +54,14 @@ def _authenticate_user(
     return user
 
 
+def _ensure_account_active(user: models.User) -> None:
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="ACCOUNT_INACTIVE",
+        )
+
+
 def _build_auth_user_response(user: models.User, db: Session) -> schemas.AuthUserResponse:
     active_roles = get_active_role_values(db, user.id)
     return schemas.AuthUserResponse(
@@ -136,6 +144,7 @@ def swagger_token(
     user = _authenticate_user(
         db, user_credentials.username, user_credentials.password
     )
+    _ensure_account_active(user)
     _touch_last_active(db, user)
     active_roles = get_active_role_values(db, user.id)
     access_token = oauth2.create_access_token(
@@ -150,6 +159,7 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
         db, user_credentials.username, user_credentials.password
     )
 
+    _ensure_account_active(user)
     _touch_last_active(db, user)
     active_roles = get_active_role_values(db, user.id)
     access_token = oauth2.create_access_token(

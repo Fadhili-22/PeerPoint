@@ -20,6 +20,7 @@ class PublicStatsResponse(BaseModel):
 class AdminDashboardResponse(BaseModel):
     total_students: int
     total_counsellors: int
+    monthly_active_students: int
     active_sessions: int
     pending_requests: int
     overdue_requests: int
@@ -54,6 +55,8 @@ class AdminStudentItem(BaseModel):
     user_id: int
     full_name: str
     email: EmailStr
+    phone: str | None = None
+    is_active: bool = True
     sessions: int
     last_active_at: datetime | None
     created_at: datetime
@@ -65,6 +68,12 @@ class AdminStudentListResponse(BaseModel):
 
 class AdminStudentDetail(AdminStudentItem):
     recent_activity: list[str]
+
+
+class AdminStudentToggleActiveResponse(BaseModel):
+    user_id: int
+    is_active: bool
+    message: str
 
 
 class PlatformActivityItem(BaseModel):
@@ -150,3 +159,16 @@ class AdminAnalyticsResponse(BaseModel):
     avg_response_hours: float | None = None
     growth_metrics: list[AdminReportSummary]
     usage_breakdown: list[AdminReportSummary]
+
+
+class AdminRatingItem(BaseModel):
+    id: int
+    counsellor_name: str
+    session_topic: str
+    stars: int
+    comment: str | None
+    created_at: datetime
+
+
+class AdminRatingListResponse(BaseModel):
+    ratings: list[AdminRatingItem]

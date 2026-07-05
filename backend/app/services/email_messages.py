@@ -186,3 +186,29 @@ def resource_rejected(
         "— PeerPoint"
     )
     return subject, body
+
+
+def account_deactivated(*, full_name: str) -> tuple[str, str]:
+    subject = "Your PeerPoint account has been deactivated."
+    body = (
+        f"Hi {full_name},\n\n"
+        "Your PeerPoint student account has been deactivated. "
+        "You will not be able to sign in until it is reactivated.\n\n"
+        "If you have questions, please contact the Strathmore University "
+        "Mental Health Club.\n\n"
+        "— PeerPoint"
+    )
+    return subject, body
+
+
+def account_reactivated(*, full_name: str) -> tuple[str, str]:
+    subject = "Your PeerPoint account has been reactivated."
+    body = (
+        f"Hi {full_name},\n\n"
+        "Your PeerPoint student account has been reactivated. "
+        "You can sign in again at any time.\n\n"
+        "If you have questions, please contact the Strathmore University "
+        "Mental Health Club.\n\n"
+        "— PeerPoint"
+    )
+    return subject, body

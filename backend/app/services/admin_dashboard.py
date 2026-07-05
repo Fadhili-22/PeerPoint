@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app import schemas
@@ -15,6 +16,7 @@ from app.models import (
     ResourceStatus,
     SessionRequest,
     SessionRequestStatus as SessionRequestStatusModel,
+    User,
     UserRole,
     UserRoleAssignment,
 )
@@ -82,9 +84,27 @@ def get_admin_dashboard(db: Session) -> schemas.AdminDashboardResponse:
         .count()
     )
 
+    thirty_days_ago = now - timedelta(days=30)
+    monthly_active_students = (
+        db.query(func.count(User.id))
+        .join(
+            UserRoleAssignment,
+            (UserRoleAssignment.user_id == User.id)
+            & (UserRoleAssignment.role == UserRole.student)
+            & (UserRoleAssignment.is_active.is_(True)),
+        )
+        .filter(
+            User.last_active_at.isnot(None),
+            User.last_active_at >= thirty_days_ago,
+        )
+        .scalar()
+        or 0
+    )
+
     return schemas.AdminDashboardResponse(
         total_students=total_students,
         total_counsellors=total_counsellors,
+        monthly_active_students=monthly_active_students,
         active_sessions=active_sessions,
         pending_requests=pending_requests,
         overdue_requests=overdue_requests,

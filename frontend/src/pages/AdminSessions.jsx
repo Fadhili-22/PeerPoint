@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Calendar,
   CalendarClock,
@@ -10,6 +11,7 @@ import {
 import AdminPageHeader from "../components/AdminPageHeader";
 import AdminKpiCard from "../components/AdminKpiCard";
 import FilterChip from "../components/FilterChip";
+import { AdminRatingsPanel } from "./AdminRatings";
 import {
   computeAdminSessionStats,
   listAdminSessions,
@@ -119,7 +121,65 @@ function SessionDetailsModal({ session, onClose }) {
   );
 }
 
+const TABS = [
+  { id: "sessions", label: "Sessions" },
+  { id: "ratings", label: "Ratings" },
+];
+
+function SessionsTabBar({ activeTab, onTabChange }) {
+  return (
+    <div
+      className="flex gap-2 rounded-2xl border border-outline-muted/30 bg-surface p-1.5"
+      role="tablist"
+      aria-label="Sessions sections"
+    >
+      {TABS.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === tab.id}
+          onClick={() => onTabChange(tab.id)}
+          className={`flex-1 rounded-xl px-4 py-2.5 font-heading text-sm font-semibold transition-colors ${
+            activeTab === tab.id
+              ? "bg-primary text-on-primary shadow-sm"
+              : "text-on-surface-muted hover:bg-surface-muted/60"
+          }`}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function AdminSessions() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") === "ratings" ? "ratings" : "sessions";
+
+  const handleTabChange = (tabId) => {
+    const next = new URLSearchParams(searchParams);
+    if (tabId === "sessions") {
+      next.delete("tab");
+    } else {
+      next.set("tab", tabId);
+    }
+    setSearchParams(next, { replace: true });
+  };
+
+  if (activeTab === "ratings") {
+    return (
+      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
+        <SessionsTabBar activeTab={activeTab} onTabChange={handleTabChange} />
+        <AdminRatingsPanel />
+      </div>
+    );
+  }
+
+  return <AdminSessionsContent tabBar={<SessionsTabBar activeTab={activeTab} onTabChange={handleTabChange} />} />;
+}
+
+function AdminSessionsContent({ tabBar }) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedSession, setSelectedSession] = useState(null);
@@ -167,6 +227,7 @@ export default function AdminSessions() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
+      {tabBar}
       <AdminPageHeader
         eyebrow="Session management"
         title="Sessions"

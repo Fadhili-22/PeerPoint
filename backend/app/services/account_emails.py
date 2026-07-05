@@ -5,6 +5,8 @@ from __future__ import annotations
 from app.models import AccountRequestType, User
 from app.services.email import send_email_safe
 from app.services.email_messages import (
+    account_deactivated,
+    account_reactivated,
     counsellor_promoted,
     email_verification,
     resource_approved,
@@ -118,3 +120,13 @@ def notify_resource_rejected(
         rejection_reason=rejection_reason,
     )
     send_email_safe(to=counsellor_email, subject=subject, body_text=body)
+
+
+def notify_account_deactivated(user: User) -> None:
+    subject, body = account_deactivated(full_name=user.full_name)
+    send_email_safe(to=user.email, subject=subject, body_text=body)
+
+
+def notify_account_reactivated(user: User) -> None:
+    subject, body = account_reactivated(full_name=user.full_name)
+    send_email_safe(to=user.email, subject=subject, body_text=body)

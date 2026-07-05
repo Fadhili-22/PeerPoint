@@ -92,10 +92,15 @@ export default function Signup() {
   const [fullName, setFullName] = useState("");
   const [studentId, setStudentId] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [confirmError, setConfirmError] = useState("");
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -115,9 +120,27 @@ export default function Signup() {
     }
   };
 
+  const validatePhone = (value) => {
+    const trimmed = value.trim();
+    const digits = trimmed.startsWith("+") ? trimmed.slice(1) : trimmed;
+    if (!digits || !/^\d+$/.test(digits)) {
+      setPhoneError(
+        "Phone number must contain digits only (optional leading +).",
+      );
+      return false;
+    }
+    if (digits.length < 10 || digits.length > 13) {
+      setPhoneError("Phone number must be 10-13 digits.");
+      return false;
+    }
+    setPhoneError("");
+    return true;
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setFormError("");
+    setConfirmError("");
 
     if (!agreed) {
       setFormError("Please agree to the Privacy Policy to continue.");
@@ -130,12 +153,22 @@ export default function Signup() {
       return;
     }
 
+    if (!validatePhone(phone)) {
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setConfirmError("Passwords do not match.");
+      return;
+    }
+
     setSubmitting(true);
     const result = await signup({
       fullName: fullName.trim(),
       email: trimmedEmail,
       password,
       admissionNumber: studentId.trim(),
+      phone: phone.trim(),
     });
     setSubmitting(false);
 
@@ -261,6 +294,50 @@ export default function Signup() {
 
               <div className="space-y-2">
                 <label
+                  htmlFor="signup-phone"
+                  className="ml-1 font-heading text-sm font-semibold text-on-surface-muted"
+                >
+                  Phone Number
+                </label>
+                <input
+                  id="signup-phone"
+                  type="tel"
+                  autoComplete="tel"
+                  required
+                  value={phone}
+                  onChange={(event) => {
+                    setPhone(event.target.value);
+                    if (phoneError) {
+                      setPhoneError("");
+                    }
+                  }}
+                  onBlur={() => {
+                    if (phone.trim()) {
+                      validatePhone(phone);
+                    }
+                  }}
+                  placeholder="e.g. 0712345678"
+                  aria-invalid={Boolean(phoneError)}
+                  aria-describedby={phoneError ? "signup-phone-error" : undefined}
+                  className={`w-full rounded-xl border bg-transparent px-4 py-4 font-body text-base outline-none transition-all focus:ring-1 focus:ring-primary ${
+                    phoneError
+                      ? "border-danger focus:border-danger"
+                      : "border-outline-muted focus:border-primary"
+                  }`}
+                />
+                {phoneError ? (
+                  <p
+                    id="signup-phone-error"
+                    className="ml-1 font-body text-sm text-danger"
+                    role="alert"
+                  >
+                    {phoneError}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="space-y-2">
+                <label
                   htmlFor="signup-password"
                   className="ml-1 font-heading text-sm font-semibold text-on-surface-muted"
                 >
@@ -291,6 +368,64 @@ export default function Signup() {
                     )}
                   </button>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="signup-confirm-password"
+                  className="ml-1 font-heading text-sm font-semibold text-on-surface-muted"
+                >
+                  Confirm Password
+                </label>
+                <div className="group relative">
+                  <input
+                    id="signup-confirm-password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    required
+                    minLength={8}
+                    value={confirmPassword}
+                    onChange={(event) => {
+                      setConfirmPassword(event.target.value);
+                      if (confirmError) {
+                        setConfirmError("");
+                      }
+                    }}
+                    placeholder="Re-enter your password"
+                    aria-invalid={Boolean(confirmError)}
+                    aria-describedby={
+                      confirmError ? "signup-confirm-password-error" : undefined
+                    }
+                    className={`w-full rounded-xl border bg-transparent px-4 py-4 pr-12 font-body text-base outline-none transition-all focus:ring-1 focus:ring-primary ${
+                      confirmError
+                        ? "border-danger focus:border-danger"
+                        : "border-outline-muted focus:border-primary"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-outline transition-colors hover:text-primary"
+                    aria-label={
+                      showConfirmPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-5 w-5" aria-hidden="true" />
+                    ) : (
+                      <Eye className="h-5 w-5" aria-hidden="true" />
+                    )}
+                  </button>
+                </div>
+                {confirmError ? (
+                  <p
+                    id="signup-confirm-password-error"
+                    className="ml-1 font-body text-sm text-danger"
+                    role="alert"
+                  >
+                    {confirmError}
+                  </p>
+                ) : null}
               </div>
 
               <div className="flex items-start gap-3 py-2">

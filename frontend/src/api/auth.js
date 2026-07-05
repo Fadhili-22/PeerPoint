@@ -103,7 +103,13 @@ export async function loginRequest(email, password) {
   };
 }
 
-export async function registerRequest({ fullName, email, password, admissionNumber }) {
+export async function registerRequest({
+  fullName,
+  email,
+  password,
+  admissionNumber,
+  phone,
+}) {
   const data = await apiFetch("/auth/register", {
     method: "POST",
     auth: false,
@@ -112,6 +118,7 @@ export async function registerRequest({ fullName, email, password, admissionNumb
       email,
       password,
       admission_number: admissionNumber,
+      phone,
       role: "student",
     },
   });

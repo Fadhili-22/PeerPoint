@@ -9,7 +9,6 @@ import {
   UserSearch,
   X,
 } from "lucide-react";
-import ComingSoonText from "../components/ComingSoonText";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { getRecommendedResources } from "../api/resources";
@@ -483,12 +482,24 @@ export default function StudentDashboard() {
             © 2026 PeerPoint. Endorsed by Strathmore University Mental Health Club
           </p>
           <div className="flex gap-4">
-            <ComingSoonText className="font-body text-xs font-medium text-on-surface-muted">
+            <Link
+              to="/privacy-policy"
+              className="font-body text-xs font-medium text-on-surface-muted transition-colors hover:text-primary"
+            >
               Privacy Policy
-            </ComingSoonText>
-            <ComingSoonText className="font-body text-xs font-medium text-on-surface-muted">
+            </Link>
+            <Link
+              to="/contact-support"
+              className="font-body text-xs font-medium text-on-surface-muted transition-colors hover:text-primary"
+            >
               Contact Support
-            </ComingSoonText>
+            </Link>
+            <Link
+              to="/terms-of-service"
+              className="font-body text-xs font-medium text-on-surface-muted transition-colors hover:text-primary"
+            >
+              Terms of Service
+            </Link>
           </div>
         </div>
       </footer>

@@ -33,6 +33,10 @@ from app.models import (
 )
 
 from app.services.session_requests import count_completed_sessions_for_student
+from app.services.account_emails import (
+    notify_account_deactivated,
+    notify_account_reactivated,
+)
 
 
 
@@ -142,6 +146,46 @@ def get_admin_student(db: Session, student_id: int) -> schemas.AdminStudentDetai
 
         recent_activity=_synthesize_recent_activity(db, student_id),
 
+    )
+
+
+
+
+def toggle_student_active(
+    db: Session, student_id: int
+) -> schemas.AdminStudentToggleActiveResponse:
+    user = (
+        db.query(User)
+        .join(
+            UserRoleAssignment,
+            (UserRoleAssignment.user_id == User.id)
+            & (UserRoleAssignment.role == UserRole.student)
+            & (UserRoleAssignment.is_active.is_(True)),
+        )
+        .filter(User.id == student_id)
+        .first()
+    )
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student not found",
+        )
+
+    user.is_active = not user.is_active
+    db.commit()
+    db.refresh(user)
+
+    if user.is_active:
+        notify_account_reactivated(user)
+        message = "Student account reactivated."
+    else:
+        notify_account_deactivated(user)
+        message = "Student account deactivated."
+
+    return schemas.AdminStudentToggleActiveResponse(
+        user_id=user.id,
+        is_active=user.is_active,
+        message=message,
     )
 
 
@@ -265,6 +309,10 @@ def _map_admin_student(user: User, *, db: Session) -> schemas.AdminStudentItem:
         full_name=user.full_name,
 
         email=user.email,
+
+        phone=user.phone,
+
+        is_active=user.is_active,
 
         sessions=count_completed_sessions_for_student(db, user.id),
 

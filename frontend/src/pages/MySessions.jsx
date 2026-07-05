@@ -1,18 +1,64 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarCheck, X } from "lucide-react";
+import { CalendarCheck, Star, X } from "lucide-react";
 import { ApiError } from "../api/client";
 import {
   formatSessionStatus,
   getMySessionDetail,
   getMySessionRequests,
+  submitSessionRating,
 } from "../api/sessions";
 
-function SessionDetailsModal({ session, detail, loading, onClose }) {
+function StarPicker({ value, onChange }) {
+  return (
+    <div className="flex gap-1" role="group" aria-label="Select a star rating">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => onChange(star)}
+          className="rounded-lg p-1 transition-colors hover:bg-surface-muted"
+          aria-label={`${star} star${star === 1 ? "" : "s"}`}
+          aria-pressed={value === star}
+        >
+          <Star
+            className={`h-7 w-7 ${
+              star <= value
+                ? "fill-accent-gold text-accent-gold"
+                : "text-outline-muted"
+            }`}
+            aria-hidden="true"
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function SessionDetailsModal({
+  session,
+  detail,
+  loading,
+  onClose,
+  showRatingForm,
+  onOpenRatingForm,
+  ratingStars,
+  onRatingStarsChange,
+  ratingComment,
+  onRatingCommentChange,
+  ratingSubmitting,
+  ratingError,
+  ratingConfirmation,
+  onSubmitRating,
+}) {
   if (!session) return null;
 
   const statusMeta = formatSessionStatus(session.status);
   const isRejected = session.status === "rejected";
+  const isCompleted = session.status === "completed";
+  const showContactInfo = ["accepted", "completed"].includes(session.status);
+  const hasSubmittedRating =
+    session.hasRating || ratingConfirmation?.sessionId === session.id;
 
   return (
     <div
@@ -103,6 +149,22 @@ function SessionDetailsModal({ session, detail, loading, onClose }) {
                   </span>
                 </dd>
               </div>
+              {showContactInfo && detail?.counsellorEmail ? (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-on-surface-muted">Email</dt>
+                  <dd className="font-medium text-on-surface">
+                    {detail.counsellorEmail}
+                  </dd>
+                </div>
+              ) : null}
+              {showContactInfo && detail?.counsellorPhone ? (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-on-surface-muted">Phone</dt>
+                  <dd className="font-medium text-on-surface">
+                    {detail.counsellorPhone}
+                  </dd>
+                </div>
+              ) : null}
             </dl>
             {loading ? (
               <p className="mt-4 font-body text-sm text-on-surface-muted">
@@ -113,6 +175,87 @@ function SessionDetailsModal({ session, detail, loading, onClose }) {
                 {detail.notes}
               </p>
             ) : null}
+
+            {isCompleted ? (
+              <div className="mt-5 border-t border-outline-muted/20 pt-5">
+                {hasSubmittedRating ? (
+                  <div className="rounded-xl bg-soft-teal/40 px-4 py-3">
+                    <p className="font-body text-sm font-medium text-on-surface">
+                      Thanks for your feedback.
+                    </p>
+                    {ratingConfirmation?.sessionId === session.id ? (
+                      <div className="mt-2 flex gap-1" aria-hidden="true">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`h-5 w-5 ${
+                              star <= ratingConfirmation.stars
+                                ? "fill-accent-gold text-accent-gold"
+                                : "text-outline-muted"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : showRatingForm ? (
+                  <div className="space-y-4">
+                    <div>
+                      <p className="mb-2 font-heading text-sm font-semibold text-on-surface">
+                        Rate this session
+                      </p>
+                      <StarPicker
+                        value={ratingStars}
+                        onChange={onRatingStarsChange}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="session-rating-comment"
+                        className="font-heading text-sm font-semibold text-on-surface-muted"
+                      >
+                        Comment (optional)
+                      </label>
+                      <textarea
+                        id="session-rating-comment"
+                        value={ratingComment}
+                        onChange={(event) =>
+                          onRatingCommentChange(event.target.value)
+                        }
+                        rows={3}
+                        placeholder="Share any feedback about your session..."
+                        className="w-full rounded-xl border border-outline-muted bg-transparent px-4 py-3 font-body text-sm text-on-surface outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                    {ratingError ? (
+                      <p
+                        className="font-body text-sm text-danger"
+                        role="alert"
+                      >
+                        {ratingError}
+                      </p>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={onSubmitRating}
+                      disabled={ratingSubmitting}
+                      className="w-full rounded-xl bg-primary py-2.5 font-heading text-sm font-semibold text-on-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {ratingSubmitting ? "Submitting..." : "Submit Rating"}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onOpenRatingForm}
+                    className="w-full rounded-xl border border-primary/20 bg-soft-teal/40 py-2.5 font-heading text-sm font-semibold text-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5"
+                  >
+                    Rate this session
+                  </button>
+                )}
+              </div>
+            ) : null}
+
             <button
               type="button"
               onClick={onClose}
@@ -134,6 +277,12 @@ export default function MySessions() {
   const [selectedSession, setSelectedSession] = useState(null);
   const [sessionDetail, setSessionDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [showRatingForm, setShowRatingForm] = useState(false);
+  const [ratingStars, setRatingStars] = useState(0);
+  const [ratingComment, setRatingComment] = useState("");
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [ratingError, setRatingError] = useState("");
+  const [ratingConfirmation, setRatingConfirmation] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -204,6 +353,72 @@ export default function MySessions() {
     };
   }, [selectedSession]);
 
+  const handleCloseModal = () => {
+    setSelectedSession(null);
+    setShowRatingForm(false);
+    setRatingStars(0);
+    setRatingComment("");
+    setRatingError("");
+  };
+
+  const handleOpenSession = (session, openRating = false) => {
+    setSelectedSession(session);
+    setShowRatingForm(openRating);
+    setRatingStars(0);
+    setRatingComment("");
+    setRatingError("");
+  };
+
+  const handleSubmitRating = async () => {
+    if (!selectedSession) return;
+
+    if (ratingStars < 1 || ratingStars > 5) {
+      setRatingError("Please select a star rating between 1 and 5.");
+      return;
+    }
+
+    setRatingSubmitting(true);
+    setRatingError("");
+    try {
+      await submitSessionRating(selectedSession.id, {
+        stars: ratingStars,
+        comment: ratingComment,
+      });
+      setSessions((current) =>
+        current.map((session) =>
+          session.id === selectedSession.id
+            ? { ...session, hasRating: true }
+            : session,
+        ),
+      );
+      setSelectedSession((current) =>
+        current ? { ...current, hasRating: true } : current,
+      );
+      setRatingConfirmation({
+        sessionId: selectedSession.id,
+        stars: ratingStars,
+      });
+      setShowRatingForm(false);
+      setRatingStars(0);
+      setRatingComment("");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        setRatingError("You have already rated this session.");
+        setSessions((current) =>
+          current.map((session) =>
+            session.id === selectedSession.id
+              ? { ...session, hasRating: true }
+              : session,
+          ),
+        );
+      } else {
+        setRatingError(err.message || "Unable to submit rating.");
+      }
+    } finally {
+      setRatingSubmitting(false);
+    }
+  };
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col">
       <header className="mb-8">
@@ -232,6 +447,8 @@ export default function MySessions() {
         <div className="space-y-4">
           {sessions.map((session) => {
             const statusMeta = formatSessionStatus(session.status);
+            const canRate =
+              session.status === "completed" && !session.hasRating;
             return (
               <article
                 key={session.id}
@@ -255,7 +472,7 @@ export default function MySessions() {
                     ) : null}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   {session.overdue ? (
                     <span className="rounded-full bg-danger/10 px-3 py-1 font-body text-xs font-medium text-danger">
                       Overdue
@@ -266,9 +483,18 @@ export default function MySessions() {
                   >
                     {statusMeta.label}
                   </span>
+                  {canRate ? (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenSession(session, true)}
+                      className="rounded-full bg-accent-gold/15 px-3 py-1 font-heading text-xs font-semibold text-accent-gold transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5"
+                    >
+                      Rate this session
+                    </button>
+                  ) : null}
                   <button
                     type="button"
-                    onClick={() => setSelectedSession(session)}
+                    onClick={() => handleOpenSession(session)}
                     className="font-heading text-sm font-semibold text-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:text-primary-dark"
                   >
                     {session.status === "rejected" ? "View Options" : "View Details"}
@@ -305,7 +531,17 @@ export default function MySessions() {
         session={selectedSession}
         detail={sessionDetail}
         loading={detailLoading}
-        onClose={() => setSelectedSession(null)}
+        onClose={handleCloseModal}
+        showRatingForm={showRatingForm}
+        onOpenRatingForm={() => setShowRatingForm(true)}
+        ratingStars={ratingStars}
+        onRatingStarsChange={setRatingStars}
+        ratingComment={ratingComment}
+        onRatingCommentChange={setRatingComment}
+        ratingSubmitting={ratingSubmitting}
+        ratingError={ratingError}
+        ratingConfirmation={ratingConfirmation}
+        onSubmitRating={handleSubmitRating}
       />
     </div>
   );

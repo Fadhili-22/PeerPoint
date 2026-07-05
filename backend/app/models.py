@@ -121,7 +121,9 @@ class User(Base):
     role = Column(Enum(UserRole), nullable=False, default=UserRole.student)
     is_verified = Column(Boolean, server_default="FALSE", nullable=False)
     email_verified = Column(Boolean, server_default="FALSE", nullable=False)
+    is_active = Column(Boolean, server_default="TRUE", nullable=False)
     admission_number = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
     created_at = Column(
         TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")
     )
@@ -301,6 +303,43 @@ class SessionRequest(Base):
         back_populates="session_requests_as_counsellor",
         foreign_keys=[counsellor_id],
     )
+    rating = relationship(
+        "SessionRating",
+        back_populates="session_request",
+        uselist=False,
+    )
+
+
+class SessionRating(Base):
+    __tablename__ = "session_ratings"
+    __table_args__ = (
+        UniqueConstraint(
+            "session_request_id",
+            name="uq_session_ratings_session_request_id",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    session_request_id = Column(
+        Integer,
+        ForeignKey("session_requests.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    student_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    counsellor_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    stars = Column(Integer, nullable=False)
+    comment = Column(Text, nullable=True)
+    created_at = Column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")
+    )
+
+    session_request = relationship("SessionRequest", back_populates="rating")
+    student = relationship("User", foreign_keys=[student_id])
+    counsellor = relationship("User", foreign_keys=[counsellor_id])
 
 
 class Resource(Base):

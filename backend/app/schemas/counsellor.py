@@ -236,6 +236,10 @@ class AdminCounsellorItem(BaseModel):
 
     email: EmailStr
 
+    phone: str | None = None
+
+    is_active: bool = True
+
     year: int
 
     program: str | None
@@ -289,10 +293,35 @@ class PromotionCandidateListResponse(BaseModel):
     candidates: list[PromotionCandidateItem]
 
 
+class PromotableStudentItem(BaseModel):
+
+    user_id: int
+
+    full_name: str
+
+    email: EmailStr
+
+    phone: str | None = None
+
+
+class PromotableStudentListResponse(BaseModel):
+
+    students: list[PromotableStudentItem]
+
+
 
 
 
 class PromoteCounsellorResponse(BaseModel):
+
+    user_id: int
+
+    roles: list[str]
+
+    message: str
+
+
+class DemoteCounsellorResponse(BaseModel):
 
     user_id: int
 

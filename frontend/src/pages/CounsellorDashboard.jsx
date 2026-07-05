@@ -14,7 +14,6 @@ import {
   X,
 } from "lucide-react";
 import ComingSoonButton from "../components/ComingSoonButton";
-import ComingSoonText from "../components/ComingSoonText";
 import RejectSessionModal from "../components/RejectSessionModal";
 import { ResourceStatusBadge } from "../components/AdminResourceRowActions";
 import { ApiError } from "../api/client";
@@ -634,12 +633,24 @@ export default function CounsellorDashboard() {
           © 2026 PeerPoint. Endorsed by Strathmore University Mental Health Club
         </p>
         <div className="flex gap-4">
-          <ComingSoonText className="font-body text-xs font-medium text-on-surface-muted">
+          <Link
+            to="/privacy-policy"
+            className="font-body text-xs font-medium text-on-surface-muted transition-colors hover:text-primary"
+          >
             Privacy Policy
-          </ComingSoonText>
-          <ComingSoonText className="font-body text-xs font-medium text-on-surface-muted">
+          </Link>
+          <Link
+            to="/contact-support"
+            className="font-body text-xs font-medium text-on-surface-muted transition-colors hover:text-primary"
+          >
             Contact Support
-          </ComingSoonText>
+          </Link>
+          <Link
+            to="/terms-of-service"
+            className="font-body text-xs font-medium text-on-surface-muted transition-colors hover:text-primary"
+          >
+            Terms of Service
+          </Link>
         </div>
       </footer>
 

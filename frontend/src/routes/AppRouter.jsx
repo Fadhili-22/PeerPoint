@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import PublicLayout from "../layouts/PublicLayout";
 import DashboardLayout from "../layouts/DashboardLayout";
 import StudentPortalLayout from "../layouts/StudentPortalLayout";
@@ -11,6 +11,10 @@ import ResetPassword from "../pages/ResetPassword";
 import VerifyEmail from "../pages/VerifyEmail";
 import VerifyEmailPending from "../pages/VerifyEmailPending";
 import PendingApproval from "../pages/PendingApproval";
+import PrivacyPolicy from "../pages/PrivacyPolicy";
+import TermsOfService from "../pages/TermsOfService";
+import ContactSupport from "../pages/ContactSupport";
+import EmergencyInfo from "../pages/EmergencyInfo";
 import ChoosePortal from "../pages/ChoosePortal";
 import StudentDashboard from "../pages/StudentDashboard";
 import CounsellorDirectory from "../pages/CounsellorDirectory";
@@ -46,6 +50,10 @@ export default function AppRouter() {
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
         <Route path="/pending-approval" element={<PendingApproval />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
+        <Route path="/contact-support" element={<ContactSupport />} />
+        <Route path="/emergency-info" element={<EmergencyInfo />} />
       </Route>
 
       <Route
@@ -113,7 +121,12 @@ export default function AppRouter() {
         <Route path="/admin/counsellors" element={<AdminCounsellors />} />
         <Route path="/admin/students" element={<AdminStudents />} />
         <Route path="/admin/sessions" element={<AdminSessions />} />
+        <Route
+          path="/admin/ratings"
+          element={<Navigate to="/admin/sessions?tab=ratings" replace />}
+        />
         <Route path="/admin/resources" element={<AdminResources />} />
+        <Route path="/admin/reports" element={<Navigate to="/admin" replace />} />
         <Route path="/admin/resources/new" element={<AdminResourceForm />} />
         <Route path="/admin/resources/:id/edit" element={<AdminResourceForm />} />
         <Route

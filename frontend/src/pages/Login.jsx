@@ -97,6 +97,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [error, setError] = useState("");
+  const [accountInactive, setAccountInactive] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const validateEmail = (value) => {
@@ -118,6 +119,7 @@ export default function Login() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+    setAccountInactive(false);
 
     const trimmedEmail = email.trim();
 
@@ -139,6 +141,11 @@ export default function Login() {
         setActivePortal(portal);
       }
       navigate(path);
+      return;
+    }
+
+    if (result.accountInactive) {
+      setAccountInactive(true);
       return;
     }
 
@@ -169,6 +176,25 @@ export default function Login() {
           </div>
 
           <div className="p-8 md:p-10">
+            {accountInactive ? (
+              <div className="space-y-6 text-center">
+                <div className="rounded-2xl border border-danger/20 bg-danger/5 px-5 py-6">
+                  <h2 className="mb-2 font-heading text-xl font-semibold text-on-surface">
+                    Account deactivated
+                  </h2>
+                  <p className="font-body text-sm leading-relaxed text-on-surface-muted">
+                    Your account has been deactivated. Please contact the Mental
+                    Health Club for more information.
+                  </p>
+                </div>
+                <Link
+                  to="/contact-support"
+                  className="inline-flex rounded-xl bg-primary px-5 py-2.5 font-heading text-sm font-semibold text-on-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5"
+                >
+                  Contact Support
+                </Link>
+              </div>
+            ) : (
             <form className="space-y-6" onSubmit={handleSubmit} noValidate>
               {error ? (
                 <p
@@ -278,8 +304,9 @@ export default function Login() {
                 {submitting ? "Signing In..." : "Sign In"}
               </button>
             </form>
+            )}
 
-            <PrivacyDisclaimer />
+            {!accountInactive ? <PrivacyDisclaimer /> : null}
           </div>
         </div>
       </div>

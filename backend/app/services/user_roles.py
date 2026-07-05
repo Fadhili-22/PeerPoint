@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.models import (
     CounsellorProfile,
+    CounsellorProfileStatus,
     PromotionCandidate,
     User,
     UserRole,
@@ -187,7 +188,8 @@ def grant_counsellor_role(
 
     # Provision a default profile in the same transaction (idempotent). A
     # counsellor must have a profile to be visible in the directory / act as one.
-    ensure_counsellor_profile(db, user)
+    profile = ensure_counsellor_profile(db, user)
+    profile.status = CounsellorProfileStatus.active
 
     # Admin promotion is approval: verified counsellors skip /pending-approval.
     # Idempotent on re-promote — leaves is_verified True if already set.

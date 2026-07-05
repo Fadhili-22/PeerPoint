@@ -212,6 +212,13 @@ function RequestDetailsModal({
           </p>
         ) : null}
 
+        {display.studentPhone ? (
+          <p className="mb-4 rounded-xl bg-soft-teal/50 px-4 py-3 font-body text-sm text-on-surface">
+            Phone:{" "}
+            <span className="font-semibold">{display.studentPhone}</span>
+          </p>
+        ) : null}
+
         <dl className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <dt className="mb-1 font-heading text-[11px] font-bold uppercase tracking-widest text-on-surface-subtle">

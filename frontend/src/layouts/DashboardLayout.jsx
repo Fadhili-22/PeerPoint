@@ -98,21 +98,7 @@ function SidebarFooter({ user, initials, onLogout, dashboardRole, onNavigate }) 
           <Settings className="h-4 w-4" />
           Profile
         </NavLink>
-      ) : (
-        <button
-          type="button"
-          disabled
-          title="Coming soon"
-          aria-disabled="true"
-          className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-on-surface/40"
-        >
-          <Settings className="h-4 w-4" />
-          Settings
-          <span className="ml-auto rounded-full bg-surface-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
-            Soon
-          </span>
-        </button>
-      )}
+      ) : null}
 
       <button
         type="button"

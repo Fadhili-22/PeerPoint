@@ -136,6 +136,9 @@ export function AuthProvider({ children }) {
       persistUser(nextUser);
       return { success: true, redirectTo, user: nextUser };
     } catch (error) {
+      if (error.status === 403 && error.detail === "ACCOUNT_INACTIVE") {
+        return { success: false, accountInactive: true };
+      }
       if (error.status === 403 || error.status === 401) {
         return { success: false, error: "Invalid email or password." };
       }
@@ -146,7 +149,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const signup = async ({ fullName, email, password, admissionNumber }) => {
+  const signup = async ({ fullName, email, password, admissionNumber, phone }) => {
     const normalizedEmail = email.trim();
     const normalizedPassword = password.trim();
     const normalizedAdmissionNumber = admissionNumber.trim();
@@ -165,6 +168,7 @@ export function AuthProvider({ children }) {
         email: normalizedEmail,
         password: normalizedPassword,
         admissionNumber: normalizedAdmissionNumber,
+        phone: phone.trim(),
       });
       return { success: true, email: registeredEmail };
     } catch (error) {

@@ -1,4 +1,11 @@
-import { apiFetch } from "./client";
+import { apiFetch, getAccessToken } from "./client";
+
+const API_BASE = import.meta.env.VITE_API_URL ?? "";
+
+const REPORT_DOWNLOAD_PATHS = {
+  "platform-summary": "/admin/reports/platform-summary",
+  "counsellor-performance": "/admin/reports/counsellor-performance",
+};
 
 export function deriveInitials(fullName) {
   const parts = (fullName ?? "").trim().split(/\s+/).filter(Boolean);
@@ -45,6 +52,8 @@ export function mapAdminCounsellor(item) {
     userId: item.user_id,
     name: item.full_name,
     email: item.email,
+    phone: item.phone ?? null,
+    isActive: item.is_active ?? true,
     initials: deriveInitials(item.full_name),
     year: item.year,
     program: item.program,
@@ -69,12 +78,33 @@ export function mapPromotionCandidate(item) {
   };
 }
 
-export async function listAdminCounsellors({ status } = {}) {
+export async function listAdminCounsellors({ status, search } = {}) {
   const searchParams = new URLSearchParams();
   if (status && status !== "all") searchParams.set("status", status);
+  if (search?.trim()) searchParams.set("search", search.trim());
   const query = searchParams.toString();
   const data = await apiFetch(`/admin/counsellors${query ? `?${query}` : ""}`);
   return (data.counsellors ?? []).map(mapAdminCounsellor);
+}
+
+export function mapPromotableStudent(item) {
+  return {
+    userId: item.user_id,
+    name: item.full_name,
+    email: item.email,
+    phone: item.phone ?? null,
+    initials: deriveInitials(item.full_name),
+  };
+}
+
+export async function searchPromotableStudents({ search } = {}) {
+  const searchParams = new URLSearchParams();
+  if (search?.trim()) searchParams.set("search", search.trim());
+  const query = searchParams.toString();
+  const data = await apiFetch(
+    `/admin/counsellors/promotable-students${query ? `?${query}` : ""}`,
+  );
+  return (data.students ?? []).map(mapPromotableStudent);
 }
 
 export async function listPromotionCandidates() {
@@ -84,6 +114,28 @@ export async function listPromotionCandidates() {
 
 export async function promoteCounsellor(userId) {
   return apiFetch(`/admin/counsellors/promote/${userId}`, { method: "POST" });
+}
+
+export async function toggleCounsellorActive(userId) {
+  const data = await apiFetch(`/admin/counsellors/${userId}/toggle-active`, {
+    method: "POST",
+  });
+  return {
+    userId: data.user_id,
+    isActive: data.is_active,
+    message: data.message,
+  };
+}
+
+export async function demoteCounsellor(userId) {
+  const data = await apiFetch(`/admin/counsellors/${userId}/demote`, {
+    method: "POST",
+  });
+  return {
+    userId: data.user_id,
+    roles: data.roles ?? [],
+    message: data.message,
+  };
 }
 
 function formatSessionDateTime(value) {
@@ -136,6 +188,25 @@ export function computeAdminSessionStats(sessions) {
   };
 }
 
+export function mapAdminRating(item) {
+  return {
+    id: item.id,
+    counsellorName: item.counsellor_name,
+    sessionTopic: item.session_topic,
+    stars: item.stars,
+    comment: item.comment,
+    createdAt: item.created_at,
+  };
+}
+
+export async function listAdminRatings({ counsellorId } = {}) {
+  const params = new URLSearchParams();
+  if (counsellorId) params.set("counsellor_id", counsellorId);
+  const query = params.toString();
+  const data = await apiFetch(`/admin/ratings${query ? `?${query}` : ""}`);
+  return (data.ratings ?? []).map(mapAdminRating);
+}
+
 function formatDashboardNumber(value) {
   return Number(value ?? 0).toLocaleString("en-US");
 }
@@ -145,6 +216,7 @@ export async function getAdminDashboard() {
 }
 
 export function mapAdminDashboard(api) {
+  const monthlyActiveStudents = Number(api.monthly_active_students ?? 0);
   return {
     headlineStats: [
       {
@@ -163,6 +235,25 @@ export function mapAdminDashboard(api) {
         value: formatDashboardNumber(api.active_sessions),
       },
     ],
+    monthlyActiveStudentsKpi: {
+      id: "monthly-active-students",
+      label: "Monthly Active Students",
+      value: formatDashboardNumber(monthlyActiveStudents),
+      sublabel: "logged in within 30 days",
+      icon: "users",
+      iconBg: "bg-soft-teal",
+      iconColor: "text-primary",
+    },
+    directoryPreviews: {
+      students: {
+        count: formatDashboardNumber(api.total_students),
+        description: "Active student accounts on the platform",
+      },
+      counsellors: {
+        count: formatDashboardNumber(api.total_counsellors),
+        description: "Counsellors listed in the directory",
+      },
+    },
     platformKpis: [
       {
         id: "students",
@@ -234,6 +325,8 @@ export function mapAdminStudent(item) {
     userId: item.user_id,
     name: item.full_name,
     email: item.email,
+    phone: item.phone ?? null,
+    isActive: item.is_active ?? true,
     initials: deriveInitials(item.full_name),
     sessions: item.sessions ?? 0,
     lastActive: formatRelative(item.last_active_at),
@@ -260,6 +353,17 @@ export async function listAdminStudents({ search } = {}) {
 export async function getAdminStudent(userId) {
   const data = await apiFetch(`/admin/students/${userId}`);
   return mapAdminStudentDetail(data);
+}
+
+export async function toggleStudentActive(userId) {
+  const data = await apiFetch(`/admin/students/${userId}/toggle-active`, {
+    method: "POST",
+  });
+  return {
+    userId: data.user_id,
+    isActive: data.is_active,
+    message: data.message,
+  };
 }
 
 export function computeAdminStudentStats(students) {
@@ -392,4 +496,35 @@ export function mapUsageBreakdown(items) {
     value: item.value,
     percent: item.percent ?? 0,
   }));
+}
+
+export async function downloadAdminReport(reportKey, format) {
+  const path = REPORT_DOWNLOAD_PATHS[reportKey];
+  if (!path) {
+    throw new Error("Unknown report type.");
+  }
+
+  const token = getAccessToken();
+  const response = await fetch(`${API_BASE}${path}?format=${encodeURIComponent(format)}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    const detail = data?.detail ?? response.statusText;
+    throw new Error(typeof detail === "string" ? detail : "Download failed.");
+  }
+
+  const blob = await response.blob();
+  const disposition = response.headers.get("content-disposition") ?? "";
+  const match = disposition.match(/filename=\"?([^\";\n]+)\"?/i);
+  const filename = match?.[1] ?? `${reportKey}.${format}`;
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }
