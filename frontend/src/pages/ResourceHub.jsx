@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import FeaturedResourceCard from "../components/FeaturedResourceCard";
-import ComingSoonText from "../components/ComingSoonText";
+import LegalFooterLinks from "../components/LegalFooterLinks";
 import NewsletterSignup from "../components/NewsletterSignup";
 import ResourceCard from "../components/ResourceCard";
 import SupportNetworkCard from "../components/SupportNetworkCard";
@@ -221,17 +221,7 @@ export default function ResourceHub() {
               Endorsed by Strathmore University Mental Health Club
             </p>
           </div>
-          <div className="flex gap-8">
-            <ComingSoonText className="font-body text-xs text-on-surface-muted">
-              Privacy Policy
-            </ComingSoonText>
-            <ComingSoonText className="font-body text-xs text-on-surface-muted">
-              Contact Support
-            </ComingSoonText>
-            <ComingSoonText className="font-body text-xs text-on-surface-muted">
-              Terms of Service
-            </ComingSoonText>
-          </div>
+          <LegalFooterLinks gapClassName="flex gap-8" />
         </div>
       </footer>
     </div>

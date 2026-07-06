@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import PublicLayout from "../layouts/PublicLayout";
-import DashboardLayout from "../layouts/DashboardLayout";
-import StudentPortalLayout from "../layouts/StudentPortalLayout";
+import PublicLayout from "../pages/layouts/PublicLayout";
+import DashboardLayout from "../pages/layouts/DashboardLayout";
+import StudentPortalLayout from "../pages/layouts/StudentPortalLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import Landing from "../pages/Landing";
 import Login from "../pages/Login";

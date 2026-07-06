@@ -9,7 +9,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import ComingSoonText from "../components/ComingSoonText";
+import LegalFooterLinks from "../components/LegalFooterLinks";
 
 function AuthHero() {
   return (
@@ -58,17 +58,7 @@ function AuthFooter() {
           Endorsed by Strathmore University Mental Health Club
         </span>
       </div>
-      <div className="flex gap-6">
-        <ComingSoonText className="font-body text-xs font-medium text-on-surface-muted">
-          Privacy Policy
-        </ComingSoonText>
-        <ComingSoonText className="font-body text-xs font-medium text-on-surface-muted">
-          Contact Support
-        </ComingSoonText>
-        <ComingSoonText className="font-body text-xs font-medium text-on-surface-muted">
-          Terms of Service
-        </ComingSoonText>
-      </div>
+      <LegalFooterLinks />
     </footer>
   );
 }
@@ -442,9 +432,12 @@ export default function Signup() {
                   className="font-body text-xs font-medium text-on-surface-muted"
                 >
                   I agree to the{" "}
-                  <ComingSoonText className="text-primary underline">
+                  <Link
+                    to="/privacy-policy"
+                    className="text-primary underline underline-offset-2 hover:text-primary-dark"
+                  >
                     Privacy Policy
-                  </ComingSoonText>{" "}
+                  </Link>{" "}
                   and understand that everything I do here is private.
                 </label>
               </div>

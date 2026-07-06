@@ -7,7 +7,6 @@ import {
   mapCounsellorProfileForPage,
 } from "../api/counsellors";
 import AvailabilityCard from "../components/AvailabilityCard";
-import ComingSoonText from "../components/ComingSoonText";
 import ProfileHeader from "../components/ProfileHeader";
 import SessionRequestCTA from "../components/SessionRequestCTA";
 import SpecialtyBadge from "../components/SpecialtyBadge";
@@ -32,36 +31,34 @@ function CounsellorNotFound() {
   );
 }
 
-function SharedResourcesCard({ resources }) {
+function SharedResourcesCard({ resource }) {
+  if (!resource) {
+    return null;
+  }
+
   return (
     <div className="rounded-3xl border border-outline-muted/20 bg-surface p-5 shadow-[0_8px_30px_rgba(17,29,39,0.05)]">
       <div className="mb-4 flex items-center gap-2">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
           <BookOpen className="h-4 w-4 text-primary" aria-hidden="true" />
         </div>
-        <h3 className="font-heading text-sm font-bold text-on-surface">Shared Resources</h3>
+        <h3 className="font-heading text-sm font-bold text-on-surface">Suggested Resource</h3>
       </div>
-      <ul className="space-y-2">
-        {resources.map((resource) => (
-          <li key={resource.title}>
-            <Link
-              to="/student/resources"
-              className="group flex w-full items-center justify-between gap-3 rounded-xl border border-outline-muted/15 bg-surface-muted/30 px-3.5 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:bg-soft-teal/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-            >
-              <div>
-                <p className="font-heading text-sm font-semibold text-primary-dark group-hover:text-primary">
-                  {resource.title}
-                </p>
-                <p className="font-body text-[11px] text-on-surface-subtle">{resource.type}</p>
-              </div>
-              <ExternalLink
-                className="h-4 w-4 shrink-0 text-on-surface-subtle transition-colors group-hover:text-primary"
-                aria-hidden="true"
-              />
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <Link
+        to={`/student/resources/${resource.id}`}
+        className="group flex w-full items-center justify-between gap-3 rounded-xl border border-outline-muted/15 bg-surface-muted/30 px-3.5 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:bg-soft-teal/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+      >
+        <div>
+          <p className="font-heading text-sm font-semibold text-primary-dark group-hover:text-primary">
+            {resource.title}
+          </p>
+          <p className="font-body text-[11px] text-on-surface-subtle">{resource.type}</p>
+        </div>
+        <ExternalLink
+          className="h-4 w-4 shrink-0 text-on-surface-subtle transition-colors group-hover:text-primary"
+          aria-hidden="true"
+        />
+      </Link>
     </div>
   );
 }
@@ -233,7 +230,7 @@ export default function CounsellorProfile() {
             counsellorId={counsellor.id}
             counsellorName={counsellor.firstName}
           />
-          <SharedResourcesCard resources={counsellor.sharedResources} />
+          <SharedResourcesCard resource={counsellor.suggestedResource} />
 
           <div className="rounded-2xl border border-outline-muted/15 bg-soft-teal/50 px-4 py-3 text-center">
             <p className="font-body text-[11px] leading-relaxed text-on-surface-muted">
@@ -251,12 +248,18 @@ export default function CounsellorProfile() {
           Endorsed by Strathmore University Mental Health Club
         </p>
         <div className="flex gap-4">
-          <ComingSoonText className="font-body text-xs text-on-surface-subtle">
+          <Link
+            to="/privacy-policy"
+            className="font-body text-xs text-on-surface-subtle transition-colors hover:text-primary"
+          >
             Privacy Policy
-          </ComingSoonText>
-          <ComingSoonText className="font-body text-xs text-on-surface-subtle">
-            Contact
-          </ComingSoonText>
+          </Link>
+          <Link
+            to="/contact-support"
+            className="font-body text-xs text-on-surface-subtle transition-colors hover:text-primary"
+          >
+            Contact Support
+          </Link>
         </div>
       </footer>
     </div>

@@ -1,29 +1,12 @@
 import StaticContentPage from "../components/landing/StaticContentPage";
-
-const crisisLines = [
-  {
-    name: "Befrienders Kenya",
-    number: "+254 722 178 177",
-    detail: "Mon–Fri, 9am–5pm — confidential emotional support",
-  },
-  {
-    name: "EMKF Suicide Prevention & Crisis Helpline",
-    number: "0800 723 253",
-    detail: "Toll-free",
-  },
-  {
-    name: "NACADA Toll-Free Helpline",
-    number: "1192",
-    detail: "Distress and substance use support",
-  },
-];
+import { crisisLines, EMERGENCY_SERVICES_NUMBER } from "../constants/crisisSupport";
 
 export default function EmergencyInfo() {
   return (
     <StaticContentPage title="Emergency Info">
       {/* Numbers sourced from public directories in July 2026 — verify against the Mental Health Club's official list before production launch. */}
       <h2 className="font-heading text-xl font-semibold text-on-surface">
-        If you are in immediate danger, call 999 or 112.
+        If you are in immediate danger, call {EMERGENCY_SERVICES_NUMBER} or 112.
       </h2>
       <p className="font-body text-base leading-relaxed text-on-surface-muted">
         If you are not in immediate danger but need someone to talk to, these
@@ -34,7 +17,12 @@ export default function EmergencyInfo() {
           <li key={line.name}>
             <span className="font-semibold text-on-surface">{line.name}</span>
             {" — "}
-            <span className="font-medium text-primary">{line.number}</span>
+            <a
+              href={`tel:${line.tel}`}
+              className="font-medium text-primary underline-offset-2 hover:underline"
+            >
+              {line.number}
+            </a>
             {line.detail ? ` (${line.detail})` : null}
           </li>
         ))}

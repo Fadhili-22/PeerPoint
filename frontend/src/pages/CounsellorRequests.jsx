@@ -339,9 +339,9 @@ export default function CounsellorRequests() {
       setRequests(data);
     } catch (err) {
       if (err instanceof ApiError && err.status === 403) {
-        setError("You are not authorized to view session requests.");
+        setError("You are not authorized to view sessions.");
       } else {
-        setError(err.message || "Unable to load requests. Please try again.");
+        setError(err.message || "Unable to load sessions. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -453,10 +453,10 @@ export default function CounsellorRequests() {
     <div className="mx-auto flex w-full max-w-[1200px] flex-col">
       <header className="mb-6">
         <h1 className="mb-1 font-heading text-2xl font-semibold text-on-surface md:text-[28px] md:leading-9">
-          Session Requests
+          Sessions
         </h1>
         <p className="font-body text-base text-on-surface-muted">
-          Review, accept, and manage incoming peer counselling requests.
+          Review, accept, and manage your peer counselling sessions.
         </p>
       </header>
 
@@ -469,7 +469,7 @@ export default function CounsellorRequests() {
       <div
         className="mb-6 flex flex-wrap items-center gap-2"
         role="tablist"
-        aria-label="Filter requests by status"
+        aria-label="Filter sessions by status"
       >
         {requestFilters.map((filter) => {
           const isActive = activeFilter === filter.id;
@@ -530,10 +530,10 @@ export default function CounsellorRequests() {
             <Inbox className="h-7 w-7 text-on-surface-subtle" aria-hidden="true" />
           </div>
           <h2 className="mb-2 font-heading text-xl font-bold text-on-surface">
-            No requests here
+            No sessions here
           </h2>
           <p className="max-w-md font-body text-sm text-on-surface-muted">
-            There are no requests matching this filter right now. New requests
+            There are no sessions matching this filter right now. New sessions
             will appear here as students reach out.
           </p>
         </div>

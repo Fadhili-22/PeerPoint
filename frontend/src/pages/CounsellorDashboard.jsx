@@ -13,7 +13,6 @@ import {
   Video,
   X,
 } from "lucide-react";
-import ComingSoonButton from "../components/ComingSoonButton";
 import RejectSessionModal from "../components/RejectSessionModal";
 import { ResourceStatusBadge } from "../components/AdminResourceRowActions";
 import { ApiError } from "../api/client";
@@ -27,7 +26,12 @@ import {
   getCounsellorUpcomingSessions,
   rejectSessionRequest,
 } from "../api/sessions";
-import { MOCK_COUNSELLOR_RESPONSE_RATE } from "../data/mockCounsellorDashboard";
+
+function formatResponseRate(sessions) {
+  if (sessions.length === 0) return "—";
+  const responded = sessions.filter((session) => session.status !== "pending").length;
+  return `${Math.round((responded / sessions.length) * 100)}%`;
+}
 
 const kpiIcons = {
   pending: ClipboardList,
@@ -65,6 +69,7 @@ export default function CounsellorDashboard() {
   const firstName = user.fullName.split(" ")[0];
   const [availabilitySlots, setAvailabilitySlots] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [allSessions, setAllSessions] = useState([]);
   const [allPendingRequests, setAllPendingRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(true);
   const [upcomingSessions, setUpcomingSessions] = useState([]);
@@ -81,10 +86,13 @@ export default function CounsellorDashboard() {
   const loadPendingRequests = useCallback(async () => {
     setRequestsLoading(true);
     try {
-      const data = await getCounsellorSessionRequests("pending");
-      setAllPendingRequests(data);
-      setRequests(data.slice(0, 5));
+      const data = await getCounsellorSessionRequests();
+      const pending = data.filter((session) => session.status === "pending");
+      setAllSessions(data);
+      setAllPendingRequests(pending);
+      setRequests(pending.slice(0, 5));
     } catch {
+      setAllSessions([]);
       setAllPendingRequests([]);
       setRequests([]);
     } finally {
@@ -161,7 +169,7 @@ export default function CounsellorDashboard() {
     () => [
       {
         id: "pending",
-        label: "Pending Requests",
+        label: "Pending Sessions",
         value: String(pendingCount).padStart(2, "0"),
         icon: "pending",
         highlight: pendingCount > 0,
@@ -181,11 +189,11 @@ export default function CounsellorDashboard() {
       {
         id: "response",
         label: "Response Rate",
-        value: MOCK_COUNSELLOR_RESPONSE_RATE,
+        value: formatResponseRate(allSessions),
         icon: "stats",
       },
     ],
-    [pendingCount, upcomingSessions.length, sessionsCount],
+    [pendingCount, upcomingSessions.length, sessionsCount, allSessions],
   );
 
   const overdueAttention = useMemo(() => {
@@ -242,7 +250,7 @@ export default function CounsellorDashboard() {
             Welcome back, {firstName}
           </h1>
           <p className="font-body text-base text-on-surface-muted">
-            You have {pendingCount} new requests waiting for your response.
+            You have {pendingCount} new sessions waiting for your response.
           </p>
         </div>
 
@@ -286,7 +294,7 @@ export default function CounsellorDashboard() {
           <section className="overflow-hidden rounded-2xl border border-primary/5 bg-surface shadow-md">
             <div className="flex items-center justify-between border-b border-outline-muted/10 p-5">
               <h2 className="font-heading text-lg font-semibold text-on-surface">
-                New Session Requests
+                New Sessions
               </h2>
               <Link
                 to="/counsellor/requests"
@@ -320,13 +328,13 @@ export default function CounsellorDashboard() {
                   {requestsLoading ? (
                     <tr>
                       <td colSpan={5} className="px-5 py-8 text-center font-body text-sm text-on-surface-muted">
-                        Loading requests...
+                        Loading sessions...
                       </td>
                     </tr>
                   ) : requests.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="px-5 py-8 text-center font-body text-sm text-on-surface-muted">
-                        No pending requests right now.
+                        No pending sessions right now.
                       </td>
                     </tr>
                   ) : (
@@ -528,9 +536,12 @@ export default function CounsellorDashboard() {
                       className="h-5 w-5 text-primary/60"
                       aria-hidden="true"
                     />
-                    <ComingSoonButton className="rounded-xl bg-primary px-5 py-2 font-heading text-sm font-semibold text-on-primary">
+                    <Link
+                      to="/counsellor/requests"
+                      className="rounded-xl bg-primary px-5 py-2 font-heading text-sm font-semibold text-on-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    >
                       View Session
-                    </ComingSoonButton>
+                    </Link>
                   </div>
                 </article>
                   );

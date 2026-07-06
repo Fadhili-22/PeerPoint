@@ -18,7 +18,7 @@ const PORTAL_CARDS = {
   },
   counsellor: {
     title: "Peer Counsellor Portal",
-    subtitle: "Manage requests & availability",
+    subtitle: "Manage sessions & availability",
     icon: HeartHandshake,
   },
   admin: {

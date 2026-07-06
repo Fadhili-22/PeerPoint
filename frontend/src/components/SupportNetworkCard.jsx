@@ -28,6 +28,13 @@ export default function SupportNetworkCard({ option }) {
         >
           {option.actionLabel}
         </Link>
+      ) : option.id === "mental-health-club" ? (
+        <Link
+          to="/contact-support"
+          className="mt-auto flex w-full items-center justify-center rounded-2xl bg-soft-teal py-3 font-heading text-sm font-bold text-primary transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 hover:bg-primary/10"
+        >
+          {option.actionLabel}
+        </Link>
       ) : (
         <ComingSoonButton className="mt-auto w-full rounded-2xl bg-soft-teal py-3 font-heading text-sm font-bold text-primary">
           {option.actionLabel}

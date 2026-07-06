@@ -132,11 +132,15 @@ const defaultFocusIcon = "brain";
 
 
 
-const placeholderSharedResources = [
+const suggestedResource = {
 
-  { title: "Getting Started with Peer Support", type: "Guide" },
+  id: "getting-started-with-peerpoint",
 
-];
+  title: "Getting Started with PeerPoint",
+
+  type: "Guide",
+
+};
 
 
 
@@ -256,7 +260,7 @@ export function mapCounsellorProfileForPage(profile) {
 
     ),
 
-    sharedResources: placeholderSharedResources,
+    suggestedResource,
 
   };
 

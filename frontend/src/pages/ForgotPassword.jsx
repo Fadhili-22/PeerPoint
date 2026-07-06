@@ -8,7 +8,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { forgotPassword } from "../api/auth";
-import ComingSoonText from "../components/ComingSoonText";
+import LegalFooterLinks from "../components/LegalFooterLinks";
 
 function AuthHero() {
   return (
@@ -57,17 +57,7 @@ function AuthFooter() {
           Endorsed by Strathmore University Mental Health Club
         </span>
       </div>
-      <div className="flex gap-6">
-        <ComingSoonText className="font-body text-xs font-medium text-on-surface-muted">
-          Privacy Policy
-        </ComingSoonText>
-        <ComingSoonText className="font-body text-xs font-medium text-on-surface-muted">
-          Contact Support
-        </ComingSoonText>
-        <ComingSoonText className="font-body text-xs font-medium text-on-surface-muted">
-          Terms of Service
-        </ComingSoonText>
-      </div>
+      <LegalFooterLinks />
     </footer>
   );
 }

@@ -10,7 +10,6 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import ComingSoonButton from "../components/ComingSoonButton";
 import { useAuth } from "../context/AuthContext";
 import {
   getAdminDashboard,
@@ -660,10 +659,13 @@ export default function AdminDashboard() {
               </h2>
               <div className="flex items-center gap-4">
                 <ViewAllLink to="/admin/resources" label="View all" />
-                <ComingSoonButton className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 font-heading text-sm font-semibold text-on-primary shadow-sm">
+                <Link
+                  to="/admin/resources/new"
+                  className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 font-heading text-sm font-semibold text-on-primary shadow-sm transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                >
                   <Plus className="h-4 w-4" aria-hidden="true" />
                   Publish New
-                </ComingSoonButton>
+                </Link>
               </div>
             </div>
             <div className="overflow-x-auto">

@@ -24,10 +24,10 @@ export default function CounsellorDirectory() {
   const [selectedLanguage, setSelectedLanguage] = useState("all");
   const [selectedYear, setSelectedYear] = useState("all");
 
-  const effectiveSpecialties =
-    selectedChips.length > 0
-      ? [...new Set([...selectedChips, ...selectedSpecialties])]
-      : selectedSpecialties;
+  const effectiveSpecialties = useMemo(() => {
+    if (selectedChips.length === 0) return selectedSpecialties;
+    return [...new Set([...selectedChips, ...selectedSpecialties])];
+  }, [selectedChips, selectedSpecialties]);
 
   useEffect(() => {
     let cancelled = false;

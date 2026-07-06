@@ -10,16 +10,24 @@ export default function ContactSupport() {
         right help.
       </p>
       <p className="font-body text-base leading-relaxed text-on-surface-muted">
-        {/* TODO: replace with the official Mental Health Club email. */}
         Email:{" "}
-        <span className="font-medium text-on-surface">
-          TODO_MHC_EMAIL@strathmore.edu
-        </span>
+        <a
+          href="mailto:mentalhealthclub@strathmore.edu"
+          className="font-medium text-on-surface transition-colors hover:text-primary"
+        >
+          mentalhealthclub@strathmore.edu
+        </a>
       </p>
       <p className="font-body text-base leading-relaxed text-on-surface-muted">
-        {/* TODO: replace with the official Mental Health Club phone number. */}
-        Phone:{" "}
-        <span className="font-medium text-on-surface">TODO_MHC_PHONE</span>
+        Instagram:{" "}
+        <a
+          href="https://www.instagram.com/su_mentalhealthclub"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-on-surface transition-colors hover:text-primary"
+        >
+          @su_mentalhealthclub
+        </a>
       </p>
     </StaticContentPage>
   );

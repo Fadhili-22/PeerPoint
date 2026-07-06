@@ -14,13 +14,13 @@ import {
   Users,
   X,
 } from "lucide-react";
-import PortalSwitcher from "../components/PortalSwitcher";
-import { useAuth } from "../context/AuthContext";
+import PortalSwitcher from "../../components/PortalSwitcher";
+import { useAuth } from "../../context/AuthContext";
 
 const navByRole = {
   counsellor: [
     { to: "/counsellor", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/counsellor/requests", label: "Requests", icon: ClipboardList },
+    { to: "/counsellor/requests", label: "Sessions", icon: ClipboardList },
     { to: "/counsellor/resources", label: "Resources", icon: BookOpen },
     { to: "/counsellor/availability", label: "Availability", icon: UserCheck },
     { to: "/counsellor/profile", label: "Profile", icon: User },

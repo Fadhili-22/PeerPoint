@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { BadgeCheck, Globe, Mail, MessageCircle, X } from "lucide-react";
-import ComingSoonText from "../ComingSoonText";
+import { BadgeCheck, MessageCircle, X } from "lucide-react";
 
 const footerPlatformLinks = [
   { label: "Find Support", to: "/signup" },
@@ -17,8 +16,7 @@ const footerSupportLinks = [
   { label: "Emergency Info", to: "/emergency-info" },
 ];
 
-// TODO: replace with the official Mental Health Club email.
-const PEER_COUNSELLOR_CONTACT_EMAIL = "TODO_MHC_EMAIL@strathmore.edu";
+const PEER_COUNSELLOR_CONTACT_EMAIL = "mentalhealthclub@strathmore.edu";
 
 function BecomePeerCounsellorModal({ onClose }) {
   return (
@@ -82,20 +80,6 @@ export default function LandingFooter() {
                 support platform. Providing a safe, anonymous sanctuary for student
                 well-being.
               </p>
-              <div className="flex gap-4">
-                <ComingSoonText
-                  aria-label="Visit website"
-                  className="rounded-lg bg-white/5 p-2 text-outline-muted"
-                >
-                  <Globe className="h-5 w-5" aria-hidden="true" />
-                </ComingSoonText>
-                <ComingSoonText
-                  aria-label="Send email"
-                  className="rounded-lg bg-white/5 p-2 text-outline-muted"
-                >
-                  <Mail className="h-5 w-5" aria-hidden="true" />
-                </ComingSoonText>
-              </div>
             </div>
             <div className="grid grid-cols-2 gap-16">
               <div className="space-y-6">
@@ -146,7 +130,7 @@ export default function LandingFooter() {
           </div>
           <div className="flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 md:flex-row">
             <p className="text-xs font-medium text-outline-muted">
-              © 2024 PeerPoint. All rights reserved.
+              © 2026 PeerPoint. All rights reserved.
             </p>
             <div className="flex items-center gap-3 rounded-full border border-white/5 bg-white/5 px-4 py-2 text-on-dark-accent">
               <BadgeCheck className="h-4 w-4" aria-hidden="true" />

@@ -11,10 +11,10 @@ import {
   X,
   BookOpen,
 } from "lucide-react";
-import CounsellorMatchWidget from "../components/CounsellorMatchWidget";
-import CrisisHelpButton from "../components/CrisisHelpButton";
-import PortalSwitcher from "../components/PortalSwitcher";
-import { useAuth } from "../context/AuthContext";
+import CounsellorMatchWidget from "../../components/CounsellorMatchWidget";
+import CrisisHelpButton from "../../components/CrisisHelpButton";
+import PortalSwitcher from "../../components/PortalSwitcher";
+import { useAuth } from "../../context/AuthContext";
 
 const navItems = [
   { to: "/student", label: "Dashboard", icon: LayoutDashboard, end: true },
